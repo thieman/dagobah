@@ -1,0 +1,8 @@
+croniter==0.3.3
+-e git+git@github.com:tthieman/dagobah@c3b0d4c6f170109ac9c7acca8412c006a45c6335#egg=dagobah-dev
+nose==1.3.0
+pymongo==2.5
+python-dateutil==2.1
+six==1.3.0
+wsgiref==0.1.2
+zope.interface==4.0.5
