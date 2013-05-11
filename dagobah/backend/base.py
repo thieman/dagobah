@@ -15,3 +15,11 @@ class BaseBackend(object):
 
     def __repr__(self):
         return '<BaseBackend>'
+
+
+    def commit_job(self, job_json):
+        pass
+
+
+    def commit_log(self, log_json):
+        pass

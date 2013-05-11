@@ -142,3 +142,29 @@ def test_run_job():
         tries += 1
 
     raise ValueError('test timed out')
+
+
+@with_setup(blank_dagobah)
+@raises(ValueError)
+def test_start_running_job():
+    dagobah.add_job('test_job')
+    dagobah.add_task_to_job('test_job', 'ls', 'list')
+    job = dagobah.get_job('test_job')
+    job.start()
+    job.start()
+
+
+@with_setup(blank_dagobah)
+def test_serialize_dagobah():
+    dagobah.add_job('test_job')
+    job = dagobah.get_job('test_job')
+    job.add_task('ls', 'list')
+    job.base_datetime = datetime(2012, 1, 1, 1, 0, 0)
+    job.schedule('*/5 * * * *')
+    test_result = {'created_jobs': 1,
+                   'jobs': [{'job_id': 1,
+                             'tasks': [{'command': 'ls',
+                                        'name': 'list'}],
+                             'cron_schedule': '*/5 * * * *',
+                             'next_run': datetime(2012, 1, 1, 1, 5, 0)}]}
+    assert dagobah._serialize() == test_result

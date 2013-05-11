@@ -80,7 +80,8 @@ class Dagobah(object):
 
     def _serialize(self):
         """ Serialize a representation of this Dagobah object to JSON. """
-        raise NotImplementedError()
+        return {'jobs': [job._serialize() for job in self.jobs],
+                'created_jobs': self.created_jobs}
 
 
 class Task(object):
@@ -94,14 +95,16 @@ class Task(object):
         self.process = None
         self.stdout = None
         self.stderr = None
-        self.stdout_file = os.tmpfile()
-        self.stderr_file = os.tmpfile()
+        self.stdout_file = None
+        self.stderr_file = None
 
         self.timer = None
 
 
     def start(self):
         """ Begin execution of this task. """
+        self.stdout_file = os.tmpfile()
+        self.stderr_file = os.tmpfile()
         self.process = subprocess.Popen(self.command,
                                         shell=True,
                                         stdout=self.stdout_file,
@@ -127,6 +130,48 @@ class Task(object):
                             complete_time = datetime.utcnow())
 
 
+    def terminate(self):
+        """ Send SIGTERM to the task's process. """
+        if not self.process:
+            raise ValueError('task does not have a running process')
+        self.process.terminate()
+
+
+    def kill(self):
+        """ Send SIGKILL to the task's process. """
+        if not self.process:
+            raise ValueError('task does not have a running process')
+        self.process.kill()
+
+
+    def head(self, stream='stdout', num_lines=10):
+        """ Head a specified stream (stdout or stderr) by num_lines. """
+        target = self._map_string_to_file(stream)
+        return self._head_temp_file(target, num_lines)
+
+
+    def tail(self, stream='stdout', num_lines=10):
+        """ Tail a specified stream (stdout or stderr) by num_lines. """
+        target = self._map_string_to_file(stream)
+        return self._tail_temp_file(target, num_lines)
+
+
+    def get_stdout(self):
+        """ Returns the entire stdout output of this process. """
+        return self._read_temp_file(self.stdout_file)
+
+
+    def get_stderr(self):
+        """ Returns the entire stderr output of this process. """
+        return self._read_temp_file(self.stderr_file)
+
+
+    def _map_string_to_file(self, stream):
+        if stream not in ['stdout', 'stderr']:
+            raise ValueError('stream must be stdout or stderr')
+        return self.stdout_file if stream == 'stdout' else self.stderr_file
+
+
     def _start_check_timer(self):
         """ Periodically checks to see if the task has completed. """
         self.timer = threading.Timer(2.5, self.check_complete)
@@ -141,6 +186,47 @@ class Task(object):
         return result
 
 
+    def _head_temp_file(self, temp_file, num_lines):
+        """ Returns a list of the first num_lines lines from a temp file. """
+        if not isinstance(num_lines, int):
+            raise TypeError('num_lines must be an integer')
+        temp_file.seek(0)
+        result, curr_line = [], 0
+        for line in temp_file:
+            curr_line += 1
+            result.append(line)
+            if curr_line >= num_lines:
+                break
+        return result
+
+
+    def _tail_temp_file(self, temp_file, num_lines, seek_offset=10000):
+        """ Returns a list of the last num_lines lines from a temp file.
+
+        This works by first moving seek_offset chars back from the end of
+        the file, then attempting to tail the file from there. It is
+        possible that fewer than num_lines will be returned, even if the
+        file has more total lines than num_lines.
+        """
+
+        if not isinstance(num_lines, int):
+            raise TypeError('num_lines must be an integer')
+
+        temp_file.seek(0, os.SEEK_END)
+        size = temp_file.tell()
+        temp_file.seek(-1 * min(size, seek_offset), os.SEEK_END)
+
+        result = []
+        while True:
+            this_line = temp_file.readline()
+            if this_line == '':
+                break
+            result.append(this_line)
+            if len(result) > num_lines:
+                result.pop(0)
+        return result
+
+
     def _task_complete(self, **kwargs):
         """ Performs cleanup tasks and notifies Job that the Task finished. """
         self.parent_job.completion_lock.acquire()
@@ -148,8 +234,9 @@ class Task(object):
 
 
     def _serialize(self):
-        """ Serialize a representation of this Task to JSON. """
-        raise NotImplementedError()
+        """ Serialize a representation of this Task to a Python dict. """
+        return {'command': self.command,
+                'name': self.name}
 
 
 class Job(DAG):
@@ -165,7 +252,6 @@ class Job(DAG):
         # tasks themselves aren't hashable, so we need a secondary lookup
         self.tasks = {}
         self.base_datetime = datetime.utcnow()
-        self.created = datetime.utcnow()
 
         self.status = None
         self.next_run = None
@@ -184,7 +270,7 @@ class Job(DAG):
 
     def commit(self):
         """ Store metadata on this Job to the backend. """
-        raise NotImplementedError()
+        self.backend.commit_job(self._serialize())
 
 
     def add_task(self, command, name=None):
@@ -206,6 +292,9 @@ class Job(DAG):
     def start(self):
         """ Begins the job by kicking off all tasks with no dependencies. """
 
+        if self.status == 'running':
+            raise ValueError('job is already running')
+
         if self.cron_iter:
             self.next_run = self.cron_iter.get_next(datetime)
 
@@ -216,6 +305,20 @@ class Job(DAG):
         for task_name in self.ind_nodes():
             self._put_task_in_run_log(task_name)
             self.tasks[task_name].start()
+
+
+    def retry(self):
+        """ Starts failed parts of a job from a failed state. """
+
+        if self.status != 'failed':
+            raise ValueError('can only retry a job from a failed state')
+
+        self._set_status('running')
+        self.run_log['retry_time'] = datetime.utcnow()
+
+        for task_name, log in self.run_log['tasks'].iteritems():
+            if log.get('success', True) == False:
+                self.tasks[task_name].start()
 
 
     def _complete_task(self, task_name, **kwargs):
@@ -244,7 +347,7 @@ class Job(DAG):
         return True
 
     def _on_completion(self):
-        """ Checks to see if the Job has completed, and cleans up if so. """
+        """ Checks to see if the Job has completed, and cleans up if it has. """
 
         if not self._is_complete():
             self.completion_lock.release()
@@ -256,10 +359,11 @@ class Job(DAG):
             if results.get('success', False) == False:
                 self._set_status('failed')
                 break
+
         if self.status != 'failed':
             self._set_status('waiting')
+            self.run_log = {}
 
-        self.run_log = {}
         self.completion_lock.release()
 
 
@@ -284,9 +388,13 @@ class Job(DAG):
 
     def _commit_run_log(self):
         """" Commit the current run log to the backend. """
-        return
+        self.backend.commit_log(self.run_log)
 
 
     def _serialize(self):
-        """ Serialize a representation of this Job to JSON. """
-        raise NotImplementedError()
+        """ Serialize a representation of this Job to a Python dict object. """
+        return {'job_id': self.job_id,
+                'tasks': [task._serialize()
+                          for task in self.tasks.itervalues()],
+                'cron_schedule': self.cron_schedule,
+                'next_run': self.next_run}
