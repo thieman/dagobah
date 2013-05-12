@@ -168,3 +168,24 @@ def test_serialize_dagobah():
                              'cron_schedule': '*/5 * * * *',
                              'next_run': datetime(2012, 1, 1, 1, 5, 0)}]}
     assert dagobah._serialize() == test_result
+
+
+
+@with_setup(blank_dagobah)
+def test_scheduler_monitoring():
+    dagobah.add_job('test_job')
+    job = dagobah.get_job('test_job')
+    job.add_task('sleep 60')
+    curr_minute = datetime.now().minute
+    if datetime.now().second >= 58:
+        curr_minute += 1
+    job.schedule('%d * * * *' % ((curr_minute + 1) % 60))
+
+    for i in range(65):
+        if job.status == 'running':
+            for task in job.tasks.values():
+                task.terminate()
+            return
+        sleep(1)
+
+    raise ValueError('scheduler did not start job')

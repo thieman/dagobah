@@ -2,6 +2,7 @@
 
 import os
 from datetime import datetime
+import time
 import subprocess
 import threading
 
@@ -9,6 +10,46 @@ from croniter import croniter
 
 from dagobah.core.dag import DAG
 from dagobah.backend.base import BaseBackend
+
+
+class Scheduler(threading.Thread):
+    """ Monitoring thread to kick off Jobs at their scheduled times. """
+
+    def __init__(self, parent_dagobah):
+        super(Scheduler, self).__init__()
+        self.parent = parent_dagobah
+        self.stopped = False
+
+        self.last_check = datetime.utcnow()
+
+
+    def __repr__(self):
+        return '<Scheduler for %s>' % self.parent
+
+
+    def stop(self):
+        """ Stop the monitoring loop without killing the thread. """
+        self.stopped = True
+
+
+    def restart(self):
+        """ Restart the monitoring loop. """
+        self.last_check = datetime.utcnow()
+        self.stopped = False
+
+
+    def run(self):
+        """ Continually monitors Jobs of the parent Dagobah. """
+        while not self.stopped:
+            for job in self.parent.jobs:
+                if not job.next_run:
+                    continue
+                if (job.next_run >= self.last_check and
+                    job.next_run <= datetime.utcnow() and
+                    job.status != 'running'):
+                    job.start()
+            self.last_checked = datetime.utcnow()
+            time.sleep(1)
 
 
 class Dagobah(object):
@@ -24,6 +65,10 @@ class Dagobah(object):
         self.backend = backend
         self.jobs = []
         self.created_jobs = 0
+        self.scheduler = Scheduler(self)
+        self.scheduler.daemon = True
+
+        self.scheduler.start()
 
 
     def __repr__(self):
@@ -82,161 +127,6 @@ class Dagobah(object):
         """ Serialize a representation of this Dagobah object to JSON. """
         return {'jobs': [job._serialize() for job in self.jobs],
                 'created_jobs': self.created_jobs}
-
-
-class Task(object):
-    """ Handles execution and reporting for an individual process. """
-
-    def __init__(self, parent_job, command, name):
-        self.parent_job = parent_job
-        self.command = command
-        self.name = name
-
-        self.process = None
-        self.stdout = None
-        self.stderr = None
-        self.stdout_file = None
-        self.stderr_file = None
-
-        self.timer = None
-
-
-    def start(self):
-        """ Begin execution of this task. """
-        self.stdout_file = os.tmpfile()
-        self.stderr_file = os.tmpfile()
-        self.process = subprocess.Popen(self.command,
-                                        shell=True,
-                                        stdout=self.stdout_file,
-                                        stderr=self.stderr_file)
-        self._start_check_timer()
-
-
-    def check_complete(self):
-        """ Runs completion flow for this task if it's finished. """
-        if self.process.poll() is None:
-            self._start_check_timer()
-            return
-
-        self.stdout, self.stderr = (self._read_temp_file(self.stdout_file),
-                                    self._read_temp_file(self.stderr_file))
-        for temp_file in [self.stdout_file, self.stderr_file]:
-            temp_file.close()
-
-        self._task_complete(success=True if self.process.returncode == 0 else False,
-                            return_code=self.process.returncode,
-                            stdout = self.stdout,
-                            stderr = self.stderr,
-                            complete_time = datetime.utcnow())
-
-
-    def terminate(self):
-        """ Send SIGTERM to the task's process. """
-        if not self.process:
-            raise ValueError('task does not have a running process')
-        self.process.terminate()
-
-
-    def kill(self):
-        """ Send SIGKILL to the task's process. """
-        if not self.process:
-            raise ValueError('task does not have a running process')
-        self.process.kill()
-
-
-    def head(self, stream='stdout', num_lines=10):
-        """ Head a specified stream (stdout or stderr) by num_lines. """
-        target = self._map_string_to_file(stream)
-        return self._head_temp_file(target, num_lines)
-
-
-    def tail(self, stream='stdout', num_lines=10):
-        """ Tail a specified stream (stdout or stderr) by num_lines. """
-        target = self._map_string_to_file(stream)
-        return self._tail_temp_file(target, num_lines)
-
-
-    def get_stdout(self):
-        """ Returns the entire stdout output of this process. """
-        return self._read_temp_file(self.stdout_file)
-
-
-    def get_stderr(self):
-        """ Returns the entire stderr output of this process. """
-        return self._read_temp_file(self.stderr_file)
-
-
-    def _map_string_to_file(self, stream):
-        if stream not in ['stdout', 'stderr']:
-            raise ValueError('stream must be stdout or stderr')
-        return self.stdout_file if stream == 'stdout' else self.stderr_file
-
-
-    def _start_check_timer(self):
-        """ Periodically checks to see if the task has completed. """
-        self.timer = threading.Timer(2.5, self.check_complete)
-        self.timer.daemon = True
-        self.timer.start()
-
-
-    def _read_temp_file(self, temp_file):
-        """ Reads a temporary file for Popen stdout and stderr. """
-        temp_file.seek(0)
-        result = temp_file.read()
-        return result
-
-
-    def _head_temp_file(self, temp_file, num_lines):
-        """ Returns a list of the first num_lines lines from a temp file. """
-        if not isinstance(num_lines, int):
-            raise TypeError('num_lines must be an integer')
-        temp_file.seek(0)
-        result, curr_line = [], 0
-        for line in temp_file:
-            curr_line += 1
-            result.append(line)
-            if curr_line >= num_lines:
-                break
-        return result
-
-
-    def _tail_temp_file(self, temp_file, num_lines, seek_offset=10000):
-        """ Returns a list of the last num_lines lines from a temp file.
-
-        This works by first moving seek_offset chars back from the end of
-        the file, then attempting to tail the file from there. It is
-        possible that fewer than num_lines will be returned, even if the
-        file has more total lines than num_lines.
-        """
-
-        if not isinstance(num_lines, int):
-            raise TypeError('num_lines must be an integer')
-
-        temp_file.seek(0, os.SEEK_END)
-        size = temp_file.tell()
-        temp_file.seek(-1 * min(size, seek_offset), os.SEEK_END)
-
-        result = []
-        while True:
-            this_line = temp_file.readline()
-            if this_line == '':
-                break
-            result.append(this_line)
-            if len(result) > num_lines:
-                result.pop(0)
-        return result
-
-
-    def _task_complete(self, **kwargs):
-        """ Performs cleanup tasks and notifies Job that the Task finished. """
-        self.parent_job.completion_lock.acquire()
-        self.parent_job._complete_task(self.name, **kwargs)
-
-
-    def _serialize(self):
-        """ Serialize a representation of this Task to a Python dict. """
-        return {'command': self.command,
-                'name': self.name}
 
 
 class Job(DAG):
@@ -398,3 +288,158 @@ class Job(DAG):
                           for task in self.tasks.itervalues()],
                 'cron_schedule': self.cron_schedule,
                 'next_run': self.next_run}
+
+
+class Task(object):
+    """ Handles execution and reporting for an individual process. """
+
+    def __init__(self, parent_job, command, name):
+        self.parent_job = parent_job
+        self.command = command
+        self.name = name
+
+        self.process = None
+        self.stdout = None
+        self.stderr = None
+        self.stdout_file = None
+        self.stderr_file = None
+
+        self.timer = None
+
+
+    def start(self):
+        """ Begin execution of this task. """
+        self.stdout_file = os.tmpfile()
+        self.stderr_file = os.tmpfile()
+        self.process = subprocess.Popen(self.command,
+                                        shell=True,
+                                        stdout=self.stdout_file,
+                                        stderr=self.stderr_file)
+        self._start_check_timer()
+
+
+    def check_complete(self):
+        """ Runs completion flow for this task if it's finished. """
+        if self.process.poll() is None:
+            self._start_check_timer()
+            return
+
+        self.stdout, self.stderr = (self._read_temp_file(self.stdout_file),
+                                    self._read_temp_file(self.stderr_file))
+        for temp_file in [self.stdout_file, self.stderr_file]:
+            temp_file.close()
+
+        self._task_complete(success=True if self.process.returncode == 0 else False,
+                            return_code=self.process.returncode,
+                            stdout = self.stdout,
+                            stderr = self.stderr,
+                            complete_time = datetime.utcnow())
+
+
+    def terminate(self):
+        """ Send SIGTERM to the task's process. """
+        if not self.process:
+            raise ValueError('task does not have a running process')
+        self.process.terminate()
+
+
+    def kill(self):
+        """ Send SIGKILL to the task's process. """
+        if not self.process:
+            raise ValueError('task does not have a running process')
+        self.process.kill()
+
+
+    def head(self, stream='stdout', num_lines=10):
+        """ Head a specified stream (stdout or stderr) by num_lines. """
+        target = self._map_string_to_file(stream)
+        return self._head_temp_file(target, num_lines)
+
+
+    def tail(self, stream='stdout', num_lines=10):
+        """ Tail a specified stream (stdout or stderr) by num_lines. """
+        target = self._map_string_to_file(stream)
+        return self._tail_temp_file(target, num_lines)
+
+
+    def get_stdout(self):
+        """ Returns the entire stdout output of this process. """
+        return self._read_temp_file(self.stdout_file)
+
+
+    def get_stderr(self):
+        """ Returns the entire stderr output of this process. """
+        return self._read_temp_file(self.stderr_file)
+
+
+    def _map_string_to_file(self, stream):
+        if stream not in ['stdout', 'stderr']:
+            raise ValueError('stream must be stdout or stderr')
+        return self.stdout_file if stream == 'stdout' else self.stderr_file
+
+
+    def _start_check_timer(self):
+        """ Periodically checks to see if the task has completed. """
+        self.timer = threading.Timer(2.5, self.check_complete)
+        self.timer.daemon = True
+        self.timer.start()
+
+
+    def _read_temp_file(self, temp_file):
+        """ Reads a temporary file for Popen stdout and stderr. """
+        temp_file.seek(0)
+        result = temp_file.read()
+        return result
+
+
+    def _head_temp_file(self, temp_file, num_lines):
+        """ Returns a list of the first num_lines lines from a temp file. """
+        if not isinstance(num_lines, int):
+            raise TypeError('num_lines must be an integer')
+        temp_file.seek(0)
+        result, curr_line = [], 0
+        for line in temp_file:
+            curr_line += 1
+            result.append(line)
+            if curr_line >= num_lines:
+                break
+        return result
+
+
+    def _tail_temp_file(self, temp_file, num_lines, seek_offset=10000):
+        """ Returns a list of the last num_lines lines from a temp file.
+
+        This works by first moving seek_offset chars back from the end of
+        the file, then attempting to tail the file from there. It is
+        possible that fewer than num_lines will be returned, even if the
+        file has more total lines than num_lines.
+        """
+
+        if not isinstance(num_lines, int):
+            raise TypeError('num_lines must be an integer')
+
+        temp_file.seek(0, os.SEEK_END)
+        size = temp_file.tell()
+        temp_file.seek(-1 * min(size, seek_offset), os.SEEK_END)
+
+        result = []
+        while True:
+            this_line = temp_file.readline()
+            if this_line == '':
+                break
+            result.append(this_line)
+            if len(result) > num_lines:
+                result.pop(0)
+        return result
+
+
+    def _task_complete(self, **kwargs):
+        """ Performs cleanup tasks and notifies Job that the Task finished. """
+        self.parent_job.completion_lock.acquire()
+        self.parent_job._complete_task(self.name, **kwargs)
+
+
+    def _serialize(self):
+        """ Serialize a representation of this Task to a Python dict. """
+        return {'command': self.command,
+                'name': self.name}
