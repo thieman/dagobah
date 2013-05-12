@@ -44,11 +44,12 @@ class Scheduler(threading.Thread):
             for job in self.parent.jobs:
                 if not job.next_run:
                     continue
+                now = datetime.utcnow()
                 if (job.next_run >= self.last_check and
-                    job.next_run <= datetime.utcnow() and
+                    job.next_run <= now and
                     job.status != 'running'):
                     job.start()
-            self.last_checked = datetime.utcnow()
+            self.last_checked = now
             time.sleep(1)
 
 
