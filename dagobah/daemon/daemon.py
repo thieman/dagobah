@@ -26,6 +26,46 @@ def get_jobs():
     return dagobah._serialize().get('jobs', {})
 
 
+@app.route('/api/head', methods=['GET'])
+@api_call
+def head_task():
+
+    args = dict(request.args)
+    if not validate_dict(request.args,
+                         required=['job_name', 'task_name'],
+                         job_name=str,
+                         task_name=str,
+                         stream=str,
+                         num_lines=int):
+        abort(400)
+
+    job = dagobah.get_job(args['job_name'])
+    task = job.tasks.get(args['task_name'], None)
+    if not task:
+        abort(400)
+    return task.head(**args)
+
+
+@app.route('/api/tail', methods=['GET'])
+@api_call
+def tail_task():
+
+    args = dict(request.args)
+    if not validate_dict(request.args,
+                         required=['job_name', 'task_name'],
+                         job_name=str,
+                         task_name=str,
+                         stream=str,
+                         num_lines=int):
+        abort(400)
+
+    job = dagobah.get_job(args['job_name'])
+    task = job.tasks.get(args['task_name'], None)
+    if not task:
+        abort(400)
+    return task.tail(**args)
+
+
 @app.route('/api/add_job', methods=['POST'])
 @api_call
 def add_job():
