@@ -31,3 +31,13 @@ class MongoBackend(BaseBackend):
 
     def __repr__(self):
         return '<MongoBackend (host: %s, port: %s)>' % (self.host, self.port)
+
+
+    def commit_job(self, job_json):
+        append = {'save_date': datetime.utcnow()}
+        self.job_coll.save(dict(job_json.items() + append.items()))
+
+
+    def commit_log(self, log_json):
+        append = {'save_date': datetime.utcnow()}
+        self.log_coll.save(dict(log_json.items() + append.items()))
