@@ -1,6 +1,7 @@
 """ Core classes for tasks and jobs (groups of tasks) """
 
 import os
+import binascii
 from datetime import datetime
 import time
 import subprocess
@@ -41,10 +42,10 @@ class Scheduler(threading.Thread):
     def run(self):
         """ Continually monitors Jobs of the parent Dagobah. """
         while not self.stopped:
+            now = datetime.utcnow()
             for job in self.parent.jobs:
                 if not job.next_run:
                     continue
-                now = datetime.utcnow()
                 if (job.next_run >= self.last_check and
                     job.next_run <= now and
                     job.status != 'running'):
@@ -64,6 +65,7 @@ class Dagobah(object):
     def __init__(self, backend=BaseBackend()):
         """ Construct a new Dagobah instance with a specified Backend. """
         self.backend = backend
+        self.dagobah_id = self.backend.get_new_dagobah_id()
         self.jobs = []
         self.created_jobs = 0
         self.scheduler = Scheduler(self)
@@ -71,9 +73,22 @@ class Dagobah(object):
 
         self.scheduler.start()
 
+        self.commit()
+
 
     def __repr__(self):
         return '<Dagobah with Backend %s>' % self.backend
+
+
+    def commit(self, cascade=False):
+        """ Commit this Dagobah instance to the backend.
+
+        If cascade=True, all child Jobs are commited as well.
+        """
+
+        self.backend.commit_dagobah(self._serialize())
+        if cascade:
+            [job.commit() for job in self.jobs]
 
 
     def add_job(self, job_name):
@@ -81,10 +96,14 @@ class Dagobah(object):
         if not self._name_is_available(job_name):
             raise KeyError('name %s is not available' % job_name)
 
-        self.jobs.append(Job(self.backend,
+        self.jobs.append(Job(self,
+                             self.backend,
                              self.created_jobs + 1,
                              job_name))
         self.created_jobs += 1
+
+        job = self.get_job(job_name)
+        job.commit()
 
 
     def get_job(self, job_name):
@@ -99,6 +118,7 @@ class Dagobah(object):
         """ Delete a job by name, or error out if no such job exists. """
         for idx, job in enumerate(self.jobs):
             if job.name == job_name:
+                self.backend.delete_job(job.job_id)
                 del self.jobs[idx]
                 return
         raise KeyError('no job with name %s exists' % job_name)
@@ -115,6 +135,7 @@ class Dagobah(object):
         if not job:
             raise KeyError('job %s does not exist' % job_or_job_name)
         job.add_task(task_command, task_name)
+        job.commit()
 
 
     def _name_is_available(self, job_name):
@@ -126,18 +147,20 @@ class Dagobah(object):
 
     def _serialize(self):
         """ Serialize a representation of this Dagobah object to JSON. """
-        return {'jobs': [job._serialize() for job in self.jobs],
-                'created_jobs': self.created_jobs}
+        return {'dagobah_id': self.dagobah_id,
+                'created_jobs': self.created_jobs,
+                'jobs': [job._serialize() for job in self.jobs]}
 
 
 class Job(DAG):
     """ Controller for a collection and graph of Task objects. """
 
-    def __init__(self, backend, job_id, name):
+    def __init__(self, parent, backend, job_id, name):
         super(Job, self).__init__()
 
+        self.parent = parent
         self.backend = backend
-        self.job_id = job_id
+        self.job_id = self.backend.get_new_job_id()
         self.name = name
 
         # tasks themselves aren't hashable, so we need a secondary lookup
@@ -152,6 +175,8 @@ class Job(DAG):
         self.completion_lock = threading.Lock()
 
         self._set_status('waiting')
+
+        self.commit()
 
 
     def from_backend(self):
@@ -171,6 +196,7 @@ class Job(DAG):
         new_task = Task(self, command, name)
         self.tasks[name] = new_task
         self.add_node(name)
+        self.commit()
 
 
     def delete_task(self, task_name):
@@ -179,6 +205,7 @@ class Job(DAG):
             raise KeyError('task %s does not exist' % task_name)
         self.tasks.pop(task_name)
         self.delete_node(task_name)
+        self.commit()
 
 
     def schedule(self, cron_schedule):
@@ -186,6 +213,7 @@ class Job(DAG):
         self.cron_schedule = cron_schedule
         self.cron_iter = croniter(cron_schedule, self.base_datetime)
         self.next_run = self.cron_iter.get_next(datetime)
+        self.commit()
 
 
     def start(self):
@@ -197,13 +225,19 @@ class Job(DAG):
         if self.cron_iter:
             self.next_run = self.cron_iter.get_next(datetime)
 
-        self.run_log = {'start_time': datetime.utcnow(),
+        self.run_log = {'job_id': self.job_id,
+                        'name': self.name,
+                        'parent_id': self.parent.dagobah_id,
+                        'log_id': self.backend.get_new_log_id(),
+                        'start_time': datetime.utcnow(),
                         'tasks': {}}
         self._set_status('running')
 
         for task_name in self.ind_nodes():
             self._put_task_in_run_log(task_name)
             self.tasks[task_name].start()
+
+        self._commit_run_log()
 
 
     def retry(self):
@@ -218,6 +252,8 @@ class Job(DAG):
         for task_name, log in self.run_log['tasks'].iteritems():
             if log.get('success', True) == False:
                 self.tasks[task_name].start()
+
+        self._commit_run_log()
 
 
     def _complete_task(self, task_name, **kwargs):
@@ -293,6 +329,8 @@ class Job(DAG):
     def _serialize(self):
         """ Serialize a representation of this Job to a Python dict object. """
         return {'job_id': self.job_id,
+                'name': self.name,
+                'parent_id': self.parent.dagobah_id,
                 'tasks': [task._serialize()
                           for task in self.tasks.itervalues()],
                 'status': self.status,
