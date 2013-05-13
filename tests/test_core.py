@@ -31,6 +31,20 @@ def test_dagobah_add_job_unavailable_name():
 
 
 @with_setup(blank_dagobah)
+def test_dagobah_delete_job():
+    dagobah.add_job('test_job')
+    assert len(dagobah.jobs) == 1
+    dagobah.delete_job('test_job')
+    assert len(dagobah.jobs) == 0
+
+
+@with_setup(blank_dagobah)
+@raises(KeyError)
+def test_dagobah_delete_job_does_not_exist():
+    dagobah.delete_job('test_job')
+
+
+@with_setup(blank_dagobah)
 def test_dagobah_get_job_does_not_exist():
     assert dagobah.get_job('test_job') is None
 
@@ -165,6 +179,7 @@ def test_serialize_dagobah():
                    'jobs': [{'job_id': 1,
                              'tasks': [{'command': 'ls',
                                         'name': 'list'}],
+                             'status': 'waiting',
                              'cron_schedule': '*/5 * * * *',
                              'next_run': datetime(2012, 1, 1, 1, 5, 0)}]}
     assert dagobah._serialize() == test_result

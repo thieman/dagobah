@@ -17,6 +17,17 @@ class DAG(object):
         self.graph[node_name] = set()
 
 
+    def delete_node(self, node_name):
+        """ Deletes this node and all edges referencing it. """
+        if node_name not in self.graph:
+            raise KeyError('node %s does not exist' % node_name)
+        self.graph.pop(node_name)
+
+        for node, edges in self.graph.iteritems():
+            if node_name in edges:
+                edges.remove(node_name)
+
+
     def add_edge(self, ind_node, dep_node):
         """ Add an edge (dependency) between the specified nodes. """
         if ind_node not in self.graph or dep_node not in self.graph:

@@ -173,6 +173,14 @@ class Job(DAG):
         self.add_node(name)
 
 
+    def delete_task(self, task_name):
+        """ Deletes the named Task in this Job. """
+        if task_name not in self.tasks:
+            raise KeyError('task %s does not exist' % task_name)
+        self.tasks.pop(task_name)
+        self.delete_node(task_name)
+
+
     def schedule(self, cron_schedule):
         """ Schedules the job to run periodically using Cron syntax. """
         self.cron_schedule = cron_schedule
@@ -287,6 +295,7 @@ class Job(DAG):
         return {'job_id': self.job_id,
                 'tasks': [task._serialize()
                           for task in self.tasks.itervalues()],
+                'status': self.status,
                 'cron_schedule': self.cron_schedule,
                 'next_run': self.next_run}
 
