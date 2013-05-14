@@ -1,0 +1,19 @@
+// KICKSTRAP FOOT
+// ==============
+
+   #caching {ie8: "<script></script>"}
+
+   // Process add-ons from settings.
+   #appList {
+      content: @apps;
+      ie8: @apps;
+   }
+
+   #appList::after {
+      content: @apps;
+   }
+
+   script#rootDir {
+      content: "<script>setDir('@{rootDir}', 'root')br-setDir('@{universalResources}', 'universal')</script>";
+      ie8: "<script>setDir('@{rootDir}', 'root')br-setDir('@{universalResources}', 'universal')</script>";
+   }

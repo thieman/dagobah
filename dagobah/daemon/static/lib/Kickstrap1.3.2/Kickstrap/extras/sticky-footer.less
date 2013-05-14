@@ -1,0 +1,28 @@
+// STICKY FOOTER
+// =============
+// Based on work from http://ryanfait.com/sticky-footer and http://www.cssstickyfooter.com/
+
+   @footerHeight: 4em; // Just set this and the rest is taken care of.
+
+   html, body {
+      height: 100%;
+   }
+   #sf-wrapper {
+      min-height: 100%;
+      height: auto !important;
+      height: 100%; // For IE.
+	   margin: 0 auto -@footerHeight;
+	  
+   }
+   #push, #footer {height: @footerHeight;}
+
+   // Opera Fix
+   body:before { // Thanks to Maleika (Kohoutec)
+      content:"";
+      height:100%;
+      float:left;
+      width:0;
+      margin-top:-32767px; // Thank you Erik J - negate effect of float
+   }
+   
+   html.lt-ie7 #wrap {display:table;height:100%}

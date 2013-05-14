@@ -1,0 +1,58 @@
+// COLOR SCHEMER
+// =============
+
+  #ks-previewer {
+      height: 100px;
+      position: fixed;
+      top: 75px;
+      right: 75px;
+      box-shadow: 0px 0px 25px black;
+      z-index: 99999999;
+      div {
+         height:100px;
+         width:100px;
+         float:left;
+      }
+      #ksp-one {
+         position: relative;
+         &:hover {
+            #ksp-sat-minus, #ksp-sat-plus, #ksp-lum-minus, #ksp-lum-plus {
+               opacity: 1;
+            }
+         }
+      }
+   }
+  #ksp-sat-minus, #ksp-sat-plus, #ksp-lum-minus, #ksp-lum-plus {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border-radius: 25px;
+      opacity: 0.1;
+      cursor: pointer;
+      .transition(all 0.75s);
+      font-size: 8pt;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: black;
+      text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;
+      font-weight: bold;
+      text-align: center;
+      line-height: 50px;
+   }
+  #ksp-lum-plus {
+      top: -60px;
+      left: 23px;
+   }
+  #ksp-sat-plus {
+      left: -60px;
+      top: 23px;
+   }
+  #ksp-sat-minus {
+      right: -60px;
+      top: 23px;
+   }
+   #ksp-lum-minus {
+      bottom: -60px;
+      left: 23px;
+   }
+   #caching {ie8: "<script></script>"}
