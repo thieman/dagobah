@@ -20,6 +20,10 @@ class BaseBackend(object):
         return '<BaseBackend>'
 
 
+    def get_known_dagobah_ids(self):
+        return
+
+
     def get_new_dagobah_id(self):
         return binascii.hexlify(os.urandom(16))
 

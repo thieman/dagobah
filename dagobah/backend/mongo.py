@@ -42,6 +42,13 @@ class MongoBackend(BaseBackend):
         return '<MongoBackend (host: %s, port: %s)>' % (self.host, self.port)
 
 
+    def get_known_dagobah_ids(self):
+        results = []
+        for rec in self.dagobah_coll.find():
+            results.append(rec['_id'])
+        return results
+
+
     def get_new_dagobah_id(self):
         while True:
             candidate = ObjectId()
