@@ -91,6 +91,11 @@ class Dagobah(object):
             [job.commit() for job in self.jobs]
 
 
+    def delete(self):
+        """ Delete this Dagobah instance from the Backend. """
+        self.backend.delete_dagobah(self.dagobah_id)
+
+
     def add_job(self, job_name):
         """ Create a new, empty Job. """
         if not self._name_is_available(job_name):
@@ -187,6 +192,7 @@ class Job(DAG):
     def commit(self):
         """ Store metadata on this Job to the backend. """
         self.backend.commit_job(self._serialize())
+        self.parent.commit()
 
 
     def add_task(self, command, name=None):
