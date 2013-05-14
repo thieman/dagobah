@@ -1,1 +1,21 @@
 {% extends 'base.html' %}
+
+{% block content %}
+
+  <table class='table table-striped'>
+    <thead>
+      <th>Name</th>
+      <th>
+      <th></th>
+    </thead>
+    <tbody>
+      {% for job in jobs %}
+        <tr>
+          <td>{{ job.name }}</td>
+          <td><button class='btn'>View Job</button></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+{% endblock content %}

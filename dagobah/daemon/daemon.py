@@ -39,8 +39,8 @@ def favicon_redirect():
 dagobah = init_dagobah()
 app.config['dagobah'] = dagobah
 
-from dagobah.daemon.api import *
 from dagobah.daemon.views import *
+from dagobah.daemon.api import *
 
 
 if __name__ == '__main__':

@@ -1,6 +1,31 @@
 """ Utility functions for the Dagobah daemon. """
 
+from datetime import date, datetime
+
+from flask import request, json, Response
 from functools import wraps
+
+try:
+    from pymongo.objectid import ObjectId
+except ImportError:
+    from bson import ObjectId
+
+
+class DagobahEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        elif isinstance(obj, datetime) or isinstance(obj, date):
+            return str(obj)
+        return json.JSONEncoder.default(self, obj)
+
+
+def jsonify(*args, **kwargs):
+    return Response(json.dumps(dict(*args, **kwargs),
+                               cls=DagobahEncoder,
+                               indent=2),
+                    mimetype='application/json')
+
 
 def api_call(fn):
     """ Returns function result in API format if requested from an API
@@ -8,11 +33,32 @@ def api_call(fn):
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        result = fn(*args, **kwargs)
+        try:
+            result = fn(*args, **kwargs)
+        except Exception as e:
+            raise e
+            return jsonify(status=500)
 
         if request and request.endpoint == fn.__name__:
-            return jsonify(result=result,
-                           status=200)
+            status_code = None
+            try:
+                if result and 'status' in result:
+                    status_code = result['status']
+                    del result['status']
+            except TypeError:
+                pass
+
+            if isinstance(result, dict):
+                if 'result' in result:
+                    return jsonify(status=status_code if status_code else 200,
+                                   **result)
+                else:
+                    return jsonify(status=status_code if status_code else 200,
+                                   result=result)
+            else:
+                return jsonify(status=status_code if status_code else 200,
+                               result=result)
+
         else:
             return result
 
