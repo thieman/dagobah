@@ -1,7 +1,6 @@
 """ Core classes for tasks and jobs (groups of tasks) """
 
 import os
-import binascii
 from datetime import datetime
 import time
 import subprocess
@@ -80,10 +79,37 @@ class Dagobah(object):
         return '<Dagobah with Backend %s>' % self.backend
 
 
+    def from_backend(self, dagobah_id):
+        """ Reconstruct this Dagobah instance from the backend. """
+
+        rec = self.backend.get_dagobah_json(dagobah_id)
+        if not rec:
+            raise ValueError('dagobah with id %s does not exist in backend' %
+                             dagobah_id)
+
+        # delete current version of this Dagobah instance
+        self.delete()
+
+        for required_key in ['dagobah_id', 'created_jobs']:
+            setattr(self, required_key, rec[required_key])
+
+        for job_json in rec.get('jobs', []):
+            self.add_job(str(job_json['name']), job_json['job_id'])
+            job = self.get_job(job_json['name'])
+            if job_json.get('cron_schedule', None):
+                job.schedule(job_json['cron_schedule'])
+            for task in job_json.get('tasks', []):
+                self.add_task_to_job(job,
+                                     str(task['command']),
+                                     str(task['name']))
+
+        self.commit(cascade=True)
+
+
     def commit(self, cascade=False):
         """ Commit this Dagobah instance to the backend.
 
-        If cascade=True, all child Jobs are commited as well.
+        If cascade is True, all child Jobs are commited as well.
         """
 
         self.backend.commit_dagobah(self._serialize())
@@ -96,16 +122,19 @@ class Dagobah(object):
         self.backend.delete_dagobah(self.dagobah_id)
 
 
-    def add_job(self, job_name):
+    def add_job(self, job_name, job_id=None):
         """ Create a new, empty Job. """
         if not self._name_is_available(job_name):
             raise KeyError('name %s is not available' % job_name)
 
+        if not job_id:
+            job_id = self.backend.get_new_job_id()
+            self.created_jobs += 1
+
         self.jobs.append(Job(self,
                              self.backend,
-                             self.created_jobs + 1,
+                             job_id,
                              job_name))
-        self.created_jobs += 1
 
         job = self.get_job(job_name)
         job.commit()
@@ -165,7 +194,7 @@ class Job(DAG):
 
         self.parent = parent
         self.backend = backend
-        self.job_id = self.backend.get_new_job_id()
+        self.job_id = job_id
         self.name = name
 
         # tasks themselves aren't hashable, so we need a secondary lookup
@@ -182,11 +211,6 @@ class Job(DAG):
         self._set_status('waiting')
 
         self.commit()
-
-
-    def from_backend(self):
-        """ Construct this job from information in the backend. """
-        raise NotImplementedError()
 
 
     def commit(self):

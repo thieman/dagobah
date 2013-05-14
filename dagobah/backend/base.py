@@ -32,6 +32,10 @@ class BaseBackend(object):
         return binascii.hexlify(os.urandom(16))
 
 
+    def get_dagobah_json(self, dagobah_id):
+        return
+
+
     def commit_dagobah(self, dagobah_json):
         return
 

@@ -1,5 +1,7 @@
 """ Utility functions for the Dagobah daemon. """
 
+from functools import wraps
+
 def api_call(fn):
     """ Returns function result in API format if requested from an API
     endpoint """

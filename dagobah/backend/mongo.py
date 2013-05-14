@@ -1,5 +1,7 @@
 """ Mongo Backend class built on top of base Backend """
 
+from datetime import datetime
+
 try:
     from pymongo import MongoClient
 except ImportError:
@@ -61,13 +63,26 @@ class MongoBackend(BaseBackend):
                 return candidate
 
 
+    def get_dagobah_json(self, dagobah_id):
+        return self.dagobah_coll.find_one({'_id': dagobah_id})
+
+
     def commit_dagobah(self, dagobah_json):
         dagobah_json['_id'] = dagobah_json['dagobah_id']
         append = {'save_date': datetime.utcnow()}
-        self.dagobah_coll.save(dict(job_json.items() + append.items()))
+        self.dagobah_coll.save(dict(dagobah_json.items() + append.items()))
 
 
     def delete_dagobah(self, dagobah_id):
+        """ Deletes the Dagobah and all child Jobs from the database.
+
+        Run logs are not deleted.
+        """
+
+        rec = self.dagobah_coll.find_one({'_id': dagobah_id})
+        for job in rec.get('jobs', []):
+            if 'job_id' in job:
+                self.delete_job(job['job_id'])
         self.dagobah_coll.remove({'_id': dagobah_id})
 
 
