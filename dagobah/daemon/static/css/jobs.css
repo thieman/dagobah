@@ -1,0 +1,10 @@
+span.waiting {
+}
+
+span.failed {
+	color: red;
+}
+
+span.running {
+	color: green;
+}

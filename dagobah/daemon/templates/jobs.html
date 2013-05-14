@@ -1,18 +1,30 @@
 {% extends 'base.html' %}
 
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" type="text/css" href="/static/css/jobs.css"></link>
+{% endblock head %}
+
 {% block content %}
 
   <table class='table table-striped'>
     <thead>
       <th>Name</th>
-      <th>
-      <th></th>
+      <th>Status</th>
+      <th>Tasks</th>
+      <th>Schedule</th>
+      <th>Next Run</th>
+      <th>Detail</th>
     </thead>
     <tbody>
       {% for job in jobs %}
         <tr>
           <td>{{ job.name }}</td>
-          <td><button class='btn'>View Job</button></td>
+          <td><span class={{ job.status }}>{{ job.status|title }}</span></td>
+          <td>{{ job.tasks|length }}</td>
+          <td>{{ job.cron_schedule }}</td>
+          <td>{{ job.next_run }}</td>
+          <td><button class='btn btn-primary' onclick="window.location.href = '{{ url_for('job_detail', job_id=job.job_id) }}';">View Job</button></td>
         </tr>
       {% endfor %}
     </tbody>
