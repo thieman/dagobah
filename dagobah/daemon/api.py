@@ -132,7 +132,7 @@ def add_dependency():
         abort(400)
 
     job = dagobah.get_job(args['job_name'])
-    job.add_edge(args['from_task_name'], args['to_task_name'])
+    job.add_dependency(args['from_task_name'], args['to_task_name'])
 
 
 @app.route('/api/schedule_job', methods=['POST'])

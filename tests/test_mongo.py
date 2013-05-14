@@ -108,6 +108,7 @@ class TestMongo(object):
                                  'parent_id': self.dagobah.dagobah_id,
                                  'tasks': [{'command': 'grep dragons',
                                             'name': 'do some grepping'}],
+                                 'dependencies': {'do some grepping': []},
                                  'status': 'waiting',
                                  'cron_schedule': None,
                                  'next_run': None}]}
@@ -132,6 +133,7 @@ class TestMongo(object):
                        'parent_id': self.dagobah.dagobah_id,
                        'tasks': [{'name': 'do some grepping',
                                   'command': 'grep dragons'}],
+                       'dependencies': {'do some grepping': []},
                        'status': 'waiting',
                        'cron_schedule': None,
                        'next_run': None,
@@ -144,7 +146,11 @@ class TestMongo(object):
         self.dagobah.add_task_to_job('test_job',
                                      'grep dragons',
                                      'do some grepping')
+        self.dagobah.add_task_to_job('test_job',
+                                     'ls | grep steve',
+                                     'find steve')
         job = self.dagobah.get_job('test_job')
+        job.add_dependency('do some grepping', 'find steve')
 
         test_dagobah = self.new_dagobah(return_instance=True)
 

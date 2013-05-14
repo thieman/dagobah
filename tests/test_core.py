@@ -173,6 +173,8 @@ def test_serialize_dagobah():
     dagobah.add_job('test_job')
     job = dagobah.get_job('test_job')
     job.add_task('ls', 'list')
+    job.add_task('grep', 'grep')
+    job.add_edge('list', 'grep')
     job.base_datetime = datetime(2012, 1, 1, 1, 0, 0)
     job.schedule('*/5 * * * *')
     dagobah_id = dagobah.dagobah_id
@@ -181,11 +183,16 @@ def test_serialize_dagobah():
                    'jobs': [{'job_id': job.job_id,
                              'name': 'test_job',
                              'parent_id': dagobah_id,
-                             'tasks': [{'command': 'ls',
-                                        'name': 'list'}],
+                             'tasks': [{'command': 'grep',
+                                        'name': 'grep'},
+                                       {'command': 'ls',
+                                        'name': 'list'},],
+                             'dependencies': {'list': ['grep'],
+                                              'grep': []},
                              'status': 'waiting',
                              'cron_schedule': '*/5 * * * *',
                              'next_run': datetime(2012, 1, 1, 1, 5, 0)}]}
+    print dagobah._serialize()
     assert dagobah._serialize() == test_result
 
 

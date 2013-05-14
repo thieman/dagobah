@@ -94,14 +94,21 @@ class Dagobah(object):
             setattr(self, required_key, rec[required_key])
 
         for job_json in rec.get('jobs', []):
+
             self.add_job(str(job_json['name']), job_json['job_id'])
             job = self.get_job(job_json['name'])
             if job_json.get('cron_schedule', None):
                 job.schedule(job_json['cron_schedule'])
+
             for task in job_json.get('tasks', []):
                 self.add_task_to_job(job,
                                      str(task['command']),
                                      str(task['name']))
+
+            dependencies = job_json.get('dependencies', {})
+            for from_node, to_nodes in dependencies.iteritems():
+                for to_node in to_nodes:
+                    job.add_dependency(from_node, to_node)
 
         self.commit(cascade=True)
 
@@ -226,6 +233,12 @@ class Job(DAG):
         new_task = Task(self, command, name)
         self.tasks[name] = new_task
         self.add_node(name)
+        self.commit()
+
+
+    def add_dependency(self, from_task_name, to_task_name):
+        """ Add a dependency between two tasks. """
+        self.add_edge(from_task_name, to_task_name)
         self.commit()
 
 
@@ -363,6 +376,9 @@ class Job(DAG):
                 'parent_id': self.parent.dagobah_id,
                 'tasks': [task._serialize()
                           for task in self.tasks.itervalues()],
+                'dependencies': {k: list(v)
+                                 for k, v
+                                 in self.graph.iteritems()},
                 'status': self.status,
                 'cron_schedule': self.cron_schedule,
                 'next_run': self.next_run}
