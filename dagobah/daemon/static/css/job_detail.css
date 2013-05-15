@@ -1,0 +1,19 @@
+.page-header h3 {
+	display: inline-block;
+}
+
+.page-header .right {
+	float: right;
+}
+
+.page-header .status-waiting {
+	color: grey;
+}
+
+.page-header .status-running {
+	color: green;
+}
+
+.page-header .status-failed {
+	color: red;
+}

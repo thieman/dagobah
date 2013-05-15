@@ -1,6 +1,6 @@
 """ HTTP API methods for Dagobah daemon. """
 
-from flask import abort
+from flask import request, abort
 
 from dagobah.daemon.daemon import app
 from dagobah.daemon.util import validate_dict, api_call
@@ -14,11 +14,25 @@ def get_jobs():
     return dagobah._serialize().get('jobs', {})
 
 
+@app.route('/api/job', methods=['GET'])
+@api_call
+def get_job():
+    args = dict(request.args)
+    if not validate_dict(args,
+                         required=['job_name'],
+                         job_name=str):
+        abort(400)
+
+    print args['job_name']
+    job = dagobah.get_job(args['job_name'])
+    return job._serialize()
+
+
 @app.route('/api/head', methods=['GET'])
 @api_call
 def head_task():
     args = dict(request.args)
-    if not validate_dict(request.args,
+    if not validate_dict(args,
                          required=['job_name', 'task_name'],
                          job_name=str,
                          task_name=str,
@@ -37,7 +51,7 @@ def head_task():
 @api_call
 def tail_task():
     args = dict(request.args)
-    if not validate_dict(request.args,
+    if not validate_dict(args,
                          required=['job_name', 'task_name'],
                          job_name=str,
                          task_name=str,
@@ -56,7 +70,7 @@ def tail_task():
 @api_call
 def add_job():
     args = dict(request.form)
-    if not validate_dict(request.form,
+    if not validate_dict(args,
                          required=['job_name'],
                          job_name=str):
         abort(400)
@@ -68,7 +82,7 @@ def add_job():
 @api_call
 def delete_job():
     args = dict(request.form)
-    if not validate_dict(request.form,
+    if not validate_dict(args,
                          required=['job_name'],
                          job_name=str):
         abort(400)
@@ -80,7 +94,7 @@ def delete_job():
 @api_call
 def start_job():
     args = dict(request.form)
-    if not validate_dict(request.form,
+    if not validate_dict(args,
                          required=['job_name'],
                          job_name=str):
         abort(400)
@@ -93,7 +107,7 @@ def start_job():
 @api_call
 def retry_job():
     args = dict(request.form)
-    if not validate_dict(request.form,
+    if not validate_dict(args,
                          required=['job_name'],
                          job_name=str):
         abort(400)
@@ -106,7 +120,7 @@ def retry_job():
 @api_call
 def add_task_to_job():
     args = dict(request.form)
-    if not validate_dict(request.form,
+    if not validate_dict(args,
                          required=['job_name', 'task_command', 'task_name'],
                          job_name=str,
                          task_command=str,
@@ -122,7 +136,7 @@ def add_task_to_job():
 @api_call
 def add_dependency():
     args = dict(request.form)
-    if not validate_dict(request.form,
+    if not validate_dict(args,
                          required=['job_name',
                                    'from_task_name',
                                    'to_task_name'],
@@ -139,7 +153,7 @@ def add_dependency():
 @api_call
 def schedule_job():
     args = dict(request.form)
-    if not validate_dict(request.form,
+    if not validate_dict(args,
                          required=['job_name', 'cron_schedule'],
                          job_name=str,
                          cron_schedule=str):

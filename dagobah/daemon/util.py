@@ -42,9 +42,9 @@ def api_call(fn):
         if request and request.endpoint == fn.__name__:
             status_code = None
             try:
-                if result and 'status' in result:
-                    status_code = result['status']
-                    del result['status']
+                if result and '_status' in result:
+                    status_code = result['_status']
+                    del result['_status']
             except TypeError:
                 pass
 
@@ -86,6 +86,11 @@ def validate_dict(in_dict, **kwargs):
                             else False)
 
         else:
+
+            if (isinstance(in_dict[key], list) and
+                len(in_dict[key]) == 1 and
+                value != list):
+                in_dict[key] = in_dict[key][0]
 
             try:
                 if key in in_dict:

@@ -1,15 +1,27 @@
 {% extends 'base.html' %}
 
-{% block content %}
-<div class='page-header'><h3>Job Detail: {{ job.name }}</h3></div>
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="/static/css/job_detail.css"></link>
+<link rel="stylesheet" href="/static/css/job_graph.css"></link>
+<script>
+  var jobName = '{{ job.name }}';
+</script>
+{% endblock head %}
 
-<div class='graph'>
-  <h4>Graph goes here</h4>
+{% block content %}
+<div class='page-header'>
+  <h3>Job Detail: {{ job.name }}</h3>
+  <h3 class='right status-{{ job.status }}'>{{ job.status|title }}</h3>
+</div>
+
+<div class='job-graph'>
 </div>
 
 <table class='table'>
   <thead>
     <th>Task</th>
+    <th>Command</th>
     <th>Started</th>
     <th>Completed</th>
     <th>Result</th>
@@ -19,6 +31,7 @@
     {% for task in job.tasks %}
       <tr>
         <td>{{ task.name }}</td>
+        <td>{{ task.command }}</td>
         <td>{{ task.started_at if task.started_at }}</td>
         <td>{{ task.completed_at if task.completed_at }}</td>
         <td>
@@ -38,3 +51,8 @@
 </table>
 
 {% endblock content %}
+
+{% block body_scripts %}
+<script src="/static/js/job_model.js"></script>
+<script src="/static/js/job_graph.js"></script>
+{% endblock body_scripts %}
