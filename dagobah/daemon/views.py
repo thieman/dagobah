@@ -31,6 +31,13 @@ def jobs():
 def job_detail(job_id=None):
     """ Show a detailed description of a Job's status. """
     jobs = get_jobs()
-    print jobs
     job = [job for job in jobs if str(job['job_id']) == job_id][0]
     return render_template('job_detail.html', job=job)
+
+
+@app.route('/job/<job_id>/<task_name>', methods=['GET'])
+def task_detail(job_id=None, task_name=None):
+    """ Show a detailed description of a specific task. """
+    jobs = get_jobs()
+    job = [job for job in jobs if str(job['job_id']) == job_id][0]
+    return render_template('task_detail.html', job=job, task_name=task_name)

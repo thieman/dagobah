@@ -371,11 +371,20 @@ class Job(DAG):
 
     def _serialize(self):
         """ Serialize a representation of this Job to a Python dict object. """
+
+        # return tasks in sorted order if graph is in a valid state
+        try:
+            topo_sorted = self._topological_sort()
+            serialized_tasks = [self.tasks[task]._serialize()
+                                for task in topo_sorted]
+        except:
+            serialized_tasks = [task._serialize()
+                                for task in self.tasks.itervalues()]
+
         return {'job_id': self.job_id,
                 'name': self.name,
                 'parent_id': self.parent.dagobah_id,
-                'tasks': [task._serialize()
-                          for task in self.tasks.itervalues()],
+                'tasks': serialized_tasks,
                 'dependencies': {k: list(v)
                                  for k, v
                                  in self.graph.iteritems()},
@@ -400,6 +409,10 @@ class Task(object):
 
         self.timer = None
 
+        self.started_at = None
+        self.completed_at = None
+        self.successful = None
+
 
     def start(self):
         """ Begin execution of this task. """
@@ -409,6 +422,9 @@ class Task(object):
                                         shell=True,
                                         stdout=self.stdout_file,
                                         stderr=self.stderr_file)
+        self.started_at = datetime.utcnow()
+        self.completed_at = None
+        self.successful = None
         self._start_check_timer()
 
 
@@ -530,10 +546,15 @@ class Task(object):
     def _task_complete(self, **kwargs):
         """ Performs cleanup tasks and notifies Job that the Task finished. """
         self.parent_job.completion_lock.acquire()
+        self.completed_at = datetime.utcnow()
+        self.successful = kwargs.get('success', None)
         self.parent_job._complete_task(self.name, **kwargs)
 
 
     def _serialize(self):
         """ Serialize a representation of this Task to a Python dict. """
         return {'command': self.command,
-                'name': self.name}
+                'name': self.name,
+                'started_at': self.started_at,
+                'completed_at': self.completed_at,
+                'success': self.successful}

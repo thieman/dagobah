@@ -1,6 +1,6 @@
 """ DAG implementation used in job classes """
 
-from copy import copy
+from copy import copy, deepcopy
 
 class DAG(object):
     """ Directed acyclic graph implementation. """
@@ -102,16 +102,16 @@ class DAG(object):
         """
 
         # woooo pseudocode from wikipedia!
-        graph = copy(self.graph)
+        graph = deepcopy(self.graph)
         l = []
-        q = self.ind_nodes()
+        q = deepcopy(self.ind_nodes())
         while len(q) != 0:
-            n = q.pop()
+            n = q.pop(0)
             l.append(n)
-            iter_nodes = copy(graph[n])
+            iter_nodes = deepcopy(graph[n])
             for m in iter_nodes:
                 graph[n].remove(m)
-                if len(self._dependencies(m)) == 0:
+                if len(self._dependencies(m, graph)) == 0:
                     q.append(m)
 
         if len(l) != len(graph.keys()):
