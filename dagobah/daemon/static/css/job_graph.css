@@ -37,16 +37,29 @@ path.link.hidden {
 }
 
 rect.node {
+	stroke: #888888;
 	stroke-width: 1.5px;
 	cursor: pointer;
 }
 
-text {
-	font: 12px sans-serif;
-	pointer-events: none;
+.node.waiting {
+	fill: #CCCCCC;
 }
 
-text.id {
-	text-anchor: middle;
+.node.running {
+	fill: orange;
+}
+
+.node.complete {
+	fill: #32cd32;
+}
+
+.node.failed {
+	fill: red;
+}
+
+p {
+	font: 16px sans-serif;
 	font-weight: bold;
+	color: black;
 }

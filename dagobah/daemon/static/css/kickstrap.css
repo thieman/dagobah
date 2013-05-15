@@ -2086,8 +2086,8 @@ html.lt-ie7 #wrap {
     */
 @font-face {
   font-family: 'FontAwesome';
-  src: url('/Kickstrap/extras/fontawesome/font/fontawesome-webfont.eot');
-  src: url('/Kickstrap/extras/fontawesome/font/fontawesome-webfont.eot?#iefix') format('embedded-opentype'), url('/Kickstrap/extras/fontawesome/font/fontawesome-webfont.woff') format('woff'), url('/Kickstrap/extras/fontawesome/font/fontawesome-webfont.ttf') format('truetype'), url('/Kickstrap/extras/fontawesome/font/fontawesome-webfont.svg#FontAwesome') format('svg');
+  src: url('/static/lib/Kickstrap1.3.2/Kickstrap/extras/fontawesome/font/fontawesome-webfont.eot');
+  src: url('/static/lib/Kickstrap1.3.2/Kickstrap/extras/fontawesome/font/fontawesome-webfont.eot?#iefix') format('embedded-opentype'), url('/static/lib/Kickstrap1.3.2/Kickstrap/extras/fontawesome/font/fontawesome-webfont.woff') format('woff'), url('/static/lib/Kickstrap1.3.2/Kickstrap/extras/fontawesome/font/fontawesome-webfont.ttf') format('truetype'), url('/static/lib/Kickstrap1.3.2/Kickstrap/extras/fontawesome/font/fontawesome-webfont.svg#FontAwesome') format('svg');
   font-weight: normal;
   font-style: normal;
 }
@@ -6139,6 +6139,6 @@ div.subnav .nav > li.dropdown.open > .dropdown-toggle:hover {
   content: "tinygrowl, bootstrap, retina, //bootstrap/transition, //knockout, //updater";
 }
 script#rootDir {
-  content: "<script>setDir('/', 'root')br-setDir('none', 'universal')</script>";
-  ie8: "<script>setDir('/', 'root')br-setDir('none', 'universal')</script>";
+  content: "<script>setDir('/static/lib/Kickstrap1.3.2/', 'root')br-setDir('none', 'universal')</script>";
+  ie8: "<script>setDir('/static/lib/Kickstrap1.3.2/', 'root')br-setDir('none', 'universal')</script>";
 }

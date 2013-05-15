@@ -21,7 +21,6 @@
 <table class='table'>
   <thead>
     <th>Task</th>
-    <th>Command</th>
     <th>Started</th>
     <th>Completed</th>
     <th>Result</th>
@@ -31,7 +30,6 @@
     {% for task in job.tasks %}
       <tr>
         <td>{{ task.name }}</td>
-        <td>{{ task.command }}</td>
         <td>{{ task.started_at if task.started_at }}</td>
         <td>{{ task.completed_at if task.completed_at }}</td>
         <td>

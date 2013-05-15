@@ -276,6 +276,9 @@ class Job(DAG):
                         'tasks': {}}
         self._set_status('running')
 
+        for task in self.tasks.itervalues():
+            task.reset()
+
         for task_name in self.ind_nodes():
             self._put_task_in_run_log(task_name)
             self.tasks[task_name].start()
@@ -414,17 +417,24 @@ class Task(object):
         self.successful = None
 
 
-    def start(self):
-        """ Begin execution of this task. """
+    def reset(self):
+        """ Reset this Task to a clean state prior to execution. """
+
         self.stdout_file = os.tmpfile()
         self.stderr_file = os.tmpfile()
+
+        self.started_at = None
+        self.completed_at = None
+        self.successful = None
+
+    def start(self):
+        """ Begin execution of this task. """
+        self.reset()
         self.process = subprocess.Popen(self.command,
                                         shell=True,
                                         stdout=self.stdout_file,
                                         stderr=self.stderr_file)
         self.started_at = datetime.utcnow()
-        self.completed_at = None
-        self.successful = None
         self._start_check_timer()
 
 

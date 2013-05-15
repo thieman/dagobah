@@ -1,12 +1,29 @@
 // set up SVG for D3
 var width  = 940,
     height = 600,
+	nodeWidth = 150,
+	nodeHeight = 50,
     colors = d3.scale.category10();
 
 var svg = d3.select('.job-graph')
-  .append('svg')
-  .attr('width', width)
-  .attr('height', height);
+	.append('svg')
+	.attr('width', width)
+	.attr('height', height)
+	.attr('pointer-events', 'all')
+	.append('g')
+	.call(d3.behavior.zoom().on('zoom', zoomGraph))
+	.on('mousedown.zoom', null)
+	.append('g');
+
+// this is for the zoom functionality
+svg.append('rect')
+	.attr('x', width * -2.5)
+	.attr('y', height * -2.5)
+	.attr('width', width * 5)
+	.attr('height', height * 5)
+	.attr('fill', 'transparent')
+	.style('stroke', '#CCCCCC')
+	.style('stroke-width', '1px');
 
 var job = new Job();
 job.load(jobName);
@@ -20,6 +37,14 @@ function drawIfLoaded() {
 	}
 }
 
+function zoomGraph(d) {
+	svg.attr('transform', 'translate(' + d3.event.translate + ')' + ' scale(' + d3.event.scale +')');
+}
+
+function panGraph(d) {
+	svg.attr('transform', '');
+}
+
 function drawForceGraph() {
 
 	var nodes = job.getForceNodes();
@@ -30,15 +55,15 @@ function drawForceGraph() {
         .nodes(nodes)
         .links(links)
         .size([width, height])
-        .linkDistance(75)
-        .charge(-1500)
+        .linkDistance(200)
+        .charge(-2000)
         .on('tick', tick);
 
     // define arrow markers for graph links
     svg.append('svg:defs').append('svg:marker')
         .attr('id', 'end-arrow')
         .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 30)
+        .attr('refX', 75)
         .attr('markerWidth', 4)
         .attr('markerHeight', 4)
         .attr('orient', 'auto')
@@ -126,23 +151,23 @@ function drawForceGraph() {
       // circle (node) group
       circle = circle.data(nodes, function(d) { return d.id; });
 
-      // update existing nodes
-      circle.selectAll('circle')
-        .style('fill', function(d) { return (d === selected_node) ? d3.rgb(colors(d.id)).brighter().toString() : colors(d.id); });
-
       // add new nodes
       var g = circle.enter().append('svg:g');
 
 	  g.append('svg:rect')
-		.attr('height', 25)
-		.attr('width', 100)
-		.attr('x', -50)
-		.attr('y', -12.5)
-        .attr('class', function(d) {
-			return 'node';
-		})
-        .style('fill', function(d) { return (d === selected_node) ? d3.rgb(colors(d.id)).brighter().toString() : colors(d.id); })
-        .style('stroke', function(d) { return d3.rgb(colors(d.id)).darker().toString(); })
+		.attr('height', nodeHeight)
+		.attr('width', nodeWidth)
+		.attr('x', -1 * (nodeWidth / 2))
+		.attr('y', -1 * (nodeHeight / 2))
+        .attr('class', function(d) { return 'node ' + d.status; });
+
+	  g.append('foreignObject')
+			.attr('x', -1 * (nodeWidth / 2))
+			.attr('y', -1 * (nodeHeight / 2))
+			.attr('width', nodeWidth)
+			.attr('height', nodeHeight)
+			.append('xhtml:body')
+			.style('background-color', 'transparent')
         .on('mouseover', function(d) {
           if(!mousedown_node || d === mousedown_node) return;
           // enlarge target node
@@ -215,14 +240,12 @@ function drawForceGraph() {
           selected_link = link;
           selected_node = null;
           restart();
-        });
-
-      // show node IDs
-      g.append('svg:text')
-          .attr('x', 0)
-          .attr('y', 4)
-          .attr('class', 'id')
-          .text(function(d) { return d.id; });
+        })
+			.append('p')
+			.style('vertical-align', 'middle')
+			.style('text-align', 'center')
+			.style('margin-top', -1 * nodeHeight + 'px')
+			.text(function(d) { return d.id; });
 
       // remove old nodes
       circle.exit().remove();
@@ -239,13 +262,6 @@ function drawForceGraph() {
       svg.classed('active', true);
 
       if(d3.event.ctrlKey || mousedown_node || mousedown_link) return;
-
-      // insert new node at point
-      var point = d3.mouse(this),
-          node = {id: 'New Task'};
-      node.x = point[0];
-      node.y = point[1];
-      nodes.push(node);
 
       restart();
     }

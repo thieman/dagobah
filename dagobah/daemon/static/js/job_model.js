@@ -28,7 +28,31 @@ Job.prototype.load = function(loadJobName) {
 
 Job.prototype.forceNode = function(taskName) {
 	// map a task name to a force node object
-	return {id: taskName};
+	var task = null;
+	for (var i = 0; i < this.tasks.length; i++) {
+		if (this.tasks[i].name === taskName) {
+			task = this.tasks[i];
+		}
+	}
+
+	if (task === null) {
+		return {};
+	}
+
+	var taskStatus = 'waiting';
+	if (task.started_at) {
+		if (!task.completed_at) {
+			taskStatus = 'running';
+		} else {
+			if (task.success === true) {
+				taskStatus = 'complete';
+			} else {
+				taskStatus = 'failed';
+			}
+		}
+	}
+
+	return {id: taskName, status: taskStatus};
 }
 
 Job.prototype.getTaskIndex = function(taskName) {
