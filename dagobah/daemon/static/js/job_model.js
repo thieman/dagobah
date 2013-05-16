@@ -15,6 +15,7 @@ Job.prototype.load = function(loadJobName) {
 				  parent.name = result['name'] || null;
 				  parent.id = result['job_id'] || null;
 				  parent.parent_id = result['parent_id'] || null;
+				  parent.status = result['status'] || null;
 				  parent.tasks = result['tasks'] || [];
 				  parent.dependencies = result['dependencies'] || {};
 				  parent.cron_schedule = result['cron_schedule'] || null;

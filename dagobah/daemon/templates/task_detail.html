@@ -1,5 +1,9 @@
 {% extends 'base.html' %}
 
+{% block navbar_current %}
+<li><a href='#'>Task Detail: {{ task_name }}</a></li>
+{% endblock navbar_current %}
+
 {% block content %}
 <div class='page-header'><h3>Task Detail: {{ task_name }}</h3></div>
 {% endblock content %}

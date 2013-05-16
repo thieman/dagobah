@@ -5,3 +5,7 @@ body {
 .page-header {
 	margin-top: 0px;
 }
+
+.alert {
+	margin-left: 0px;
+}

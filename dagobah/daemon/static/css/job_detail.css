@@ -2,6 +2,22 @@
 	display: inline-block;
 }
 
+.section-header {
+	display: inline-block;
+}
+
+.right {
+	text-align: right;
+}
+
+.btn-sequence {
+	margin-right: 10px;
+}
+
+.btn-sequence-right {
+	margin-left: 10px;
+}
+
 .page-header .right {
 	float: right;
 }

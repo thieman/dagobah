@@ -9,6 +9,8 @@ var width  = 940,
 
 var svg = d3.select('.job-graph')
 	.append('svg')
+	.attr('width', width)
+	.attr('height', height)
 	.attr('pointer-events', 'all')
 	.append('g')
 	.call(d3.behavior.zoom().on('zoom', zoomGraph))
@@ -54,6 +56,8 @@ function drawForceGraph() {
 
 	var nodes = job.getForceNodes();
 	var links = job.getForceLinks();
+	var preRenderTicks = 100;
+	var renderDelayMs = 750;
 
     // init D3 force layout
     var force = d3.layout.force()
@@ -61,14 +65,13 @@ function drawForceGraph() {
         .links(links)
         .size([1, 1])
         .linkDistance(200)
-        .charge(-2000)
-        .on('tick', tick);
+        .charge(-2000);
 
     // define arrow markers for graph links
     svg.append('svg:defs').append('svg:marker')
         .attr('id', 'end-arrow')
         .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 70)
+        .attr('refX', 75)
         .attr('markerWidth', 5)
         .attr('markerHeight', 5)
         .attr('orient', 'auto')
@@ -119,7 +122,14 @@ function drawForceGraph() {
       circle.attr('transform', function(d) {
         return 'translate(' + d.x + ',' + d.y + ')';
       });
+
     }
+
+	// get the graph in a non-chaotic state before rendering
+	for (var i = 0; i < preRenderTicks; i++) {
+		tick();
+	}
+	setTimeout(function() { force.on('tick', tick); }, renderDelayMs);
 
     // update graph (called when needed)
     function restart() {
@@ -308,6 +318,7 @@ function drawForceGraph() {
     svg.on('mousedown', mousedown)
       .on('mousemove', mousemove)
       .on('mouseup', mouseup);
+
     restart();
 
 }

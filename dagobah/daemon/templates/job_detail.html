@@ -9,6 +9,10 @@
 </script>
 {% endblock head %}
 
+{% block navbar_current %}
+<li><a href='#'>Job Detail: {{ job.name }}</a></li>
+{% endblock navbar_current %}
+
 {% block content %}
 <div class='page-header'>
   <h3>Job Detail: {{ job.name }}</h3>
@@ -18,6 +22,50 @@
 <div class='job-graph'>
 </div>
 
+<div class='row' id='config'>
+  <div class='span6'>
+    <h3>Job Scheduling</h3>
+
+    <form class='form form-horizontal'>
+
+      <div class='control-group'>
+        <label class='control-label' for='cron-schedule'>Cron Schedule String</label>
+        <div class='controls'>
+          <input id='cron-schedule' type='text' class='input' value='{{ job.cron_schedule }}'></input>
+        </div>
+      </div>
+
+      <div class='control-group'>
+        <label class='control-label' for='next-run'>Next Scheduled Run</label>
+        <div class='controls'>
+          <input id='next-run' type='text' class='input' disabled value='{{ job.next_run }}'></input>
+        </div>
+      </div>
+
+      <div class='control-group'>
+        <div class='controls'>
+          <button id='save-schedule' class='btn btn-success'>Save Schedule</button>
+        </div>
+      </div>
+
+    </form>
+
+  </div>
+  <div class='span6'>
+    <h3>Job State Control</h3>
+
+    <div id='state-alert' class='alert hidden'>
+    </div>
+
+    <button id='start-job' class='btn btn-sequence btn-success'>Start Job From Beginning</button>
+    <button id='retry-job' class='btn btn-sequence btn-success'>Retry Job from Current State</button>
+    <br /><br />
+    <button id='terminate-job' class='btn btn-sequence btn-warning'>Terminate Job</button>
+    <button id='kill-job' class='btn btn-sequence btn-danger'>Kill Job</button>
+  </div>
+</div>
+
+<h3>{{ job.name }}'s Tasks</h3>
 <table class='table'>
   <thead>
     <th>Task</th>
@@ -53,4 +101,5 @@
 {% block body_scripts %}
 <script src="/static/js/job_model.js"></script>
 <script src="/static/js/job_graph.js"></script>
+<script src="/static/js/job_detail.js"></script>
 {% endblock body_scripts %}
