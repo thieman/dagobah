@@ -1,26 +1,27 @@
 // set up SVG for D3
 var width  = 940,
     height = 600,
+	gWidth = width * 5,
+	gHeight = height * 5,
 	nodeWidth = 150,
 	nodeHeight = 50,
     colors = d3.scale.category10();
 
 var svg = d3.select('.job-graph')
 	.append('svg')
-	.attr('width', width)
-	.attr('height', height)
 	.attr('pointer-events', 'all')
 	.append('g')
 	.call(d3.behavior.zoom().on('zoom', zoomGraph))
+	.attr('transform', 'translate(' + (width / 2) + ',' + (height / 2) + ') scale(' + getInitialZoom() + ')')
 	.on('mousedown.zoom', null)
 	.append('g');
 
 // this is for the zoom functionality
 svg.append('rect')
-	.attr('x', width * -2.5)
-	.attr('y', height * -2.5)
-	.attr('width', width * 5)
-	.attr('height', height * 5)
+	.attr('x', gWidth * -0.5)
+	.attr('y', gHeight * -0.5)
+	.attr('width', gWidth)
+	.attr('height', gHeight)
 	.attr('fill', 'transparent')
 	.style('stroke', '#CCCCCC')
 	.style('stroke-width', '1px');
@@ -35,6 +36,10 @@ function drawIfLoaded() {
 	} else {
 		window.setTimeout(drawIfLoaded, 50);
 	}
+}
+
+function getInitialZoom() {
+	return 0.8;
 }
 
 function zoomGraph(d) {
@@ -54,7 +59,7 @@ function drawForceGraph() {
     var force = d3.layout.force()
         .nodes(nodes)
         .links(links)
-        .size([width, height])
+        .size([1, 1])
         .linkDistance(200)
         .charge(-2000)
         .on('tick', tick);
@@ -63,9 +68,9 @@ function drawForceGraph() {
     svg.append('svg:defs').append('svg:marker')
         .attr('id', 'end-arrow')
         .attr('viewBox', '0 -5 10 10')
-        .attr('refX', 75)
-        .attr('markerWidth', 4)
-        .attr('markerHeight', 4)
+        .attr('refX', 70)
+        .attr('markerWidth', 5)
+        .attr('markerHeight', 5)
         .attr('orient', 'auto')
       .append('svg:path')
         .attr('d', 'M0,-5L10,0L0,5')
