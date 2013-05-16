@@ -265,7 +265,8 @@ class Job(DAG):
         if self.status == 'running':
             raise ValueError('job is already running')
 
-        if self.cron_iter:
+        # don't increment if the job was run manually
+        if self.cron_iter and datetime.utcnow() > self.next_run:
             self.next_run = self.cron_iter.get_next(datetime)
 
         self.run_log = {'job_id': self.job_id,
