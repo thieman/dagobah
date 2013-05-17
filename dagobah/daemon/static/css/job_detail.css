@@ -33,3 +33,7 @@
 .page-header .status-failed {
 	color: red;
 }
+
+.task-failed {
+	color: red;
+}

@@ -2,28 +2,59 @@ function Job() {
 	this.loaded = false;
 }
 
-Job.prototype.load = function(loadJobName) {
+Job.prototype.readFromJSON = function(data) {
+
+	this.raw = data;
+
+	this.name = data['name'] || null;
+	this.id = data['job_id'] || null;
+	this.this_id = data['this_id'] || null;
+	this.status = data['status'] || null;
+	this.tasks = data['tasks'] || [];
+	this.dependencies = data['dependencies'] || {};
+	this.cron_schedule = data['cron_schedule'] || null;
+	this.next_run = data['next_run'] || null;
+
+}
+
+Job.prototype.load = function(loadJobName, callback) {
 
 	var parent = this;
+	parent.loaded = false;
+
 	$.getJSON($SCRIPT_ROOT + '/api/job',
 			  {'job_name': loadJobName},
 			  function(data) {
 
-				  var result = data['result'];
-				  parent.raw = result;
-
-				  parent.name = result['name'] || null;
-				  parent.id = result['job_id'] || null;
-				  parent.parent_id = result['parent_id'] || null;
-				  parent.status = result['status'] || null;
-				  parent.tasks = result['tasks'] || [];
-				  parent.dependencies = result['dependencies'] || {};
-				  parent.cron_schedule = result['cron_schedule'] || null;
-				  parent.next_run = result['next_run'] || null;
-
+				  parent.readFromJSON(data['result']);
 				  parent.loaded = true;
+				  callback = callback || function() {};
+				  callback();
 
-			  });
+			  }
+
+	);
+
+}
+
+Job.prototype.update = function(callback) {
+
+	if (this.loaded === false) {
+		throw "job has not been loaded";
+	}
+
+	var parent = this;
+	$.getJSON($SCRIPT_ROOT + '/api/job',
+			  {'job_name': parent.name},
+			  function(data) {
+
+				  parent.readFromJSON(data['result']);
+				  parent.loaded = true;
+				  callback = callback || function() {};
+				  callback();
+
+			  }
+	);
 
 }
 

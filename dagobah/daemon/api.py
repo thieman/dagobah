@@ -175,11 +175,37 @@ def restart_scheduler():
     dagobah.scheduler.restart()
 
 
+@app.route('/api/terminate_all_tasks', methods=['POST'])
+@api_call
+def terminate_all_tasks():
+    args = dict(request.form)
+    if not validate_dict(args,
+                         required=['job_name'],
+                         job_name=str):
+        abort(400)
+
+    job = dagobah.get_job(args['job_name'])
+    job.terminate_all()
+
+
+@app.route('/api/kill_all_tasks', methods=['POST'])
+@api_call
+def kill_all_tasks():
+    args = dict(request.form)
+    if not validate_dict(args,
+                         required=['job_name'],
+                         job_name=str):
+        abort(400)
+
+    job = dagobah.get_job(args['job_name'])
+    job.kill_all()
+
+
 @app.route('/api/terminate_task', methods=['POST'])
 @api_call
 def terminate_task():
     args = dict(request.form)
-    if not validate_dict(request.form,
+    if not validate_dict(args,
                          required=['job_name', 'task_name'],
                          job_name=str,
                          task_name=str):
@@ -196,7 +222,7 @@ def terminate_task():
 @api_call
 def kill_task():
     args = dict(request.form)
-    if not validate_dict(request.form,
+    if not validate_dict(args,
                          required=['job_name', 'task_name'],
                          job_name=str,
                          task_name=str):

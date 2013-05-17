@@ -45,10 +45,11 @@ class Scheduler(threading.Thread):
             for job in self.parent.jobs:
                 if not job.next_run:
                     continue
-                if (job.next_run >= self.last_check and
-                    job.next_run <= now and
-                    job.status != 'running'):
-                    job.start()
+                if job.next_run >= self.last_check and job.next_run <= now:
+                    if job.status != 'running':
+                        job.start()
+                    else:
+                        job.next_run = job.cron_iter.get_next(datetime)
             self.last_checked = now
             time.sleep(1)
 
@@ -206,7 +207,6 @@ class Job(DAG):
 
         # tasks themselves aren't hashable, so we need a secondary lookup
         self.tasks = {}
-        self.base_datetime = datetime.utcnow()
 
         self.status = None
         self.next_run = None
@@ -254,7 +254,7 @@ class Job(DAG):
     def schedule(self, cron_schedule):
         """ Schedules the job to run periodically using Cron syntax. """
         self.cron_schedule = cron_schedule
-        self.cron_iter = croniter(cron_schedule, self.base_datetime)
+        self.cron_iter = croniter(cron_schedule, datetime.utcnow())
         self.next_run = self.cron_iter.get_next(datetime)
         self.commit()
 
@@ -296,11 +296,26 @@ class Job(DAG):
         self._set_status('running')
         self.run_log['retry_time'] = datetime.utcnow()
 
-        for task_name, log in self.run_log['tasks'].iteritems():
+        for task_name, log in self.run_log['tasks'].items():
             if log.get('success', True) == False:
+                self._put_task_in_run_log(task_name)
                 self.tasks[task_name].start()
 
         self._commit_run_log()
+
+
+    def terminate_all(self):
+        """ Terminate all currently running jobs. """
+        for task in self.tasks.itervalues():
+            if task.started_at and not task.completed_at:
+                task.terminate()
+
+
+    def kill_all(self):
+        """ Kill all currently running jobs. """
+        for task in self.tasks.itervalues():
+            if task.started_at and not task.completed_at:
+                task.kill()
 
 
     def _complete_task(self, task_name, **kwargs):
@@ -331,11 +346,11 @@ class Job(DAG):
     def _on_completion(self):
         """ Checks to see if the Job has completed, and cleans up if it has. """
 
+        self._commit_run_log()
+
         if not self._is_complete():
             self.completion_lock.release()
             return
-
-        self._commit_run_log()
 
         for job, results in self.run_log['tasks'].iteritems():
             if results.get('success', False) == False:

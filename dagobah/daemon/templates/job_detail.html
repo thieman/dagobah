@@ -16,7 +16,7 @@
 {% block content %}
 <div class='page-header'>
   <h3>Job Detail: {{ job.name }}</h3>
-  <h3 class='right status-{{ job.status }}'>{{ job.status|title }}</h3>
+  <h3 id='job-status' class='right'></h3>
 </div>
 
 <div class='job-graph'>
@@ -26,10 +26,13 @@
   <div class='span6'>
     <h3>Job Scheduling</h3>
 
+    <div id='schedule-alert' class='alert hidden'>
+    </div>
+
     <form class='form form-horizontal'>
 
       <div class='control-group'>
-        <label class='control-label' for='cron-schedule'>Cron Schedule String</label>
+        <label class='control-label' for='cron-schedule'>Cron Schedule String<br />(M H DoM Mon DoW)</label>
         <div class='controls'>
           <input id='cron-schedule' type='text' class='input' value='{{ job.cron_schedule }}'></input>
         </div>
@@ -38,13 +41,13 @@
       <div class='control-group'>
         <label class='control-label' for='next-run'>Next Scheduled Run</label>
         <div class='controls'>
-          <input id='next-run' type='text' class='input' disabled value='{{ job.next_run }}'></input>
+          <input id='next-run' type='text' class='input' disabled></input>
         </div>
       </div>
 
       <div class='control-group'>
         <div class='controls'>
-          <button id='save-schedule' class='btn btn-success'>Save Schedule</button>
+          <button id='save-schedule' class='btn btn-success' onclick='return false;'>Save Schedule</button>
         </div>
       </div>
 
@@ -58,10 +61,10 @@
     </div>
 
     <button id='start-job' class='btn btn-sequence btn-success'>Start Job From Beginning</button>
-    <button id='retry-job' class='btn btn-sequence btn-success'>Retry Job from Current State</button>
+    <button id='retry-job' class='btn btn-sequence btn-success'>Retry Job from Failure</button>
     <br /><br />
-    <button id='terminate-job' class='btn btn-sequence btn-warning'>Terminate Job</button>
-    <button id='kill-job' class='btn btn-sequence btn-danger'>Kill Job</button>
+    <button id='terminate-job' class='btn btn-sequence btn-warning'>Terminate Running Tasks</button>
+    <button id='kill-job' class='btn btn-sequence btn-danger'>Kill Running Tasks</button>
   </div>
 </div>
 
@@ -74,19 +77,14 @@
     <th>Result</th>
     <th>Task Detail</th>
   </thead>
-  <tbody>
+  <tbody id='tasks-body'>
     {% for task in job.tasks %}
-      <tr>
-        <td>{{ task.name }}</td>
-        <td>{{ task.started_at if task.started_at }}</td>
-        <td>{{ task.completed_at if task.completed_at }}</td>
+      <tr data-task='{{task.name}}'>
+        <td data-attr='name'></td>
+        <td data-attr='started_at' data-transform='datetime'></td>
+        <td data-attr='completed_at' data-transform='datetime'></td>
         <td>
-          {% if task.success in [True, False] %}
-            <span class={{ 'task-success' if task.success else 'task-failed' }}>
-              {{ 'Success' if task.success else 'Failed' }}
-            </span>
-          {% elif task.success == None %}
-          {% endif %}
+          <span data-attr='success' data-transform='class-success'></span>
         </td>
         <td>
           <button class='btn btn-primary' onclick="window.location.href = '{{ url_for('task_detail', job_id=job.job_id, task_name=task.name) }}';">View Task</button>
