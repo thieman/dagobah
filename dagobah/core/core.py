@@ -417,6 +417,7 @@ class Task(object):
 
     def __init__(self, parent_job, command, name):
         self.parent_job = parent_job
+        self.backend = self.parent_job.backend
         self.command = command
         self.name = name
 
@@ -465,6 +466,9 @@ class Task(object):
         for temp_file in [self.stdout_file, self.stderr_file]:
             temp_file.close()
 
+        self.stdout_file = None
+        self.stderr_file = None
+
         self._task_complete(success=True if self.process.returncode == 0 else False,
                             return_code=self.process.returncode,
                             stdout = self.stdout,
@@ -489,13 +493,29 @@ class Task(object):
     def head(self, stream='stdout', num_lines=10):
         """ Head a specified stream (stdout or stderr) by num_lines. """
         target = self._map_string_to_file(stream)
-        return self._head_temp_file(target, num_lines)
+        if not target:  # no current temp file
+            last_run = self.backend.get_latest_run_log(self.parent_job.job_id,
+                                                       self.name)
+            if not last_run:
+                return None
+            return self._head_string(last_run['tasks'][self.name][stream],
+                                     num_lines)
+        else:
+            return self._head_temp_file(target, num_lines)
 
 
     def tail(self, stream='stdout', num_lines=10):
         """ Tail a specified stream (stdout or stderr) by num_lines. """
         target = self._map_string_to_file(stream)
-        return self._tail_temp_file(target, num_lines)
+        if not target:  # no current temp file
+            last_run = self.backend.get_latest_run_log(self.parent_job.job_id,
+                                                       self.name)
+            if not last_run:
+                return None
+            return self._tail_string(last_run['tasks'][self.name][stream],
+                                     num_lines)
+        else:
+            return self._tail_temp_file(target, num_lines)
 
 
     def get_stdout(self):
@@ -528,6 +548,16 @@ class Task(object):
         return result
 
 
+    def _head_string(self, in_str, num_lines):
+        """ Returns a list of the first num_lines lines from a string. """
+        return in_str.split('\n')[:num_lines]
+
+
+    def _tail_string(self, in_str, num_lines):
+        """ Returns a list of the last num_lines lines from a string. """
+        return in_str.split('\n')[-1 * num_lines :]
+
+
     def _head_temp_file(self, temp_file, num_lines):
         """ Returns a list of the first num_lines lines from a temp file. """
         if not isinstance(num_lines, int):
@@ -536,7 +566,7 @@ class Task(object):
         result, curr_line = [], 0
         for line in temp_file:
             curr_line += 1
-            result.append(line)
+            result.append(line.strip())
             if curr_line >= num_lines:
                 break
         return result
@@ -563,7 +593,7 @@ class Task(object):
             this_line = temp_file.readline()
             if this_line == '':
                 break
-            result.append(this_line)
+            result.append(this_line.strip())
             if len(result) > num_lines:
                 result.pop(0)
         return result

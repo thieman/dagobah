@@ -1,5 +1,5 @@
 var jobsData = [];
-var updateDataDelayMs = 10000;
+var updateDataDelayMs = 5000;
 updateJobsData();
 
 function updateJobsData() {

@@ -58,3 +58,7 @@ class BaseBackend(object):
 
     def commit_log(self, log_json):
         pass
+
+
+    def get_latest_run_log(self, job_id, task_name):
+        return {}

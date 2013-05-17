@@ -1,9 +1,50 @@
 {% extends 'base.html' %}
 
+{% block head %}
+{{ super() }}
+
+<script>
+  var jobName = '{{ job.name }}';
+  var taskName = '{{ task_name }}';
+</script>
+
+<link rel="stylesheet" href="/static/css/task_detail.css"></link>
+{% endblock head %}
+
 {% block navbar_current %}
 <li><a href='#'>Task Detail: {{ task_name }}</a></li>
 {% endblock navbar_current %}
 
 {% block content %}
-<div class='page-header'><h3>Task Detail: {{ task_name }}</h3></div>
+<div class='page-header'>
+  <h3>Task Detail: {{ task_name }}</h3>
+  <h3 id='task-status' class='right'></h3>
+</div>
+
+<div class='row'>
+</div>
+
+<div id='logs' class='row'>
+  <div class='span12'>
+
+    <h3>Run Logs</h3>
+
+    <div class='log-controls'>
+      <button id='head-stdout' class='btn btn-sequence btn-primary'>Head Stdout</button>
+      <button id='tail-stdout' class='btn btn-sequence btn-primary'>Tail Stdout</button>
+      <button id='head-stderr' class='btn btn-sequence btn-primary'>Head Stderr</button>
+      <button id='tail-stderr' class='btn btn-sequence btn-primary'>Tail Stderr</button>
+
+      <span id='log-type' class='right-header'></span>
+    </div>
+
+    <textarea id='log-detail' class='hidden'></textarea>
+
+  </div>
+</div>
+
 {% endblock content %}
+
+{% block body_scripts %}
+  <script src="/static/js/task_detail.js"></script>
+{% endblock body_scripts %}

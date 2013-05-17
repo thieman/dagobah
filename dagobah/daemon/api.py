@@ -43,7 +43,12 @@ def head_task():
     task = job.tasks.get(args['task_name'], None)
     if not task:
         abort(400)
-    return task.head(**args)
+
+    call_args = {}
+    for key in ['stream', 'num_lines']:
+        if key in args:
+            call_args[key] = args[key]
+    return task.head(**call_args)
 
 
 @app.route('/api/tail', methods=['GET'])
@@ -62,7 +67,12 @@ def tail_task():
     task = job.tasks.get(args['task_name'], None)
     if not task:
         abort(400)
-    return task.tail(**args)
+
+    call_args = {}
+    for key in ['stream', 'num_lines']:
+        if key in args:
+            call_args[key] = args[key]
+    return task.tail(**call_args)
 
 
 @app.route('/api/add_job', methods=['POST'])
