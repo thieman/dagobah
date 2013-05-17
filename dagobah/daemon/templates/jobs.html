@@ -18,14 +18,15 @@
       <th>Next Run</th>
       <th>Detail</th>
     </thead>
-    <tbody>
+    <tbody id='jobs-body'>
       {% for job in jobs %}
-        <tr>
-          <td>{{ job.name }}</td>
-          <td><span class={{ job.status }}>{{ job.status|title }}</span></td>
-          <td>{{ job.tasks|length }}</td>
-          <td>{{ job.cron_schedule }}</td>
-          <td>{{ job.next_run }}</td>
+        <tr data-job='{{ job.name }}'>
+          <td data-attr='name'></td>
+          <td><span data-attr='status' data-transform='class title'
+                    class={{ job.status }}></span></td>
+          <td data-attr='tasks' data-transform='length'></td>
+          <td data-attr='cron_schedule'></td>
+          <td data-attr='next_run' data-transform='datetime'></td>
           <td><button class='btn btn-primary' onclick="window.location.href = '{{ url_for('job_detail', job_id=job.job_id) }}';">View Job</button></td>
         </tr>
       {% endfor %}
@@ -33,3 +34,7 @@
   </table>
 
 {% endblock content %}
+
+{% block body_scripts %}
+  <script src="/static/js/jobs.js"></script>
+{% endblock body_scripts %}

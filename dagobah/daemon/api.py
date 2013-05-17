@@ -23,7 +23,6 @@ def get_job():
                          job_name=str):
         abort(400)
 
-    print args['job_name']
     job = dagobah.get_job(args['job_name'])
     return job._serialize()
 

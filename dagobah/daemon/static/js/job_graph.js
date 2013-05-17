@@ -15,7 +15,7 @@ var svg = d3.select('.job-graph')
 	.append('g')
 	.call(d3.behavior.zoom().on('zoom', zoomGraph))
 	.attr('transform', 'translate(' + (width / 2) + ',' + (height / 2) + ') scale(' + getInitialZoom() + ')')
-	.on('mousedown.zoom', null)
+     // .on('mousedown.zoom', null)   // comment this out to allow pan
 	.append('g');
 
 // this is for the zoom functionality
