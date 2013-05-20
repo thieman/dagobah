@@ -99,6 +99,7 @@ class TestMongo(object):
         assert self.dagobah_coll.find(q).count() == 1
         rec = self.dagobah_coll.find_one(q)
 
+        print rec
         assert rec == {'_id': self.dagobah.dagobah_id,
                        'save_date': rec['save_date'],
                        'dagobah_id': self.dagobah.dagobah_id,
@@ -107,7 +108,10 @@ class TestMongo(object):
                                  'name': 'test_job',
                                  'parent_id': self.dagobah.dagobah_id,
                                  'tasks': [{'command': 'grep dragons',
-                                            'name': 'do some grepping'}],
+                                            'name': 'do some grepping',
+                                            'started_at': None,
+                                            'completed_at': None,
+                                            'success': None}],
                                  'dependencies': {'do some grepping': []},
                                  'status': 'waiting',
                                  'cron_schedule': None,
@@ -127,12 +131,16 @@ class TestMongo(object):
 
         rec = self.job_coll.find_one(q)
 
+        print rec
         assert rec == {'_id': job.job_id,
                        'job_id': job.job_id,
                        'name': 'test_job',
                        'parent_id': self.dagobah.dagobah_id,
                        'tasks': [{'name': 'do some grepping',
-                                  'command': 'grep dragons'}],
+                                  'command': 'grep dragons',
+                                  'completed_at': None,
+                                  'started_at': None,
+                                  'success': None}],
                        'dependencies': {'do some grepping': []},
                        'status': 'waiting',
                        'cron_schedule': None,

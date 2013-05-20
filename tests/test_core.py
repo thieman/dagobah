@@ -100,23 +100,23 @@ def test_job_schedule():
     dagobah.add_job('test_job')
     job = dagobah.get_job('test_job')
 
-    job.base_datetime = datetime(2012, 1, 1, 1, 0, 0)
-    job.schedule('5 * * * *')
+    base_datetime = datetime(2012, 1, 1, 1, 0, 0)
+    job.schedule('5 * * * *', base_datetime)
     assert job.next_run == datetime(2012, 1, 1, 1, 5, 0)
     job.next_run = job.cron_iter.get_next(datetime)
     assert job.next_run == datetime(2012, 1, 1, 2, 5, 0)
 
-    job.schedule('*/5 * * * *')
+    job.schedule('*/5 * * * *', base_datetime)
     assert job.next_run == datetime(2012, 1, 1, 1, 5, 0)
     job.next_run = job.cron_iter.get_next(datetime)
     assert job.next_run == datetime(2012, 1, 1, 1, 10, 0)
 
-    job.schedule('0 5 * * *')
+    job.schedule('0 5 * * *', base_datetime)
     assert job.next_run == datetime(2012, 1, 1, 5, 0, 0)
     job.next_run = job.cron_iter.get_next(datetime)
     assert job.next_run == datetime(2012, 1, 2, 5, 0, 0)
 
-    job.schedule('0 0 * * 3')
+    job.schedule('0 0 * * 3', base_datetime)
     assert job.next_run == datetime(2012, 1, 4, 0, 0, 0)
     job.next_run = job.cron_iter.get_next(datetime)
     assert job.next_run == datetime(2012, 1, 11, 0, 0, 0)
@@ -175,24 +175,31 @@ def test_serialize_dagobah():
     job.add_task('ls', 'list')
     job.add_task('grep', 'grep')
     job.add_edge('list', 'grep')
-    job.base_datetime = datetime(2012, 1, 1, 1, 0, 0)
-    job.schedule('*/5 * * * *')
+    base_datetime = datetime(2012, 1, 1, 1, 0, 0)
+    job.schedule('*/5 * * * *', base_datetime)
     dagobah_id = dagobah.dagobah_id
     test_result = {'dagobah_id': dagobah_id,
                    'created_jobs': 1,
                    'jobs': [{'job_id': job.job_id,
                              'name': 'test_job',
                              'parent_id': dagobah_id,
-                             'tasks': [{'command': 'grep',
-                                        'name': 'grep'},
-                                       {'command': 'ls',
-                                        'name': 'list'},],
+                             'tasks': [{'command': 'ls',
+                                        'name': 'list',
+                                        'completed_at': None,
+                                        'started_at': None,
+                                        'success': None},
+                                       {'command': 'grep',
+                                        'name': 'grep',
+                                        'completed_at': None,
+                                        'started_at': None,
+                                        'success': None},],
                              'dependencies': {'list': ['grep'],
                                               'grep': []},
                              'status': 'waiting',
                              'cron_schedule': '*/5 * * * *',
                              'next_run': datetime(2012, 1, 1, 1, 5, 0)}]}
     print dagobah._serialize()
+    print test_result
     assert dagobah._serialize() == test_result
 
 
