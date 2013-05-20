@@ -251,10 +251,12 @@ class Job(DAG):
         self.commit()
 
 
-    def schedule(self, cron_schedule):
+    def schedule(self, cron_schedule, base_datetime=None):
         """ Schedules the job to run periodically using Cron syntax. """
+        if base_datetime is None:
+            base_datetime = datetime.utcnow()
         self.cron_schedule = cron_schedule
-        self.cron_iter = croniter(cron_schedule, datetime.utcnow())
+        self.cron_iter = croniter(cron_schedule, base_datetime)
         self.next_run = self.cron_iter.get_next(datetime)
         self.commit()
 
@@ -290,16 +292,20 @@ class Job(DAG):
     def retry(self):
         """ Starts failed parts of a job from a failed state. """
 
-        if self.status != 'failed':
-            raise ValueError('can only retry a job from a failed state')
-
-        self._set_status('running')
-        self.run_log['retry_time'] = datetime.utcnow()
-
+        failed_task_names = []
         for task_name, log in self.run_log['tasks'].items():
             if log.get('success', True) == False:
-                self._put_task_in_run_log(task_name)
-                self.tasks[task_name].start()
+                failed_task_names.append(task_name)
+
+        if len(failed_task_names) == 0:
+            raise ValueError('no failed tasks to retry')
+
+        self._set_status('running')
+        self.run_log['last_retry_time'] = datetime.utcnow()
+
+        for task_name in failed_task_names:
+            self._put_task_in_run_log(task_name)
+            self.tasks[task_name].start()
 
         self._commit_run_log()
 
