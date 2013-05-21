@@ -3,6 +3,25 @@
 {% block head %}
 {{ super() }}
 <link rel="stylesheet" type="text/css" href="/static/css/jobs.css"></link>
+
+<script id="jobs-table-template" type="text/x-handlebars-template">
+
+{% raw %}
+  <tr data-job='{{ jobName }}'>
+    <td data-attr='name'></td>
+    <td><span data-attr='status' data-transform='class title'
+              class={{ jobStatus }}></span></td>
+              <td data-attr='tasks' data-transform='length'></td>
+              <td data-attr='cron_schedule'></td>
+              <td data-attr='next_run' data-transform='datetime'></td>
+              <td><button class='btn btn-primary'
+                          onclick="window.location.href = '{{ jobURL }}';">
+                          View Job</button></td>
+  </tr>
+{% endraw %}
+
+</script>
+
 {% endblock head %}
 
 {% block content %}
@@ -19,19 +38,17 @@
       <th>Detail</th>
     </thead>
     <tbody id='jobs-body'>
-      {% for job in jobs %}
-        <tr data-job='{{ job.name }}'>
-          <td data-attr='name'></td>
-          <td><span data-attr='status' data-transform='class title'
-                    class={{ job.status }}></span></td>
-          <td data-attr='tasks' data-transform='length'></td>
-          <td data-attr='cron_schedule'></td>
-          <td data-attr='next_run' data-transform='datetime'></td>
-          <td><button class='btn btn-primary' onclick="window.location.href = '{{ url_for('job_detail', job_id=job.job_id) }}';">View Job</button></td>
-        </tr>
-      {% endfor %}
     </tbody>
   </table>
+
+  <div id='new-alert' class='alert hidden'>
+  </div>
+
+  <h4 class='inline'>Add New Job</h4>
+  <form class='form form-horizontal'>
+    <input id='new-job-name' type='text' placeholder='Job Name'></input>
+    <button id='add-job' class='btn btn-success' onclick='return false;'>Add Job</button>
+  </form>
 
 {% endblock content %}
 
