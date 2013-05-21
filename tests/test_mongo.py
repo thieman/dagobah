@@ -20,7 +20,7 @@ class TestMongo(object):
         config = yaml.load(config_file.read())
 
         self.mongo_host = config['MongoBackend']['host']
-        self.mongo_port = int(config['MongoBackend']['port'])
+        self.mongo_port = config['MongoBackend']['port']
 
         try:
             try:
