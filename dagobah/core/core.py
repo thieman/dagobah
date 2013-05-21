@@ -162,7 +162,13 @@ class Dagobah(object):
 
 
 class Job(DAG):
-    """ Controller for a collection and graph of Task objects. """
+    """ Controller for a collection and graph of Task objects.
+
+    Emitted events:
+
+    job_complete: On completion (successful or not) of the job. Returns
+    the current serialization of the job.
+    """
 
     def __init__(self, parent, backend, job_id, name):
         super(Job, self).__init__()
@@ -359,7 +365,7 @@ class Job(DAG):
             self.run_log = {}
 
         self.event_handler.emit('job_complete',
-                                {'job_name': self.name})
+                                self._serialize())
 
         self.completion_lock.release()
 

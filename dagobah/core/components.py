@@ -1,6 +1,7 @@
 """ Component classes used by core classes. """
 
 import inspect
+import logging
 from datetime import datetime
 from collections import defaultdict
 import time
@@ -19,13 +20,16 @@ class EventHandler(object):
 
 
     def emit(self, event, event_params={}):
-        methods = self.handlers.get(event, [])
-        for method, args, kwargs in methods:
-            argspec = inspect.getargspec(method)
-            if ('event_params' in argspec.args or argspec.keywords is not None):
-                kwargs = dict(kwargs.items() +
-                              {'event_params': event_params}.items())
-            method.__call__(*args, **kwargs)
+        try:
+            methods = self.handlers.get(event, [])
+            for method, args, kwargs in methods:
+                argspec = inspect.getargspec(method)
+                if ('event_params' in argspec.args or argspec.keywords is not None):
+                    kwargs = dict(kwargs.items() +
+                                  {'event_params': event_params}.items())
+                method.__call__(*args, **kwargs)
+        except Exception:
+            logging.exception('Exception emitting event %s' % event)
 
 
     def register(self, event, method, *args, **kwargs):

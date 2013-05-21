@@ -1,39 +1,52 @@
 Dagobahd:
 
-    # choose one of the available backends
-    # None: Dagobah will not use a backend to permanently store data
-    # mongo: store results in Mongo. see the MongoBackend section in this file
-    backend: mongo
+  # choose one of the available backends
+  # None: Dagobah will not use a backend to permanently store data
+  # mongo: store results in Mongo. see the MongoBackend section in this file
+  backend: mongo
 
-    # choose one of the available email templates
-    # None: Dagobah won't send you emails when a job finishes or fails
-    # text: Send emails in a simple text format
-    email: None
+  # choose one of the available email templates
+  # None: Dagobah won't send you emails when a job finishes or fails
+  # text: Send emails in a simple text format
+  email: None
+
+Logging:
+
+  # change to False to disable logging entirely
+  enabled: True
+
+  # specify a full path to the log file
+  # alternatively, specify "default" to log to a file in the dagobahd directory
+  logfile: default
+
+  # specify the log level to use
+  # choose one of [debug, info, warning, error, critical]
+  loglevel: info
 
 Email:
 
-    # from address in the emails from Dagobah.
-    # supports the following special variables within curly brackets {}
-    # {HOSTNAME}: the machine's hostname
-    from_address: dagobah@{HOSTNAME}
+  # from address in the emails from Dagobah.
+  # supports the following special variables within curly brackets {}
+  # {HOSTNAME}: the machine's hostname
+  from_address: dagobah@{HOSTNAME}
 
-    # email addresses
-    recipients: ['travis.thieman@gmail.com']
+  # email addresses
+  recipients: ['travis.thieman@gmail.com']
 
-    # sets whether Dagobah sends you emails on successful job completion
-    send_on_success: True
+  # sets whether Dagobah sends you emails on successful job completion
+  send_on_success: True
 
-    # sets whether Dagobah sends you emails on job and task failures
-    send_on_failure: True
+  # sets whether Dagobah sends you emails on job and task failures
+  send_on_failure: True
 
 MongoBackend:
 
-    # connection details to a mongo database
-    host: localhost
-    port: 27017
-    db: dagobah
+  # connection details to a mongo database
+  host: localhost
+  port: 27017
+  db: dagobah
 
-    # names of collections within the db specified above
-    dagobah_collection: dagobah
-    job_collection: dagobah_job
-    log_collection: dagobah_log
+  # names of collections within the db specified above
+  dagobah_collection: dagobah
+  job_collection: dagobah_job
+  log_collection: dagobah_log

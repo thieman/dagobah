@@ -1,6 +1,7 @@
 """ HTTP Daemon implementation for Dagobah service. """
 
 import os
+import logging
 
 from flask import Flask, send_from_directory
 import yaml
@@ -21,6 +22,8 @@ def init_dagobah(testing=False):
     config_file = open(os.path.join(location, 'dagobahd.yaml'))
     config = yaml.load(config_file.read())
     config_file.close()
+
+    init_logger(location, config)
 
     backend = get_backend(config)
     event_handler = configure_event_hooks(config)
@@ -50,6 +53,31 @@ def configure_event_hooks(config):
     handler.register('job_complete', print_event_info)
 
     return handler
+
+
+def init_logger(location, config):
+    """ Initialize the logger with settings from config. """
+
+    class NullHandler(logging.Handler):
+        def emit(self, record):
+            pass
+
+    if config['Logging'].get('enabled', False) == False:
+        handler = NullHandler()
+        logging.getLogger("dagobah").addHandler(handler)
+        return
+
+    if config['Logging'].get('logfile', 'default') == 'default':
+        path = os.path.join(location, 'dagobah.log')
+    else:
+        path = config['Logging']['logfile']
+
+    level_string = config['Logging'].get('loglevel', 'info').upper()
+    numeric_level = getattr(logging, level_string, None)
+
+    logging.basicConfig(filename=path, level=numeric_level)
+
+    logging.info('Logger initialized at level %s' % level_string)
 
 
 def get_backend(config):
