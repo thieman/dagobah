@@ -12,6 +12,34 @@ from dagobah.core.dag import DAG
 from dagobah.backend.base import BaseBackend
 
 
+class JobState(object):
+    """ Stores state and related state metadata of a current job. """
+
+    def __init__(self):
+        self.status = None
+
+        self.allow_start = None
+        self.allow_change_graph = None
+        self.allow_change_schedule = None
+
+
+    def set_status(self, status):
+        status = status.lower()
+        if status not in ['waiting', 'running', 'failed']:
+            raise ValueError('unknown status %s' % status)
+
+        self.status = status
+        self._set_permissions()
+
+
+    def _set_permissions(self):
+        perms = {'allow_start': ['waiting', 'failed'],
+                 'allow_change_graph': ['waiting', 'failed'],
+                 'allow_change_schedule': ['waiting', 'running', 'failed']}
+        for perm, states in perms.iteritems():
+            setattr(self, perm, True if self.status in states else False)
+
+
 class Scheduler(threading.Thread):
     """ Monitoring thread to kick off Jobs at their scheduled times. """
 
@@ -46,7 +74,7 @@ class Scheduler(threading.Thread):
                 if not job.next_run:
                     continue
                 if job.next_run >= self.last_check and job.next_run <= now:
-                    if job.status != 'running':
+                    if job.state.allow_start:
                         job.start()
                     else:
                         job.next_run = job.cron_iter.get_next(datetime)
@@ -178,6 +206,11 @@ class Dagobah(object):
 
         if not job:
             raise KeyError('job %s does not exist' % job_or_job_name)
+
+        if not job.state.allow_change_graph:
+            raise ValueError("job's graph is immutable in its current state: %s"
+                             % job.state.status)
+
         job.add_task(task_command, task_name)
         job.commit()
 
@@ -206,6 +239,7 @@ class Job(DAG):
         self.backend = backend
         self.job_id = job_id
         self.name = name
+        self.state = JobState()
 
         # tasks themselves aren't hashable, so we need a secondary lookup
         self.tasks = {}
@@ -230,6 +264,11 @@ class Job(DAG):
 
     def add_task(self, command, name=None):
         """ Adds a new Task to the graph with no edges. """
+
+        if not self.state.allow_change_graph:
+            raise ValueError("job's graph is immutable in its current state: %s"
+                             % self.state.status)
+
         if name is None:
             name = command
         new_task = Task(self, command, name)
@@ -240,14 +279,25 @@ class Job(DAG):
 
     def add_dependency(self, from_task_name, to_task_name):
         """ Add a dependency between two tasks. """
+
+        if not self.state.allow_change_graph:
+            raise ValueError("job's graph is immutable in its current state: %s"
+                             % self.state.status)
+
         self.add_edge(from_task_name, to_task_name)
         self.commit()
 
 
     def delete_task(self, task_name):
         """ Deletes the named Task in this Job. """
+
+        if not self.state.allow_change_graph:
+            raise ValueError("job's graph is immutable in its current state: %s"
+                             % self.state.status)
+
         if task_name not in self.tasks:
             raise KeyError('task %s does not exist' % task_name)
+
         self.tasks.pop(task_name)
         self.delete_node(task_name)
         self.commit()
@@ -255,6 +305,11 @@ class Job(DAG):
 
     def schedule(self, cron_schedule, base_datetime=None):
         """ Schedules the job to run periodically using Cron syntax. """
+
+        if not self.state.allow_change_schedule:
+            raise ValueError("job's schedule cannot be changed in state: %s"
+                             % self.state.status)
+
         if base_datetime is None:
             base_datetime = datetime.utcnow()
         self.cron_schedule = cron_schedule
@@ -266,8 +321,9 @@ class Job(DAG):
     def start(self):
         """ Begins the job by kicking off all tasks with no dependencies. """
 
-        if self.status == 'running':
-            raise ValueError('job is already running')
+        if not self.state.allow_start:
+            raise ValueError('job cannot currently be started; ' +
+                             'it is probably already running')
 
         # don't increment if the job was run manually
         if self.cron_iter and datetime.utcnow() > self.next_run:
@@ -386,9 +442,7 @@ class Job(DAG):
 
     def _set_status(self, status):
         """ Enforces enum-like behavior on the status field. """
-        if status.lower() not in ['waiting', 'running', 'failed']:
-            raise ValueError('unknown status %s' % status)
-        self.status = status.lower()
+        self.state.set_status(status)
 
 
     def _commit_run_log(self):
@@ -415,7 +469,7 @@ class Job(DAG):
                 'dependencies': {k: list(v)
                                  for k, v
                                  in self.graph.iteritems()},
-                'status': self.status,
+                'status': self.state.status,
                 'cron_schedule': self.cron_schedule,
                 'next_run': self.next_run}
 
