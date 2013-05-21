@@ -9,4 +9,4 @@ setup(name='dagobah',
       license='BSD License',
       packages=['dagobah'],
       zip_safe=False,
-      install_requires=['croniter'])
+      install_requires=['croniter', 'pyyaml'])

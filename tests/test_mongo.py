@@ -1,8 +1,8 @@
 """ Tests on the core class implementations (Dagobah, Job, Task) """
 
 import os
-from ConfigParser import ConfigParser
 
+import yaml
 from nose.tools import nottest
 import pymongo
 
@@ -16,11 +16,11 @@ class TestMongo(object):
     def setup_class(self):
         location = os.path.realpath(os.path.join(os.getcwd(),
                                                  os.path.dirname(__file__)))
-        test_config = ConfigParser()
-        test_config.read(os.path.join(location, 'test_config.conf'))
+        config_file = open(os.path.join(location, 'test_config.yaml'))
+        config = yaml.load(config_file.read())
 
-        self.mongo_host = test_config.get('MongoBackend', 'host')
-        self.mongo_port = int(test_config.get('MongoBackend', 'port'))
+        self.mongo_host = config['MongoBackend']['host']
+        self.mongo_port = int(config['MongoBackend']['port'])
 
         try:
             try:

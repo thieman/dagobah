@@ -1,9 +1,9 @@
 """ HTTP Daemon implementation for Dagobah service. """
 
 import os
-from ConfigParser import ConfigParser
 
 from flask import Flask, send_from_directory
+import yaml
 
 from dagobah.core import Dagobah
 from dagobah.backend.base import BaseBackend
@@ -18,8 +18,8 @@ def init_dagobah(testing=False):
     location = os.path.realpath(os.path.join(os.getcwd(),
                                              os.path.dirname(__file__)))
 
-    config = ConfigParser()
-    config.read(os.path.join(location, 'dagobahd.conf'))
+    config_file = open(os.path.join(location, 'dagobahd.yaml'))
+    config = yaml.load(config_file.read())
 
     backend = get_backend(config)
     dagobah = Dagobah(backend)
@@ -40,7 +40,7 @@ def init_dagobah(testing=False):
 def get_backend(config):
     """ Returns a backend instance based on the Daemon config file. """
 
-    backend_string = config.get('Dagobahd', 'backend')
+    backend_string = config['Dagobahd']['backend']
 
     if backend_string.lower() == 'none':
         return BaseBackend()
@@ -51,7 +51,7 @@ def get_backend(config):
         for conf_kwarg in ['host', 'port', 'db',
                            'dagobah_collection', 'job_collection',
                            'log_collection']:
-            backend_kwargs[conf_kwarg] = config.get('MongoBackend', conf_kwarg)
+            backend_kwargs[conf_kwarg] = config['MongoBackend'][conf_kwarg]
 
         backend_kwargs['port'] = int(backend_kwargs['port'])
         return MongoBackend(**backend_kwargs)

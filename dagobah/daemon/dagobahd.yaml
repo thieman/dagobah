@@ -1,0 +1,31 @@
+Dagobahd:
+
+    # choose one of the available backends
+    # None: Dagobah will not use a backend to permanently store data
+    # mongo: store results in Mongo. see the MongoBackend section in this file
+    backend: mongo
+
+    # choose one of the available email templates
+    # None: Dagobah won't send you emails when a job finishes or fails
+    # text: Send emails in a simple text format
+    email: None
+
+Email:
+
+    # sets whether Dagobah sends you emails on successful job completion
+    send_on_success: True
+
+    # sets whether Dagobah sends you emails on job and task failures
+    send_on_failure: True
+
+MongoBackend:
+
+    # connection details to a mongo database
+    host: localhost
+    port: 27017
+    db: dagobah
+
+    # names of collections within the db specified above
+    dagobah_collection: dagobah
+    job_collection: dagobah_job
+    log_collection: dagobah_log
