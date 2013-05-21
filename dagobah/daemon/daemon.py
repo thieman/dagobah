@@ -13,7 +13,7 @@ app = Flask(__name__)
 APP_PORT = 9000
 
 
-def init_dagobah():
+def init_dagobah(testing=False):
 
     location = os.path.realpath(os.path.join(os.getcwd(),
                                              os.path.dirname(__file__)))
@@ -42,10 +42,10 @@ def get_backend(config):
 
     backend_string = config.get('Dagobahd', 'backend')
 
-    if backend_string == None:
+    if backend_string.lower() == 'none':
         return BaseBackend()
 
-    elif backend_string == 'mongo':
+    elif backend_string.lower() == 'mongo':
 
         backend_kwargs = {}
         for conf_kwarg in ['host', 'port', 'db',

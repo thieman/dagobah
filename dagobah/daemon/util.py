@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 
-from flask import request, json, Response
+from flask import request, json, Response, abort
 from functools import wraps
 
 try:
@@ -37,7 +37,6 @@ def api_call(fn):
             result = fn(*args, **kwargs)
         except Exception as e:
             raise e
-            return jsonify(status=500)
 
         if request and request.endpoint == fn.__name__:
             status_code = None

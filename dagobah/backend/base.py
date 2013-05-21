@@ -21,7 +21,7 @@ class BaseBackend(object):
 
 
     def get_known_dagobah_ids(self):
-        return
+        return []
 
 
     def get_new_dagobah_id(self):

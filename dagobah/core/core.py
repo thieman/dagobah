@@ -127,6 +127,8 @@ class Dagobah(object):
 
     def delete(self):
         """ Delete this Dagobah instance from the Backend. """
+        self.jobs = []
+        self.created_jobs = 0
         self.backend.delete_dagobah(self.dagobah_id)
 
 
