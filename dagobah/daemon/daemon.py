@@ -7,6 +7,7 @@ from flask import Flask, send_from_directory
 import yaml
 
 from dagobah.core import Dagobah, EventHandler
+from dagobah.email import get_email_handler
 from dagobah.backend.base import BaseBackend
 from dagobah.backend.mongo import MongoBackend
 
@@ -48,9 +49,15 @@ def configure_event_hooks(config):
     def print_event_info(**kwargs):
         print kwargs.get('event_params', {})
 
+    def job_complete_email(email_handler, **kwargs):
+        email_handler.send_job_complete(kwargs['event_params'])
+
     handler = EventHandler()
 
+    email_handler = get_email_handler(config['Dagobahd'].get('email', None),
+                                      config['Email'])
     handler.register('job_complete', print_event_info)
+    handler.register('job_complete', job_complete_email, email_handler)
 
     return handler
 
@@ -109,6 +116,7 @@ def favicon_redirect():
                                             'static', 'img'),
                                'favicon.ico',
                                mimetype='image/vnd.microsoft.icon')
+
 
 dagobah = init_dagobah()
 app.config['dagobah'] = dagobah

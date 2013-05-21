@@ -8,12 +8,12 @@ Dagobahd:
   # choose one of the available email templates
   # None: Dagobah won't send you emails when a job finishes or fails
   # text: Send emails in a simple text format
-  email: None
+  email: text
 
 Logging:
 
   # change to False to disable logging entirely
-  enabled: True
+  enabled: False
 
   # specify a full path to the log file
   # alternatively, specify "default" to log to a file in the dagobahd directory
