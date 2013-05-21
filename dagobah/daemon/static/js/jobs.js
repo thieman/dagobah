@@ -101,27 +101,8 @@ function updateJobsTable() {
 			}
 
 			for (var i = 0; i < transforms.length; i++) {
-
 				var transform = transforms[i];
-
-				if (transform === 'datetime') {
-					if (job[attr] !== null) {
-						$(this).text(moment.utc(job[attr]).local().format('lll'));
-					}
-				} else if (transform === 'class') {
-					if (job[attr] !== null) {
-						$(this).removeClass().addClass(job[attr]);
-					}
-				} else if (transform === 'title') {
-					if (job[attr] !== null) {
-						$(this).text(toTitleCase(job[attr]));
-					}
-				} else if (transform === 'length') {
-					if (job[attr] !== null) {
-						$(this).text(job[attr].length);
-					}
-				}
-
+				applyTransformation($(this), job[attr], transform);
 			}
 
 		});

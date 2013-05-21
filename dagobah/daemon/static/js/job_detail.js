@@ -39,31 +39,7 @@ function updateTasksTable() {
 			if (typeof transform === 'undefined' || transform === false) {
 				// no transform attribute
 			} else {
-
-				if (transform === 'class-success') {
-
-					if (task[attr] === true) {
-						$(this).text('Success');
-					} else if (task[attr] === false) {
-						$(this).text('Failed');
-					}
-
-					$(this).removeClass();
-					if (task.success === true) {
-						$(this).addClass('task-success');
-					} else {
-						$(this).addClass('task-failed');
-					}
-				}
-
-				else if (transform == 'datetime') {
-
-					if (task[attr] !== null) {
-						$(this).text(moment.utc(task[attr]).local().format('lll'));
-					}
-
-				}
-
+				applyTransformation($(this), task[attr], transform);
 			}
 
 		});
