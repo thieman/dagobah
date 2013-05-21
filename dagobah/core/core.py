@@ -3,83 +3,14 @@
 import os
 from datetime import datetime
 import time
-import subprocess
 import threading
+import subprocess
 
 from croniter import croniter
 
 from dagobah.core.dag import DAG
+from dagobah.core.components import Scheduler, JobState
 from dagobah.backend.base import BaseBackend
-
-
-class JobState(object):
-    """ Stores state and related state metadata of a current job. """
-
-    def __init__(self):
-        self.status = None
-
-        self.allow_start = None
-        self.allow_change_graph = None
-        self.allow_change_schedule = None
-
-
-    def set_status(self, status):
-        status = status.lower()
-        if status not in ['waiting', 'running', 'failed']:
-            raise ValueError('unknown status %s' % status)
-
-        self.status = status
-        self._set_permissions()
-
-
-    def _set_permissions(self):
-        perms = {'allow_start': ['waiting', 'failed'],
-                 'allow_change_graph': ['waiting', 'failed'],
-                 'allow_change_schedule': ['waiting', 'running', 'failed']}
-        for perm, states in perms.iteritems():
-            setattr(self, perm, True if self.status in states else False)
-
-
-class Scheduler(threading.Thread):
-    """ Monitoring thread to kick off Jobs at their scheduled times. """
-
-    def __init__(self, parent_dagobah):
-        super(Scheduler, self).__init__()
-        self.parent = parent_dagobah
-        self.stopped = False
-
-        self.last_check = datetime.utcnow()
-
-
-    def __repr__(self):
-        return '<Scheduler for %s>' % self.parent
-
-
-    def stop(self):
-        """ Stop the monitoring loop without killing the thread. """
-        self.stopped = True
-
-
-    def restart(self):
-        """ Restart the monitoring loop. """
-        self.last_check = datetime.utcnow()
-        self.stopped = False
-
-
-    def run(self):
-        """ Continually monitors Jobs of the parent Dagobah. """
-        while not self.stopped:
-            now = datetime.utcnow()
-            for job in self.parent.jobs:
-                if not job.next_run:
-                    continue
-                if job.next_run >= self.last_check and job.next_run <= now:
-                    if job.state.allow_start:
-                        job.start()
-                    else:
-                        job.next_run = job.cron_iter.get_next(datetime)
-            self.last_checked = now
-            time.sleep(1)
 
 
 class Dagobah(object):
@@ -90,9 +21,10 @@ class Dagobah(object):
     backend used for permanent storage.
     """
 
-    def __init__(self, backend=BaseBackend()):
+    def __init__(self, backend=BaseBackend(), event_handler=None):
         """ Construct a new Dagobah instance with a specified Backend. """
         self.backend = backend
+        self.event_handler = event_handler
         self.dagobah_id = self.backend.get_new_dagobah_id()
         self.jobs = []
         self.created_jobs = 0
@@ -237,6 +169,7 @@ class Job(DAG):
 
         self.parent = parent
         self.backend = backend
+        self.event_handler = self.parent.event_handler
         self.job_id = job_id
         self.name = name
         self.state = JobState()
@@ -424,6 +357,9 @@ class Job(DAG):
         if self.status != 'failed':
             self._set_status('waiting')
             self.run_log = {}
+
+        self.event_handler.emit('job_complete',
+                                {'job_name': self.name})
 
         self.completion_lock.release()
 

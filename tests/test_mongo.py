@@ -18,6 +18,7 @@ class TestMongo(object):
                                                  os.path.dirname(__file__)))
         config_file = open(os.path.join(location, 'test_config.yaml'))
         config = yaml.load(config_file.read())
+        config_file.close()
 
         self.mongo_host = config['MongoBackend']['host']
         self.mongo_port = config['MongoBackend']['port']

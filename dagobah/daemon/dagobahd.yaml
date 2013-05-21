@@ -12,6 +12,14 @@ Dagobahd:
 
 Email:
 
+    # from address in the emails from Dagobah.
+    # supports the following special variables within curly brackets {}
+    # {HOSTNAME}: the machine's hostname
+    from_address: dagobah@{HOSTNAME}
+
+    # email addresses
+    recipients: ['travis.thieman@gmail.com']
+
     # sets whether Dagobah sends you emails on successful job completion
     send_on_success: True
 

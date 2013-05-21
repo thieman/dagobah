@@ -5,7 +5,7 @@ import os
 from flask import Flask, send_from_directory
 import yaml
 
-from dagobah.core import Dagobah
+from dagobah.core import Dagobah, EventHandler
 from dagobah.backend.base import BaseBackend
 from dagobah.backend.mongo import MongoBackend
 
@@ -20,9 +20,11 @@ def init_dagobah(testing=False):
 
     config_file = open(os.path.join(location, 'dagobahd.yaml'))
     config = yaml.load(config_file.read())
+    config_file.close()
 
     backend = get_backend(config)
-    dagobah = Dagobah(backend)
+    event_handler = configure_event_hooks(config)
+    dagobah = Dagobah(backend, event_handler)
 
     known_ids = [id for id in backend.get_known_dagobah_ids()
                  if id != dagobah.dagobah_id]
@@ -35,6 +37,19 @@ def init_dagobah(testing=False):
         dagobah.from_backend(known_ids[0])
 
     return dagobah
+
+
+def configure_event_hooks(config):
+    """ Returns an EventHandler instance with registered hooks. """
+
+    def print_event_info(**kwargs):
+        print kwargs.get('event_params', {})
+
+    handler = EventHandler()
+
+    handler.register('job_complete', print_event_info)
+
+    return handler
 
 
 def get_backend(config):
