@@ -16,7 +16,11 @@
               <td data-attr='next_run' data-transform='datetime'></td>
               <td><button class='btn btn-primary'
                           onclick="window.location.href = '{{ jobURL }}';">
-                          View Job</button></td>
+                          View Job
+                </button>
+                <button class='btn btn-danger job-delete' onclick="return false;"><i class='icon-trash'></i>
+                </button>
+              </td>
   </tr>
 {% endraw %}
 
@@ -28,6 +32,9 @@
 
   <div class='page-header'><h3>Registered Jobs</h3></div>
 
+  <div id='table-alert' class='alert hidden'>
+  </div>
+
   <table class='table table-striped'>
     <thead>
       <th>Name</th>
@@ -35,7 +42,7 @@
       <th>Tasks</th>
       <th>Schedule</th>
       <th>Next Run</th>
-      <th>Detail</th>
+      <th></th>
     </thead>
     <tbody id='jobs-body'>
     </tbody>

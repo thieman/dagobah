@@ -11,8 +11,36 @@ $('#add-job').click(function() {
 		showAlert('new-alert', 'error', 'Please enter a name for the new job.');
 	}
 	addNewJob(newName);
+	$('#new-job-name').val('');
 
 });
+
+function bindEvents() {
+	$('.job-delete').on('click', function() {
+		$(this).parents('[data-job]').each(function() {
+			deleteJob($(this).attr('data-job'));
+		});
+	});
+}
+
+function deleteJob(jobName) {
+
+	$.ajax({
+		type: 'POST',
+		url: $SCRIPT_ROOT + '/api/delete_job',
+		data: { job_name: jobName },
+		dataType: 'json',
+		success: function() {
+			showAlert('table-alert', 'success', 'Job deleted successfully.');
+			$('[data-job="' + jobName + '"]').remove();
+		},
+		error: function() {
+			showAlert('table-alert', 'error', 'There was an error deleting the job.');
+		},
+		async: true
+	});
+
+}
 
 function addNewJob(jobName) {
 
@@ -22,7 +50,7 @@ function addNewJob(jobName) {
 		data: { job_name: jobName },
 		dataType: 'json',
 		success: function() {
-			showAlert('new-alert', 'success', 'Job created.');
+			showAlert('new-alert', 'success', 'Job created successfully.');
 			updateJobsData(true);
 		},
 		error: function() {
@@ -53,6 +81,7 @@ function resetJobsTable() {
 		);
 	}
 
+	bindEvents();
 	updateJobsTable();
 
 }

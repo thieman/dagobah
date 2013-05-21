@@ -348,7 +348,7 @@ class Job(DAG):
 
 
     def retry(self):
-        """ Starts failed parts of a job from a failed state. """
+        """ Restarts failed tasks of a job. """
 
         failed_task_names = []
         for task_name, log in self.run_log['tasks'].items():
@@ -505,6 +505,7 @@ class Task(object):
         self.started_at = None
         self.completed_at = None
         self.successful = None
+
 
     def start(self):
         """ Begin execution of this task. """
