@@ -50,7 +50,13 @@ def configure_event_hooks(config):
         print kwargs.get('event_params', {})
 
     def job_complete_email(email_handler, **kwargs):
-        email_handler.send_job_complete(kwargs['event_params'])
+        email_handler.send_job_completed(kwargs['event_params'])
+
+    def job_failed_email(email_handler, **kwargs):
+        email_handler.send_job_failed(kwargs['event_params'])
+
+    def task_failed_email(email_handler, **kwargs):
+        email_handler.send_task_failed(kwargs['event_params'])
 
     handler = EventHandler()
 
@@ -58,6 +64,10 @@ def configure_event_hooks(config):
                                       config['Email'])
     handler.register('job_complete', print_event_info)
     handler.register('job_complete', job_complete_email, email_handler)
+
+    handler.register('job_failed', job_failed_email, email_handler)
+
+    handler.register('task_failed', task_failed_email, email_handler)
 
     return handler
 

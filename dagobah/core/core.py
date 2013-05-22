@@ -154,11 +154,12 @@ class Dagobah(object):
                 else True)
 
 
-    def _serialize(self):
+    def _serialize(self, include_run_logs=False):
         """ Serialize a representation of this Dagobah object to JSON. """
         return {'dagobah_id': self.dagobah_id,
                 'created_jobs': self.created_jobs,
-                'jobs': [job._serialize() for job in self.jobs]}
+                'jobs': [job._serialize(include_run_logs=include_run_logs)
+                         for job in self.jobs]}
 
 
 class Job(DAG):
@@ -166,8 +167,10 @@ class Job(DAG):
 
     Emitted events:
 
-    job_complete: On completion (successful or not) of the job. Returns
+    job_complete: On successful completion of the job. Returns
     the current serialization of the job.
+    job_failed: On failed completion of the job. Returns
+    the current serialization of the job with run logs.
     """
 
     def __init__(self, parent, backend, job_id, name):
@@ -183,7 +186,6 @@ class Job(DAG):
         # tasks themselves aren't hashable, so we need a secondary lookup
         self.tasks = {}
 
-        self.status = None
         self.next_run = None
         self.cron_schedule = None
         self.cron_iter = None
@@ -329,6 +331,12 @@ class Job(DAG):
         for node in self.downstream(task_name):
             self._start_if_ready(node)
 
+        self._commit_run_log()
+        if kwargs.get('success', None) == False:
+            task = self.tasks[task_name]
+            self.event_handler.emit('task_failed',
+                                    task._serialize(include_run_logs=True))
+
         self._on_completion()
 
 
@@ -349,23 +357,22 @@ class Job(DAG):
     def _on_completion(self):
         """ Checks to see if the Job has completed, and cleans up if it has. """
 
-        self._commit_run_log()
-
-        if not self._is_complete():
+        if self.state.status != 'running' or (not self._is_complete()):
             self.completion_lock.release()
             return
 
         for job, results in self.run_log['tasks'].iteritems():
             if results.get('success', False) == False:
                 self._set_status('failed')
+                self.event_handler.emit('job_failed',
+                                        self._serialize(include_run_logs=True))
                 break
 
-        if self.status != 'failed':
+        if self.state.status != 'failed':
             self._set_status('waiting')
             self.run_log = {}
-
-        self.event_handler.emit('job_complete',
-                                self._serialize())
+            self.event_handler.emit('job_complete',
+                                    self._serialize())
 
         self.completion_lock.release()
 
@@ -392,22 +399,22 @@ class Job(DAG):
         self.backend.commit_log(self.run_log)
 
 
-    def _serialize(self):
+    def _serialize(self, include_run_logs=False):
         """ Serialize a representation of this Job to a Python dict object. """
 
         # return tasks in sorted order if graph is in a valid state
         try:
             topo_sorted = self._topological_sort()
-            serialized_tasks = [self.tasks[task]._serialize()
-                                for task in topo_sorted]
+            t = [self.tasks[task]._serialize(include_run_logs=include_run_logs)
+                 for task in topo_sorted]
         except:
-            serialized_tasks = [task._serialize()
-                                for task in self.tasks.itervalues()]
+            t = [task._serialize(include_run_logs=include_run_logs)
+                 for task in self.tasks.itervalues()]
 
         return {'job_id': self.job_id,
                 'name': self.name,
                 'parent_id': self.parent.dagobah_id,
-                'tasks': serialized_tasks,
+                'tasks': t,
                 'dependencies': {k: list(v)
                                  for k, v
                                  in self.graph.iteritems()},
@@ -417,11 +424,17 @@ class Job(DAG):
 
 
 class Task(object):
-    """ Handles execution and reporting for an individual process. """
+    """ Handles execution and reporting for an individual process.
+
+    Emitted events:
+    task_failed: On failure of an individual task. Returns the
+    current serialization of the task with run logs.
+    """
 
     def __init__(self, parent_job, command, name):
         self.parent_job = parent_job
         self.backend = self.parent_job.backend
+        self.event_handler = self.parent_job.event_handler
         self.command = command
         self.name = name
 
@@ -612,10 +625,21 @@ class Task(object):
         self.parent_job._complete_task(self.name, **kwargs)
 
 
-    def _serialize(self):
+    def _serialize(self, include_run_logs=False):
         """ Serialize a representation of this Task to a Python dict. """
-        return {'command': self.command,
-                'name': self.name,
-                'started_at': self.started_at,
-                'completed_at': self.completed_at,
-                'success': self.successful}
+
+        result = {'command': self.command,
+                  'name': self.name,
+                  'started_at': self.started_at,
+                  'completed_at': self.completed_at,
+                  'success': self.successful}
+
+        if include_run_logs:
+            last_run = self.backend.get_latest_run_log(self.parent_job.job_id,
+                                                       self.name)
+            if last_run:
+                run_log = last_run.get('tasks', {}).get(self.name, {})
+                if run_log:
+                    result['run_log'] = run_log
+
+        return result

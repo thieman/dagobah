@@ -2,6 +2,7 @@
 
 import smtplib
 import socket
+import email.utils
 
 class EmailTemplate(object):
 
@@ -13,8 +14,22 @@ class EmailTemplate(object):
         self.message = None
 
 
-    def send_job_complete(self, data):
+    def send_job_completed(self, data):
         raise NotImplementedError()
+
+
+    def send_task_failed(self, data):
+        raise NotImplementedError()
+
+
+    def send_job_failed(self, data):
+        raise NotImplementedError()
+
+
+    def _construct_and_send(self, subject):
+        self._address_message()
+        self._set_subject(subject)
+        self._send_message()
 
 
     def _apply_formatters(self, value):
@@ -25,7 +40,8 @@ class EmailTemplate(object):
 
 
     def _address_message(self):
-        self.message['From'] = self.from_address
+        self.message['From'] = email.utils.formataddr((self.from_address,
+                                                       self.user))
         self.message['To'] = ','.join(self.recipients)
 
 
@@ -34,7 +50,12 @@ class EmailTemplate(object):
 
 
     def _send_message(self):
-        s = smtplib.SMTP('localhost', 1025)
+        s = smtplib.SMTP(self.host, self.port)
+        if self.use_tls:
+            s.ehlo()
+            s.starttls()
+            s.ehlo
+        s.login(self.user, self.password)
         s.sendmail(self.message['From'],
                    self.message['To'],
                    self.message.as_string())

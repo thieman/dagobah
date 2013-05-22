@@ -36,7 +36,7 @@ def api_call(fn):
         try:
             result = fn(*args, **kwargs)
         except Exception as e:
-            raise e
+            raise
 
         if request and request.endpoint == fn.__name__:
             status_code = None

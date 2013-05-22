@@ -25,6 +25,18 @@ Logging:
 
 Email:
 
+  # set host and port of the SMTP server to use to send mail
+  # e.g. host: smtp.gmail.com   port: 587
+  host: smtp.gmail.com
+  port: 587
+
+  # email authentication
+  user: dagobah.testing@gmail.com
+  password: dagobahdagobah
+
+  # tls is required for some mail servers, specifically Gmail
+  use_tls: True
+
   # from address in the emails from Dagobah.
   # supports the following special variables within curly brackets {}
   # {HOSTNAME}: the machine's hostname
