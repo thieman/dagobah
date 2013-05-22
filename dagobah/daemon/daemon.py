@@ -62,12 +62,13 @@ def configure_event_hooks(config):
 
     email_handler = get_email_handler(config['Dagobahd'].get('email', None),
                                       config['Email'])
-    handler.register('job_complete', print_event_info)
-    handler.register('job_complete', job_complete_email, email_handler)
 
-    handler.register('job_failed', job_failed_email, email_handler)
+    if config['Email'].get('send_on_success', False) == True:
+        handler.register('job_complete', job_complete_email, email_handler)
 
-    handler.register('task_failed', task_failed_email, email_handler)
+    if config['Email'].get('send_on_failure', False) == True:
+        handler.register('job_failed', job_failed_email, email_handler)
+        handler.register('task_failed', task_failed_email, email_handler)
 
     return handler
 

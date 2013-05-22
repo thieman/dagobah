@@ -1,5 +1,8 @@
+var tasksTableTemplate = Handlebars.compile($('#tasks-table-template').html());
+
 function runWhenJobLoaded() {
 	if (typeof job != 'undefined' && job.loaded === true) {
+		resetTasksTable();
 		setInterval(updateJobStatusViews, 500);
 		setInterval(updateJobNextRun, 500);
 		setInterval(updateTasksTable, 500);
@@ -9,6 +12,117 @@ function runWhenJobLoaded() {
 }
 
 runWhenJobLoaded();
+
+function bindEvents() {
+	$('.task-delete').on('click', function() {
+		$(this).parents('[data-task]').each(function() {
+			deleteTask($(this).attr('data-task'));
+		});
+	});
+}
+
+function deleteTask(taskName) {
+
+	if (!job.loaded) {
+		return;
+	}
+
+	$.ajax({
+		type: 'POST',
+		url: $SCRIPT_ROOT + '/api/delete_task',
+		data: {
+			job_name: job.name,
+			task_name: taskName
+		},
+		dataType: 'json',
+		async: true,
+		success: function() {
+			job.update(function() {
+				resetTasksTable();
+				job.removeTaskFromGraph(taskName);
+			});
+			showAlert('table-alert', 'success', 'Task ' + taskName + ' deleted.');
+		},
+		error: function() {
+			showAlert('table-alert', 'error', 'There was an error deleting the task.');
+		},
+		dataType: 'json'
+	});
+
+}
+
+$('#add-task').click(function() {
+
+	var newName = $('#new-task-name').val();
+	var newCommand = $('#new-task-command').val();
+
+	if (newName === null || newName === '') {
+		showAlert('new-alert', 'error', 'Please enter a name for the new task.');
+		return;
+	}
+	if (newCommand === null || newCommand === '') {
+		showAlert('new-alert', 'error', 'Please enter a command for the new task.');
+		return;
+	}
+
+	addNewTask(newName, newCommand);
+
+});
+
+function addNewTask(newName, newCommand) {
+
+	if (!job.loaded) {
+		return;
+	}
+
+	$.ajax({
+		type: 'POST',
+		url: $SCRIPT_ROOT + '/api/add_task_to_job',
+		data: {
+			job_name: job.name,
+			task_name: newName,
+			task_command: newCommand
+		},
+		dataType: 'json',
+		success: function() {
+			showAlert('new-alert', 'success', 'Task added to job.');
+			job.update(function() {
+				job.addTaskToGraph(newName);
+				resetTasksTable();
+			});
+			$('#new-task-name').val('');
+			$('#new-task-command').val('');
+		},
+		error: function() {
+			showAlert('new-alert', 'error', 'There was an error adding the task to this job.');
+		},
+		async: true
+	});
+
+}
+
+function resetTasksTable() {
+
+	if (!job.loaded) {
+		return;
+	}
+
+	$('#tasks-body').empty();
+
+	for (var i = 0; i < job.tasks.length; i++) {
+		var thisTask = job.tasks[i];
+		$('#tasks-body').append(
+			tasksTableTemplate({
+				taskName: thisTask.name,
+				taskURL: $SCRIPT_ROOT + '/job/' + job.id + '/' + thisTask.name
+			})
+		);
+	}
+
+	bindEvents();
+	updateTasksTable();
+
+}
 
 function updateTasksTable() {
 

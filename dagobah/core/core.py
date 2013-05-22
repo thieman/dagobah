@@ -168,7 +168,7 @@ class Job(DAG):
     Emitted events:
 
     job_complete: On successful completion of the job. Returns
-    the current serialization of the job.
+    the current serialization of the job with run logs.
     job_failed: On failed completion of the job. Returns
     the current serialization of the job with run logs.
     """
@@ -372,7 +372,7 @@ class Job(DAG):
             self._set_status('waiting')
             self.run_log = {}
             self.event_handler.emit('job_complete',
-                                    self._serialize())
+                                    self._serialize(include_run_logs=True))
 
         self.completion_lock.release()
 

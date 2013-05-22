@@ -11,7 +11,6 @@ $('#add-job').click(function() {
 		showAlert('new-alert', 'error', 'Please enter a name for the new job.');
 	}
 	addNewJob(newName);
-	$('#new-job-name').val('');
 
 });
 
@@ -33,6 +32,7 @@ function deleteJob(jobName) {
 		success: function() {
 			showAlert('table-alert', 'success', 'Job deleted successfully.');
 			$('[data-job="' + jobName + '"]').remove();
+			$('#new-job-name').val('');
 		},
 		error: function() {
 			showAlert('table-alert', 'error', 'There was an error deleting the job.');

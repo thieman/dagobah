@@ -8,15 +8,15 @@ var width  = 940,
     colors = d3.scale.category10();
 
 var svg = d3.select('.job-graph')
-	.append('svg')
-	.attr('width', width)
-	.attr('height', height)
-	.attr('pointer-events', 'all')
-	.append('g')
-	.call(d3.behavior.zoom().on('zoom', zoomGraph))
-	.attr('transform', 'translate(' + (width / 2) + ',' + (height / 2) + ') scale(' + getInitialZoom() + ')')
-     // .on('mousedown.zoom', null)   // comment this out to allow pan
-	.append('g');
+		.append('svg')
+		.attr('width', width)
+		.attr('height', height)
+		.attr('pointer-events', 'all')
+		.append('g')
+		.call(d3.behavior.zoom().on('zoom', zoomGraph))
+		.attr('transform', 'translate(' + (width / 2) + ',' + (height / 2) + ') scale(' + getInitialZoom() + ')')
+		.on('mousedown.zoom', null)   // comment this out to allow pan
+		.append('g');
 
 // this is for the zoom functionality
 svg.append('rect')
@@ -52,10 +52,14 @@ function panGraph(d) {
 	svg.attr('transform', '');
 }
 
+var nodes = [];
+var links = [];
+var restartGraph = null;
+
 function drawForceGraph() {
 
-	var nodes = job.getForceNodes();
-	var links = job.getForceLinks();
+	nodes = job.getForceNodes();
+	links = job.getForceLinks();
 	var preRenderTicks = 100;
 	var renderDelayMs = 750;
 	var graphUpdateMs = 1000;
@@ -66,7 +70,7 @@ function drawForceGraph() {
 			.links(links)
 			.size([1, 1])
 			.linkDistance(200)
-			.charge(-2000);
+			.charge(-4000);
 
     // define arrow markers for graph links
     svg.append('svg:defs').append('svg:marker')
@@ -163,7 +167,15 @@ function drawForceGraph() {
 	}
 
     // update graph (called when needed)
-    function restart() {
+    function restart(charge, linkDistance) {
+
+		if (typeof charge !== 'undefined') {
+			force.charge(charge);
+		}
+
+		if (typeof linkDistance !== 'undefined') {
+			force.linkDistance(linkDistance);
+		}
 
 		// path (link) group
 		path = path.data(links);
@@ -255,7 +267,7 @@ function drawForceGraph() {
 				// needed by FF
 				drag_line
 					.classed('hidden', true)
-					.style('marker-end', '');
+					.style('marker-end', 'url(#end-arrow)');
 
 				// check for drag-to-self
 				mouseup_node = d;
@@ -267,15 +279,9 @@ function drawForceGraph() {
 				// add link to graph (update if exists)
 				// NB: links are strictly source < target; arrows separately specified by booleans
 				var source, target, direction;
-				if(mousedown_node.id < mouseup_node.id) {
-					source = mousedown_node;
-					target = mouseup_node;
-					direction = 'right';
-				} else {
-					source = mouseup_node;
-					target = mousedown_node;
-					direction = 'left';
-				}
+				source = mousedown_node;
+				target = mouseup_node;
+				direction = 'right';
 
 				var link;
 				link = links.filter(function(l) {
@@ -288,6 +294,7 @@ function drawForceGraph() {
 					link = {source: source, target: target, left: false, right: false};
 					link[direction] = true;
 					links.push(link);
+					job.addDependency(link);
 				}
 
 				// select new link
@@ -334,7 +341,7 @@ function drawForceGraph() {
 			// hide drag line
 			drag_line
 				.classed('hidden', true)
-				.style('marker-end', '');
+				.style('marker-end', 'url(#end-arrow)');
 		}
 
 		// because :active only works in WebKit?
@@ -358,6 +365,7 @@ function drawForceGraph() {
 		.on('mousemove', mousemove)
 		.on('mouseup', mouseup);
 
+	restartGraph = restart;
     restart();
 
 }

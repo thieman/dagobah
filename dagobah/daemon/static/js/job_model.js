@@ -68,7 +68,7 @@ Job.prototype.forceNode = function(taskName) {
 	}
 
 	if (task === null) {
-		return {};
+		return {id: taskName, status: 'waiting'};
 	}
 
 	var taskStatus = 'waiting';
@@ -129,5 +129,62 @@ Job.prototype.getForceLinks = function() {
 	}
 
 	return result;
+
+}
+
+Job.prototype.addDependency = function(link) {
+	/// add a new dependency using a link from the graph
+
+	if (!this.loaded) {
+		return;
+	}
+
+	var fromName = link.source.id;
+	var toName = link.target.id;
+
+	$.ajax({
+		type: 'POST',
+		url: $SCRIPT_ROOT + '/api/add_dependency',
+		data: {
+			job_name: this.name,
+			from_task_name: fromName,
+			to_task_name: toName
+		},
+		dataType: 'json',
+		async: true,
+		success: function() {
+			showAlert('graph-alert', 'success', 'Dependency from ' + fromName + ' to ' + toName + ' saved successfully.');
+		},
+		error: function() {
+			showAlert('graph-alert', 'error', "There was an error saving this dependency. To be sure you're looking at accurate data, refresh the page.");
+		}
+	});
+
+}
+
+Job.prototype.addTaskToGraph = function(taskName) {
+	// add a new node to the graph and refresh it
+
+	if (!this.loaded) {
+		return;
+	}
+
+	nodes.push(this.forceNode(taskName));
+	restartGraph();
+
+}
+
+Job.prototype.removeTaskFromGraph = function(taskName) {
+	// remove a node from the graph and refresh it
+
+	if (!this.loaded) {
+		return;
+	}
+
+	nodes = nodes.filter(function(element) { return element.id !== taskName; });
+	links = links.filter(function(element) {
+		return (element.source.id !== taskName && element.target.id !== taskName);
+	});
+	restartGraph();
 
 }

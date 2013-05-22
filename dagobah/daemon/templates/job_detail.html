@@ -4,9 +4,28 @@
 {{ super() }}
 <link rel="stylesheet" href="/static/css/job_detail.css"></link>
 <link rel="stylesheet" href="/static/css/job_graph.css"></link>
+
 <script>
   var jobName = '{{ job.name }}';
 </script>
+
+<script id="tasks-table-template" type="text/x-handlebars-template">
+  {% raw %}
+    <tr data-task='{{ taskName }}'>
+      <td data-attr='name'></td>
+      <td data-attr='started_at' data-transform='datetime'></td>
+      <td data-attr='completed_at' data-transform='datetime'></td>
+      <td>
+        <span data-attr='success' data-transform='class-success'></span>
+      </td>
+      <td>
+        <button class='btn btn-primary' onclick="window.location.href = '{{ taskURL }}';">View Task</button>
+        <button class='btn btn-danger task-delete' onclick="return false;"><i class='icon-trash'></i>
+      </td>
+    </tr>
+  {% endraw %}
+</script>
+
 {% endblock head %}
 
 {% block navbar_current %}
@@ -17,6 +36,9 @@
 <div class='page-header'>
   <h3>Job Detail: {{ job.name }}</h3>
   <h3 id='job-status' class='right'></h3>
+</div>
+
+<div id='graph-alert' class='alert hidden'>
 </div>
 
 <div class='job-graph'>
@@ -69,6 +91,10 @@
 </div>
 
 <h3>{{ job.name }}'s Tasks</h3>
+
+<div id='table-alert' class='alert hidden'>
+</div>
+
 <table class='table'>
   <thead>
     <th>Task</th>
@@ -78,21 +104,26 @@
     <th>Task Detail</th>
   </thead>
   <tbody id='tasks-body'>
-    {% for task in job.tasks %}
-      <tr data-task='{{task.name}}'>
-        <td data-attr='name'></td>
-        <td data-attr='started_at' data-transform='datetime'></td>
-        <td data-attr='completed_at' data-transform='datetime'></td>
-        <td>
-          <span data-attr='success' data-transform='class-success'></span>
-        </td>
-        <td>
-          <button class='btn btn-primary' onclick="window.location.href = '{{ url_for('task_detail', job_id=job.job_id, task_name=task.name) }}';">View Task</button>
-        </td>
-      </tr>
-    {% endfor %}
   </tbody>
 </table>
+
+<div id='new-alert' class='alert hidden'>
+</div>
+
+<h3>Add New Task</h3>
+
+<form class='form'>
+
+  <label>Name</label>
+  <input id='new-task-name' class='input-xxlarge' type='text' placeholder='Task Name'></input>
+
+  <label>Command</label>
+  <textarea id='new-task-command' rows="3" placeholder='Task Command'></textarea>
+
+  <br />
+  <button id='add-task' class='btn btn-success' onclick='return false;'>Add Task</button>
+
+</form>
 
 {% endblock content %}
 

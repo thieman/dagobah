@@ -37,3 +37,7 @@
 .task-failed {
 	color: red;
 }
+
+textarea {
+	width: 100%;
+}

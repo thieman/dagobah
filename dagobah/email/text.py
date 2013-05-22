@@ -8,21 +8,21 @@ from dagobah.email.common import EmailTemplate
 class TextEmail(EmailTemplate):
 
     def send_job_completed(self, data):
-        self.message = MIMEText(self.job_to_text(data))
+        self.message = MIMEText(self._job_to_text(data))
         self._construct_and_send('Job Completed: %s' % data.get('name', None))
 
 
     def send_job_failed(self, data):
-        self.message = MIMEText(self.job_to_text(data))
+        self.message = MIMEText(self._job_to_text(data))
         self._construct_and_send('Job Failed: %s' % data.get('name', None))
 
 
     def send_task_failed(self, data):
-        self.message = MIMEText(self.task_to_text(data))
+        self.message = MIMEText(self._task_to_text(data))
         self._construct_and_send('Task Failed: %s' % data.get('name', None))
 
 
-    def task_to_text(self, task):
+    def _task_to_text(self, task):
         """ Return a standard formatting of a Task serialization. """
 
         started = self._format_date(task.get('started_at', None))
@@ -43,14 +43,14 @@ class TextEmail(EmailTemplate):
                           'Stderr: %s' % run_log.get('stderr', None)])
 
 
-    def job_to_text(self, job):
+    def _job_to_text(self, job):
         """ Return a standard formatting of a Job serialization. """
 
         next_run = self._format_date(job.get('next_run', None))
 
         tasks = ''
         for task in job.get('tasks', []):
-            tasks += self.task_to_text(task)
+            tasks += self._task_to_text(task)
             tasks += '\n\n'
 
         return '\n'.join(['Job name: %s' % job.get('name', None),

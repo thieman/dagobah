@@ -141,6 +141,20 @@ def add_task_to_job():
                             args['task_name'])
 
 
+@app.route('/api/delete_task', methods=['POST'])
+@api_call
+def delete_job():
+    args = dict(request.form)
+    if not validate_dict(args,
+                         required=['job_name', 'task_name'],
+                         job_name=str,
+                         task_name=str):
+        abort(400)
+
+    job = dagobah.get_job(args['job_name'])
+    job.delete_task(args['task_name'])
+
+
 @app.route('/api/add_dependency', methods=['POST'])
 @api_call
 def add_dependency():
