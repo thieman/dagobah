@@ -10,3 +10,7 @@ body {
 	margin-left: 0px;
 	width: 90%;
 }
+
+.inline {
+	display: inline-block;
+}

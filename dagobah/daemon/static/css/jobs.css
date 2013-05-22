@@ -22,3 +22,7 @@ form {
 form button {
 	margin-left: 20px;
 }
+
+td:last-child {
+	width: 16%;
+}

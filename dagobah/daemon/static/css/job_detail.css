@@ -45,3 +45,12 @@ textarea {
 #schedule label {
 	margin-top: -11px;
 }
+
+#table-toggle {
+	float: right;
+	margin-top: 18px;
+}
+
+td:last-child {
+	width: 16%;
+}

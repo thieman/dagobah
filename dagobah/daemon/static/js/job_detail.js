@@ -1,4 +1,6 @@
-var tasksTableTemplate = Handlebars.compile($('#tasks-table-template').html());
+var tasksTableHeadersTemplate = Handlebars.compile($('#tasks-table-headers-template').html());
+var tasksTableResultsTemplate = Handlebars.compile($('#tasks-table-results-template').html());
+var tasksTableCommandsTemplate = Handlebars.compile($('#tasks-table-commands-template').html());
 
 function runWhenJobLoaded() {
 	if (typeof job != 'undefined' && job.loaded === true) {
@@ -101,28 +103,66 @@ function addNewTask(newName, newCommand) {
 
 }
 
-function resetTasksTable() {
+function resetTasksTable(tableMode) {
 
 	if (!job.loaded) {
 		return;
 	}
 
+	if (typeof tableMode === 'undefined') {
+		tableMode = getTableMode();
+	}
+
+	$('#tasks-headers').empty();
 	$('#tasks-body').empty();
+
+	if (tableMode === 'results') {
+		var headers = ['Task', 'Started', 'Completed', 'Result', ''];
+	} else if (tableMode === 'commands') {
+		var headers = ['Task', 'Command', ''];
+	}
+
+	for (var i = 0; i < headers.length; i++) {
+		$('#tasks-headers').append(
+			tasksTableHeadersTemplate({
+				headerName: headers[i]
+			})
+		);
+	}
 
 	for (var i = 0; i < job.tasks.length; i++) {
 		var thisTask = job.tasks[i];
-		$('#tasks-body').append(
-			tasksTableTemplate({
-				taskName: thisTask.name,
-				taskURL: $SCRIPT_ROOT + '/job/' + job.id + '/' + thisTask.name
-			})
-		);
+
+		if (tableMode === 'results') {
+			$('#tasks-body').append(
+				tasksTableResultsTemplate({
+					taskName: thisTask.name,
+					taskURL: $SCRIPT_ROOT + '/job/' + job.id + '/' + thisTask.name
+				})
+			);
+		} else if (tableMode === 'commands') {
+			$('#tasks-body').append(
+				tasksTableCommandsTemplate({
+					taskName: thisTask.name,
+					taskURL: $SCRIPT_ROOT + '/job/' + job.id + '/' + thisTask.name
+				})
+			);
+		}
+
 	}
 
 	bindEvents();
 	updateTasksTable();
 
 }
+
+function getTableMode() {
+	return $('#table-toggle').children('.active').val();
+}
+
+$('#table-toggle').children().click(function() {
+	resetTasksTable($(this).val());
+});
 
 function updateTasksTable() {
 
