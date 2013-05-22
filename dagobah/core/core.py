@@ -263,8 +263,12 @@ class Job(DAG):
         """ Begins the job by kicking off all tasks with no dependencies. """
 
         if not self.state.allow_start:
-            raise ValueError('job cannot currently be started; ' +
+            raise ValueError('job cannot be started in its current state; ' +
                              'it is probably already running')
+
+        is_valid, reason = self.validate()
+        if not is_valid:
+            raise ValueError(reason)
 
         # don't increment if the job was run manually
         if self.cron_iter and datetime.utcnow() > self.next_run:

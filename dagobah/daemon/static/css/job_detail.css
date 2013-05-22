@@ -41,3 +41,7 @@
 textarea {
 	width: 100%;
 }
+
+#schedule label {
+	margin-top: -11px;
+}
