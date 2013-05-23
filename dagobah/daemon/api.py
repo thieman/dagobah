@@ -143,7 +143,7 @@ def add_task_to_job():
 
 @app.route('/api/delete_task', methods=['POST'])
 @api_call
-def delete_job():
+def delete_task():
     args = dict(request.form)
     if not validate_dict(args,
                          required=['job_name', 'task_name'],
