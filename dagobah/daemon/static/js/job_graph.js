@@ -299,6 +299,7 @@ function drawForceGraph() {
 
 				// select new link
 				selected_link = link;
+				selected_node = null;
 				restart();
 			})
 			.append('p')
