@@ -172,6 +172,23 @@ def add_dependency():
     job.add_dependency(args['from_task_name'], args['to_task_name'])
 
 
+@app.route('/api/delete_dependency', methods=['POST'])
+@api_call
+def delete_dependency():
+    args = dict(request.form)
+    if not validate_dict(args,
+                         required=['job_name',
+                                   'from_task_name',
+                                   'to_task_name'],
+                         job_name=str,
+                         from_task_name=str,
+                         to_task_name=str):
+        abort(400)
+
+    job = dagobah.get_job(args['job_name'])
+    job.delete_dependency(args['from_task_name'], args['to_task_name'])
+
+
 @app.route('/api/schedule_job', methods=['POST'])
 @api_call
 def schedule_job():

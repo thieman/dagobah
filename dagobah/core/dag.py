@@ -35,6 +35,12 @@ class DAG(object):
         self.graph[ind_node].add(dep_node)
 
 
+    def delete_edge(self, ind_node, dep_node):
+        if dep_node not in self.graph.get(ind_node, []):
+            raise KeyError('this edge does not exist in graph')
+        self.graph[ind_node].remove(dep_node)
+
+
     def downstream(self, node):
         """ Returns a list of all nodes this node has edges towards. """
         if node not in self.graph:

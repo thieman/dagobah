@@ -20,6 +20,15 @@ $('#add-job').click(function() {
 
 });
 
+function submitOnEnter(e) {
+	var key = (e.keyCode ? e.keyCode : e.which);
+	if (key === 13) {
+		$(e.target).siblings('button').each(function() {
+			$(this).click();
+		});
+	}
+}
+
 function onJobDeleteClick() {
 	$(this).parents('[data-job]').each(function() {
 		deleteJob($(this).attr('data-job'));
@@ -32,6 +41,7 @@ function onEditJobClick() {
 
 	td.remove();
 	tr.prepend(editJobNameTemplate({ jobName: $(tr).attr('data-job') }));
+	$(tr).find('>:first-child').find('input').select();
 	bindEvents();
 }
 
@@ -67,6 +77,9 @@ function bindEvents() {
 
 	$('.save-job-name').off('click', onSaveJobClick);
 	$('.save-job-name').on('click', onSaveJobClick);
+
+	$('.submit-on-enter').off('keydown', submitOnEnter);
+	$('.submit-on-enter').on('keydown', submitOnEnter);
 
 }
 

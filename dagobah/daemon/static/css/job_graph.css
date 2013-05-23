@@ -42,6 +42,12 @@ rect.node {
 	cursor: pointer;
 }
 
+rect.node.selected {
+	stroke-width: 5px;
+	stroke-dasharray: 10,2;
+	stroke: #333333;
+}
+
 .node.waiting {
 	fill: #CCCCCC;
 }
@@ -62,4 +68,8 @@ p {
 	font: 16px sans-serif;
 	font-weight: bold;
 	color: black;
+}
+
+.node-object {
+	cursor: pointer;
 }

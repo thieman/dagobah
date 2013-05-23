@@ -23,10 +23,43 @@ function bindEvents() {
 	});
 }
 
-function deleteTask(taskName) {
+function deleteDependency(fromTaskName, toTaskName) {
 
 	if (!job.loaded) {
 		return;
+	}
+
+	$.ajax({
+		type: 'POST',
+		url: $SCRIPT_ROOT + '/api/delete_dependency',
+		data: {
+			job_name: job.name,
+			from_task_name: fromTaskName,
+			to_task_name: toTaskName
+		},
+		dataType: 'json',
+		async: true,
+		success: function() {
+			job.removeDependencyFromGraph(fromTaskName, toTaskName);
+			showAlert('graph-alert', 'success', 'Dependency from ' +
+					  fromTaskName + ' to ' + toTaskName +
+					  ' was successfully removed.');
+		},
+		error: function() {
+			showAlert('graph-alert', 'error', 'There was an error removing this dependency.');
+		}
+	});
+
+}
+
+function deleteTask(taskName, alertId) {
+
+	if (!job.loaded) {
+		return;
+	}
+
+	if (typeof alertId === 'undefined') {
+		alertId = 'table-alert';
 	}
 
 	$.ajax({
@@ -43,10 +76,10 @@ function deleteTask(taskName) {
 				resetTasksTable();
 				job.removeTaskFromGraph(taskName);
 			});
-			showAlert('table-alert', 'success', 'Task ' + taskName + ' deleted.');
+			showAlert(alertId, 'success', 'Task ' + taskName + ' deleted.');
 		},
 		error: function() {
-			showAlert('table-alert', 'error', 'There was an error deleting the task.');
+			showAlert(alertId, 'error', 'There was an error deleting the task.');
 		},
 		dataType: 'json'
 	});

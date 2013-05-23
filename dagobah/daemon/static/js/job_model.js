@@ -188,3 +188,16 @@ Job.prototype.removeTaskFromGraph = function(taskName) {
 	restartGraph();
 
 }
+
+Job.prototype.removeDependencyFromGraph = function(fromTaskName, toTaskName) {
+
+	if (!this.loaded) {
+		return;
+	}
+
+	links = links.filter(function(element) {
+		return (element.source.id !== fromTaskName || element.target.id !== toTaskName);
+	});
+	restartGraph();
+
+}

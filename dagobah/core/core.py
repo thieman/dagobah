@@ -248,6 +248,17 @@ class Job(DAG):
         self.commit()
 
 
+    def delete_dependency(self, from_task_name, to_task_name):
+        """ Delete a dependency between two tasks. """
+
+        if not self.state.allow_change_graph:
+            raise DagobahError("job's graph is immutable in its current state: %s"
+                               % self.state.status)
+
+        self.delete_edge(from_task_name, to_task_name)
+        self.commit()
+
+
     def schedule(self, cron_schedule, base_datetime=None):
         """ Schedules the job to run periodically using Cron syntax. """
 

@@ -98,7 +98,8 @@ function drawForceGraph() {
         selected_link = null,
         mousedown_link = null,
         mousedown_node = null,
-        mouseup_node = null;
+        mouseup_node = null,
+		graphFocused = null;
 
     function resetMouseVars() {
 		mousedown_node = null;
@@ -159,7 +160,8 @@ function drawForceGraph() {
 		d3.selectAll('.node-element')
 			.data(force.nodes())
 			.select('.node')
-			.attr('class', function(d) { return 'node ' + d.status; });
+			.attr('class', function(d) { return 'node ' + d.status; })
+			.classed('selected', function(d) { return d === selected_node; });
 
 	}
 
@@ -209,26 +211,22 @@ function drawForceGraph() {
 		// circle (node) group
 		circle = circle.data(nodes, function(d) { return d.id; });
 
-		// circle
-		// 	.data(nodes)
-		// 	.select('.node')
-		// 	.data(nodes)
-		// 	.attr('class', function(d) { console.log(d); return 'node ' + d.status; });
-
 		// add new nodes
 		var g = circle.enter()
 			.append('svg:g')
 			.attr('class', 'node-element');
 
 		g.append('svg:rect')
+			.attr('class', function(d) { return 'node ' + d.status; })
+			.classed('selected', function(d) { return d === selected_node; })
 			.attr('height', nodeHeight)
 			.attr('width', nodeWidth)
 			.attr('x', -1 * (nodeWidth / 2))
-			.attr('y', -1 * (nodeHeight / 2))
-			.attr('class', function(d) { return 'node ' + d.status; });
+			.attr('y', -1 * (nodeHeight / 2));
 
 		g.append('foreignObject')
 		    .call(d3.behavior.zoom().on('zoom', null))
+			.attr('class', 'node-object')
 			.attr('x', -1 * (nodeWidth / 2))
 			.attr('y', -1 * (nodeHeight / 2))
 			.attr('width', nodeWidth)
@@ -243,7 +241,7 @@ function drawForceGraph() {
 			.on('mouseout', function(d) {
 				if(!mousedown_node || d === mousedown_node) return;
 				// unenlarge target node
-				d3.select(this).attr('transform', '');
+				d3.select(this).attr('transform', '');p
 			})
 			.on('mousedown', function(d) {
 				if(d3.event.ctrlKey) return;
@@ -273,6 +271,7 @@ function drawForceGraph() {
 				// check for drag-to-self
 				mouseup_node = d;
 				if(mouseup_node === mousedown_node) { resetMouseVars(); return; }
+				if(mouseup_node !== mousedown_node) { selected_node = null; }
 
 				// unenlarge target node
 				d3.select(this).attr('transform', '');
@@ -300,7 +299,6 @@ function drawForceGraph() {
 
 				// select new link
 				selected_link = link;
-				selected_node = null;
 				restart();
 			})
 			.append('p')
@@ -308,6 +306,9 @@ function drawForceGraph() {
 			.style('text-align', 'center')
 			.style('margin-top', -1 * nodeHeight + 'px')
 			.text(function(d) { return d.id; });
+
+		circle.select('rect')
+			.classed('selected', function(d) { return d === selected_node; });
 
 		// remove old nodes
 		circle.exit().remove();
@@ -352,6 +353,28 @@ function drawForceGraph() {
 		resetMouseVars();
     }
 
+	function mouseover() {
+		graphFocused = true;
+	}
+
+	function mouseout() {
+		graphFocused = false;
+	}
+
+	function keydown() {
+		if (!graphFocused) return;
+		if (!selected_node && !selected_link) return;
+		switch (d3.event.keyCode) {
+		case 68: // d
+			if (selected_link) {
+				deleteDependency(selected_link.source.id, selected_link.target.id);
+			}
+			if (selected_node) {
+				deleteTask(selected_node.id, 'graph-alert');
+			}
+		}
+	}
+
     function spliceLinksForNode(node) {
 		var toSplice = links.filter(function(l) {
 			return (l.source === node || l.target === node);
@@ -364,7 +387,11 @@ function drawForceGraph() {
     // app starts here
     svg.on('mousedown', mousedown)
 		.on('mousemove', mousemove)
-		.on('mouseup', mouseup);
+		.on('mouseup', mouseup)
+		.on('mouseover', mouseover)
+		.on('mouseout', mouseout);
+
+	d3.select('body').on('keydown', keydown);
 
 	restartGraph = restart;
     restart();
