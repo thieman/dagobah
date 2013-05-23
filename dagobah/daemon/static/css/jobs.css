@@ -26,3 +26,8 @@ form button {
 td:last-child {
 	width: 16%;
 }
+
+td > i {
+	cursor: pointer;
+	margin-left: 10px;
+}

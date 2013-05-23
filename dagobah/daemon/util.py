@@ -10,6 +10,8 @@ try:
 except ImportError:
     from bson import ObjectId
 
+from dagobah.core import DagobahError
+
 
 class DagobahEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -35,6 +37,10 @@ def api_call(fn):
     def wrapper(*args, **kwargs):
         try:
             result = fn(*args, **kwargs)
+        except DagobahError:
+            if request and request.endpoint == fn.__name__:
+                abort(400)
+            raise
         except Exception as e:
             raise
 

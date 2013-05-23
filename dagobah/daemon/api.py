@@ -256,3 +256,40 @@ def kill_task():
     if not task:
         abort(400)
     task.kill()
+
+
+@app.route('/api/edit_job', methods=['POST'])
+@api_call
+def edit_job():
+    args = dict(request.form)
+    if not validate_dict(args,
+                         required=['job_name'],
+                         job_name=str,
+                         name=str):
+        abort(400)
+
+    job = dagobah.get_job(args['job_name'])
+    del args['job_name']
+    job.edit(**args)
+
+
+@app.route('/api/edit_task', methods=['POST'])
+@api_call
+def edit_task():
+    args = dict(request.form)
+    if not validate_dict(args,
+                         required=['job_name', 'task_name'],
+                         job_name=str,
+                         task_name=str,
+                         name=str,
+                         command=str):
+        abort(400)
+
+    job = dagobah.get_job(args['job_name'])
+    task = job.tasks.get(args['task_name'], None)
+    if not task:
+        abort(400)
+
+    del args['job_name']
+    del args['task_name']
+    job.edit_task(task.name, **args)

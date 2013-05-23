@@ -51,9 +51,14 @@ class JobState(object):
     def __init__(self):
         self.status = None
 
-        self.allow_start = None
-        self.allow_change_graph = None
-        self.allow_change_schedule = None
+        self.perms = {'allow_start': ['waiting', 'failed'],
+                      'allow_change_graph': ['waiting', 'failed'],
+                      'allow_change_schedule': ['waiting', 'running', 'failed'],
+                      'allow_edit_job': ['waiting', 'failed'],
+                      'allow_edit_task': ['waiting', 'failed']}
+
+        for key in self.perms.keys():
+            setattr(self, key, None)
 
 
     def set_status(self, status):
@@ -66,10 +71,7 @@ class JobState(object):
 
 
     def _set_permissions(self):
-        perms = {'allow_start': ['waiting', 'failed'],
-                 'allow_change_graph': ['waiting', 'failed'],
-                 'allow_change_schedule': ['waiting', 'running', 'failed']}
-        for perm, states in perms.iteritems():
+        for perm, states in self.perms.iteritems():
             setattr(self, perm, True if self.status in states else False)
 
 

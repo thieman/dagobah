@@ -4,27 +4,44 @@
 {{ super() }}
 <link rel="stylesheet" type="text/css" href="/static/css/jobs.css"></link>
 
-<script id="jobs-table-template" type="text/x-handlebars-template">
 {% raw %}
-  <tr data-job='{{ jobName }}'>
-    <td data-attr='name'></td>
-    <td><span data-attr='status' data-transform='class title'
-              class={{ jobStatus }}></span>
+
+  <script id="jobs-table-template" type="text/x-handlebars-template">
+    <tr data-job='{{ jobName }}'>
+      {{> jobName }}
+      <td><span data-attr='status' data-transform='class title'
+                class={{ jobStatus }}></span>
+      </td>
+      <td data-attr='tasks' data-transform='length'></td>
+      <td data-attr='cron_schedule'></td>
+      <td data-attr='next_run' data-transform='datetime'></td>
+      <td>
+        <button class='btn btn-primary'
+                onclick="window.location.href = '{{ jobURL }}';">
+                View Job
+        </button>
+        <button class='btn btn-danger job-delete' onclick="return false;"><i class='icon-trash'></i>
+        </button>
+      </td>
+    </tr>
+  </script>
+
+  <script id="job-name-template" type="text/x-handlebars-template">
+    <td data-attr='name'>
+      {{#if jobName}}{{jobName}}{{/if}}
+      <i class='icon-pencil edit-job'></i>
     </td>
-    <td data-attr='tasks' data-transform='length'></td>
-    <td data-attr='cron_schedule'></td>
-    <td data-attr='next_run' data-transform='datetime'></td>
+  </script>
+
+  <script id="edit-job-name-template" type="text/x-handlebars-template">
     <td>
-      <button class='btn btn-primary'
-              onclick="window.location.href = '{{ jobURL }}';">
-              View Job
-      </button>
-      <button class='btn btn-danger job-delete' onclick="return false;"><i class='icon-trash'></i>
-      </button>
+      <input type='text' data-original-name='{{ jobName }}'
+             value='{{ jobName }}'></input>
+      <button class='btn btn-success save-job-name'>Save</button>
     </td>
-  </tr>
+  </script>
+
 {% endraw %}
-</script>
 
 {% endblock head %}
 

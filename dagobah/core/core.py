@@ -13,6 +13,10 @@ from dagobah.core.components import Scheduler, JobState
 from dagobah.backend.base import BaseBackend
 
 
+class DagobahError(Exception):
+    pass
+
+
 class Dagobah(object):
     """ Top-level controller for all Dagobah usage.
 
@@ -45,8 +49,8 @@ class Dagobah(object):
 
         rec = self.backend.get_dagobah_json(dagobah_id)
         if not rec:
-            raise ValueError('dagobah with id %s does not exist in backend' %
-                             dagobah_id)
+            raise DagobahError('dagobah with id %s does not exist in backend' %
+                               dagobah_id)
 
         # delete current version of this Dagobah instance
         self.delete()
@@ -95,7 +99,7 @@ class Dagobah(object):
     def add_job(self, job_name, job_id=None):
         """ Create a new, empty Job. """
         if not self._name_is_available(job_name):
-            raise KeyError('name %s is not available' % job_name)
+            raise DagobahError('name %s is not available' % job_name)
 
         if not job_id:
             job_id = self.backend.get_new_job_id()
@@ -125,7 +129,7 @@ class Dagobah(object):
                 self.backend.delete_job(job.job_id)
                 del self.jobs[idx]
                 return
-        raise KeyError('no job with name %s exists' % job_name)
+        raise DagobahError('no job with name %s exists' % job_name)
 
 
     def add_task_to_job(self, job_or_job_name, task_command, task_name=None):
@@ -137,11 +141,11 @@ class Dagobah(object):
             job = self.get_job(job_or_job_name)
 
         if not job:
-            raise KeyError('job %s does not exist' % job_or_job_name)
+            raise DagobahError('job %s does not exist' % job_or_job_name)
 
         if not job.state.allow_change_graph:
-            raise ValueError("job's graph is immutable in its current state: %s"
-                             % job.state.status)
+            raise DagobahError("job's graph is immutable in its current state: %s"
+                               % job.state.status)
 
         job.add_task(task_command, task_name)
         job.commit()
@@ -207,8 +211,8 @@ class Job(DAG):
         """ Adds a new Task to the graph with no edges. """
 
         if not self.state.allow_change_graph:
-            raise ValueError("job's graph is immutable in its current state: %s"
-                             % self.state.status)
+            raise DagobahError("job's graph is immutable in its current state: %s"
+                               % self.state.status)
 
         if name is None:
             name = command
@@ -222,8 +226,8 @@ class Job(DAG):
         """ Add a dependency between two tasks. """
 
         if not self.state.allow_change_graph:
-            raise ValueError("job's graph is immutable in its current state: %s"
-                             % self.state.status)
+            raise DagobahError("job's graph is immutable in its current state: %s"
+                               % self.state.status)
 
         self.add_edge(from_task_name, to_task_name)
         self.commit()
@@ -233,11 +237,11 @@ class Job(DAG):
         """ Deletes the named Task in this Job. """
 
         if not self.state.allow_change_graph:
-            raise ValueError("job's graph is immutable in its current state: %s"
-                             % self.state.status)
+            raise DagobahError("job's graph is immutable in its current state: %s"
+                               % self.state.status)
 
         if task_name not in self.tasks:
-            raise KeyError('task %s does not exist' % task_name)
+            raise DagobahError('task %s does not exist' % task_name)
 
         self.tasks.pop(task_name)
         self.delete_node(task_name)
@@ -248,8 +252,8 @@ class Job(DAG):
         """ Schedules the job to run periodically using Cron syntax. """
 
         if not self.state.allow_change_schedule:
-            raise ValueError("job's schedule cannot be changed in state: %s"
-                             % self.state.status)
+            raise DagobahError("job's schedule cannot be changed in state: %s"
+                               % self.state.status)
 
         if base_datetime is None:
             base_datetime = datetime.utcnow()
@@ -263,12 +267,12 @@ class Job(DAG):
         """ Begins the job by kicking off all tasks with no dependencies. """
 
         if not self.state.allow_start:
-            raise ValueError('job cannot be started in its current state; ' +
-                             'it is probably already running')
+            raise DagobahError('job cannot be started in its current state; ' +
+                               'it is probably already running')
 
         is_valid, reason = self.validate()
         if not is_valid:
-            raise ValueError(reason)
+            raise DagobahError(reason)
 
         # don't increment if the job was run manually
         if self.cron_iter and datetime.utcnow() > self.next_run:
@@ -301,7 +305,7 @@ class Job(DAG):
                 failed_task_names.append(task_name)
 
         if len(failed_task_names) == 0:
-            raise ValueError('no failed tasks to retry')
+            raise DagobahError('no failed tasks to retry')
 
         self._set_status('running')
         self.run_log['last_retry_time'] = datetime.utcnow()
@@ -325,6 +329,59 @@ class Job(DAG):
         for task in self.tasks.itervalues():
             if task.started_at and not task.completed_at:
                 task.kill()
+
+
+    def edit(self, **kwargs):
+        """ Change this Job's name.
+
+        This will affect the historical data available for this
+        Job, e.g. past run logs will no longer be accessible.
+        """
+
+        if not self.state.allow_edit_job:
+            raise DagobahError('job cannot be edited in its current state')
+
+        if 'name' in kwargs and isinstance(kwargs['name'], str):
+            if not self.parent._name_is_available(kwargs['name']):
+                raise DagobahError('new job name %s is not available' %
+                                   kwargs['name'])
+
+        for key in ['name']:
+            if key in kwargs and isinstance(kwargs[key], str):
+                setattr(self, key, kwargs[key])
+
+        self.parent.commit(cascade=True)
+
+
+    def edit_task(self, task_name, **kwargs):
+        """ Change the name of a Task owned by this Job.
+
+        This will affect the historical data available for this
+        Task, e.g. past run logs will no longer be accessible.
+        """
+
+        if not self.state.allow_edit_task:
+            raise DagobahError("tasks cannot be edited in this job's " +
+                             "current state")
+
+        if task_name not in self.tasks:
+            raise DagobahError('task %s not found' % task_name)
+
+        if 'name' in kwargs and isinstance(kwargs['name'], str):
+            if kwargs['name'] in self.tasks:
+                raise DagobahError('task name %s is unavailable' %
+                               kwargs['name'])
+
+        task = self.tasks[task_name]
+        for key in ['name', 'command']:
+            if key in kwargs and isinstance(kwargs[key], str):
+                setattr(task, key, kwargs[key])
+
+        if 'name' in kwargs and isinstance(kwargs['name'], str):
+            self.tasks[kwargs['name']] = task
+            del self.tasks[task_name]
+
+        self.parent.commit(cascade=True)
 
 
     def _complete_task(self, task_name, **kwargs):
@@ -501,14 +558,14 @@ class Task(object):
     def terminate(self):
         """ Send SIGTERM to the task's process. """
         if not self.process:
-            raise ValueError('task does not have a running process')
+            raise DagobahError('task does not have a running process')
         self.process.terminate()
 
 
     def kill(self):
         """ Send SIGKILL to the task's process. """
         if not self.process:
-            raise ValueError('task does not have a running process')
+            raise DagobahError('task does not have a running process')
         self.process.kill()
 
 
@@ -552,7 +609,7 @@ class Task(object):
 
     def _map_string_to_file(self, stream):
         if stream not in ['stdout', 'stderr']:
-            raise ValueError('stream must be stdout or stderr')
+            raise DagobahError('stream must be stdout or stderr')
         return self.stdout_file if stream == 'stdout' else self.stderr_file
 
 
@@ -583,7 +640,7 @@ class Task(object):
     def _head_temp_file(self, temp_file, num_lines):
         """ Returns a list of the first num_lines lines from a temp file. """
         if not isinstance(num_lines, int):
-            raise TypeError('num_lines must be an integer')
+            raise DagobahError('num_lines must be an integer')
         temp_file.seek(0)
         result, curr_line = [], 0
         for line in temp_file:
@@ -604,7 +661,7 @@ class Task(object):
         """
 
         if not isinstance(num_lines, int):
-            raise TypeError('num_lines must be an integer')
+            raise DagobahError('num_lines must be an integer')
 
         temp_file.seek(0, os.SEEK_END)
         size = temp_file.tell()

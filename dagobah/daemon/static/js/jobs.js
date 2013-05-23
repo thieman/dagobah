@@ -1,6 +1,12 @@
 var jobsTableTemplate = Handlebars.compile($('#jobs-table-template').html());
+var jobNameTemplate = Handlebars.compile($('#job-name-template').html());
+var editJobNameTemplate = Handlebars.compile($('#edit-job-name-template').html());
+
+Handlebars.registerPartial('jobName', jobNameTemplate);
+
 var jobsData = [];
 var updateDataDelayMs = 5000;
+var jobsDataTimeout = null;
 updateJobsData();
 resetJobsTable();
 
@@ -15,11 +21,67 @@ $('#add-job').click(function() {
 });
 
 function bindEvents() {
+
 	$('.job-delete').on('click', function() {
 		$(this).parents('[data-job]').each(function() {
 			deleteJob($(this).attr('data-job'));
 		});
 	});
+
+	$('.edit-job').click(function() {
+
+		var td = $(this).parent();
+		var tr = $(td).parent();
+
+		td.remove();
+		tr.prepend(editJobNameTemplate({ jobName: $(tr).attr('data-job') }));
+		bindEvents();
+
+	});
+
+	$('.save-job-name').click(function() {
+
+		var input = $(this).siblings('input');
+		var jobName = $(input).attr('data-original-name');
+		var newName = $(input).val();
+
+		if (newName !== null && newName !== '' &&  jobName !== newName) {
+			changeJobName(jobName, newName);
+		} else {
+			showAlert('table-alert', 'info', 'Job name was not changed.');
+			newName = jobName;
+		}
+
+		var td = $(this).parent();
+		var tr = $(td).parent();
+
+		td.remove();
+		tr.prepend(jobNameTemplate({ jobName: newName }));
+		bindEvents();
+
+	});
+
+}
+
+function changeJobName(jobName, newName) {
+
+	$.ajax({
+		type: 'POST',
+		url: $SCRIPT_ROOT + '/api/edit_job',
+		data: { job_name: jobName, name: newName },
+		dataType: 'json',
+		async: true,
+		success: function() {
+			$('tr[data-job="' + jobName + '"]').attr('data-job', newName);
+			showAlert('table-alert', 'success', 'Job name changed successfully.');
+		},
+		error: function() {
+			showAlert('table-alert', 'error', "There was a problem changing the job's name.");
+		}
+	});
+
+	updateJobsData();
+
 }
 
 function deleteJob(jobName) {
@@ -96,7 +158,8 @@ function updateJobsData(redrawTable) {
 					  resetJobsTable();
 				  }
 				  updateViews();
-				  setTimeout(updateJobsData, updateDataDelayMs);
+				  clearTimeout(jobsDataTimeout);
+				  jobsDataTimeout = setTimeout(updateJobsData, updateDataDelayMs);
 			  }
 	);
 
@@ -124,6 +187,7 @@ function updateJobsTable() {
 			var transforms = $(this).attr('data-transform') || '';
 			transforms = transforms.split(' ');
 
+			var descendants = $(this).children();
 			$(this).text('');
 			if (job[attr] !== null) {
 				$(this).text(job[attr]);
@@ -134,8 +198,12 @@ function updateJobsTable() {
 				applyTransformation($(this), job[attr], transform);
 			}
 
+			$(this).append(descendants);
+
 		});
 
 	});
+
+	bindEvents();
 
 }
