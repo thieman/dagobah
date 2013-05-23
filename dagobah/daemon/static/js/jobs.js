@@ -20,46 +20,53 @@ $('#add-job').click(function() {
 
 });
 
+function onJobDeleteClick() {
+	$(this).parents('[data-job]').each(function() {
+		deleteJob($(this).attr('data-job'));
+	});
+}
+
+function onEditJobClick() {
+	var td = $(this).parent();
+	var tr = $(td).parent();
+
+	td.remove();
+	tr.prepend(editJobNameTemplate({ jobName: $(tr).attr('data-job') }));
+	bindEvents();
+}
+
+function onSaveJobClick() {
+
+	var input = $(this).siblings('input');
+	var jobName = $(input).attr('data-original-name');
+	var newName = $(input).val();
+
+	if (newName !== null && newName !== '' &&  jobName !== newName) {
+		changeJobName(jobName, newName);
+	} else {
+		showAlert('table-alert', 'info', 'Job name was not changed.');
+		newName = jobName;
+	}
+
+	var td = $(this).parent();
+	var tr = $(td).parent();
+
+	td.remove();
+	tr.prepend(jobNameTemplate({ jobName: newName }));
+	bindEvents();
+
+}
+
 function bindEvents() {
 
-	$('.job-delete').on('click', function() {
-		$(this).parents('[data-job]').each(function() {
-			deleteJob($(this).attr('data-job'));
-		});
-	});
+	$('.job-delete').off('click', onJobDeleteClick);
+	$('.job-delete').on('click', onJobDeleteClick);
 
-	$('.edit-job').click(function() {
+	$('.edit-job').off('click', onEditJobClick);
+	$('.edit-job').on('click', onEditJobClick);
 
-		var td = $(this).parent();
-		var tr = $(td).parent();
-
-		td.remove();
-		tr.prepend(editJobNameTemplate({ jobName: $(tr).attr('data-job') }));
-		bindEvents();
-
-	});
-
-	$('.save-job-name').click(function() {
-
-		var input = $(this).siblings('input');
-		var jobName = $(input).attr('data-original-name');
-		var newName = $(input).val();
-
-		if (newName !== null && newName !== '' &&  jobName !== newName) {
-			changeJobName(jobName, newName);
-		} else {
-			showAlert('table-alert', 'info', 'Job name was not changed.');
-			newName = jobName;
-		}
-
-		var td = $(this).parent();
-		var tr = $(td).parent();
-
-		td.remove();
-		tr.prepend(jobNameTemplate({ jobName: newName }));
-		bindEvents();
-
-	});
+	$('.save-job-name').off('click', onSaveJobClick);
+	$('.save-job-name').on('click', onSaveJobClick);
 
 }
 
