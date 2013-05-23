@@ -15,7 +15,7 @@ var svg = d3.select('.job-graph')
 		.append('g')
 		.call(d3.behavior.zoom().on('zoom', zoomGraph))
 		.attr('transform', 'translate(' + (width / 2) + ',' + (height / 2) + ') scale(' + getInitialZoom() + ')')
-		.on('mousedown.zoom', null)   // comment this out to allow pan
+		// .on('mousedown.zoom', null)   // comment this out to allow pan
 		.append('g');
 
 // this is for the zoom functionality
@@ -228,6 +228,7 @@ function drawForceGraph() {
 			.attr('class', function(d) { return 'node ' + d.status; });
 
 		g.append('foreignObject')
+		    .call(d3.behavior.zoom().on('zoom', null))
 			.attr('x', -1 * (nodeWidth / 2))
 			.attr('y', -1 * (nodeHeight / 2))
 			.attr('width', nodeWidth)
