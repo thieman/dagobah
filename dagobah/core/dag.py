@@ -36,9 +36,24 @@ class DAG(object):
 
 
     def delete_edge(self, ind_node, dep_node):
+        """ Delete an edge from the graph. """
         if dep_node not in self.graph.get(ind_node, []):
             raise KeyError('this edge does not exist in graph')
         self.graph[ind_node].remove(dep_node)
+
+
+    def rename_edges(self, old_task_name, new_task_name):
+        """ Change references to a task in existing edges. """
+        for node, edges in self.graph.iteritems():
+
+            if node == old_task_name:
+                self.graph[new_task_name] = copy(edges)
+                del self.graph[old_task_name]
+
+            else:
+                if old_task_name in edges:
+                    edges.remove(old_task_name)
+                    edges.add(new_task_name)
 
 
     def downstream(self, node):

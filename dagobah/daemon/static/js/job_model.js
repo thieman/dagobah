@@ -189,6 +189,23 @@ Job.prototype.removeTaskFromGraph = function(taskName) {
 
 }
 
+Job.prototype.renameTask = function(oldTaskName, newTaskName) {
+	// rename a node in the graph and refresh it
+
+	if (!this.loaded) {
+		return;
+	}
+
+	for (var i = 0; i < nodes.length; i++) {
+		if (nodes[i].id === oldTaskName) {
+			nodes[i].id = newTaskName;
+		}
+	}
+
+	restartGraph();
+
+}
+
 Job.prototype.removeDependencyFromGraph = function(fromTaskName, toTaskName) {
 
 	if (!this.loaded) {

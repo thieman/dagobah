@@ -389,6 +389,7 @@ class Job(DAG):
                 setattr(task, key, kwargs[key])
 
         if 'name' in kwargs and isinstance(kwargs['name'], str):
+            self.rename_edges(task_name, kwargs['name'])
             self.tasks[kwargs['name']] = task
             del self.tasks[task_name]
 

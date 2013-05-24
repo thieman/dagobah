@@ -9,16 +9,15 @@
   var jobName = '{{ job.name }}';
 </script>
 
-<script id='tasks-table-headers-template' type="text/x-handlebars-template">
-  {% raw %}
-    <th>{{ headerName }}</th>
-  {% endraw %}
-</script>
+{% raw %}
 
-<script id="tasks-table-results-template" type="text/x-handlebars-template">
-  {% raw %}
+  <script id='tasks-table-headers-template' type="text/x-handlebars-template">
+    <th>{{ headerName }}</th>
+  </script>
+
+  <script id="tasks-table-results-template" type="text/x-handlebars-template">
     <tr data-task='{{ taskName }}'>
-      <td data-attr='name'></td>
+      {{> tasksName }}
       <td data-attr='started_at' data-transform='datetime'></td>
       <td data-attr='completed_at' data-transform='datetime'></td>
       <td>
@@ -29,21 +28,43 @@
         <button class='btn btn-danger task-delete' onclick="return false;"><i class='icon-trash'></i>
       </td>
     </tr>
-  {% endraw %}
-</script>
+  </script>
 
-<script id="tasks-table-commands-template" type="text/x-handlebars-template">
-  {% raw %}
+  <script id="tasks-table-commands-template" type="text/x-handlebars-template">
     <tr data-task='{{ taskName }}'>
-      <td data-attr='name'></td>
-      <td data-attr='command'></td>
+      {{> tasksName }}
+      {{> tasksCommand }}
       <td>
         <button class='btn btn-primary' onclick="window.location.href = '{{ taskURL }}';">View Task</button>
         <button class='btn btn-danger task-delete' onclick="return false;"><i class='icon-trash'></i>
       </td>
     </tr>
-  {% endraw %}
-</script>
+  </script>
+
+  <script id="tasks-data-name-template" type="text/x-handlebars-template">
+    <td data-attr='name'>
+      {{#if text}}{{text}}{{/if}}
+      <i class='icon-pencil edit-task'></i>
+    </td>
+  </script>
+
+  <script id="tasks-data-command-template" type="text/x-handlebars-template">
+    <td data-attr='command'>
+      {{#if text}}{{text}}{{/if}}
+      <i class='icon-pencil edit-task'></i>
+    </td>
+  </script>
+
+  <script id="tasks-edit-template" type="text/x-handlebars-template">
+    <td>
+      <input type='text' class='submit-on-enter' data-field='{{ field }}'
+             data-original='{{ original }}' value='{{ original }}'>
+      </input>
+      <button class='btn btn-success save-task-edit'>Save</button>
+    </td>
+  </script>
+
+{% endraw %}
 
 {% endblock head %}
 

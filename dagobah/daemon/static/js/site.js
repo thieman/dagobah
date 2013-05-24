@@ -58,3 +58,12 @@ function applyTransformation(target, value, transformation) {
 	}
 
 }
+
+function submitOnEnter(e) {
+	var key = (e.keyCode ? e.keyCode : e.which);
+	if (key === 13) {
+		$(e.target).siblings('button').each(function() {
+			$(this).click();
+		});
+	}
+}

@@ -40,7 +40,6 @@
 
 textarea {
 	width: 100%;
-    font-family: "Lucida Console", Monaco, monospace;
 }
 
 #schedule label {
@@ -53,5 +52,10 @@ textarea {
 }
 
 td:last-child {
-	width: 17%;
+	width: 16%;
+}
+
+td > i {
+	cursor: pointer;
+	margin-left: 10px;
 }

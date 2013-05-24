@@ -84,6 +84,9 @@ def validate_dict(in_dict, **kwargs):
                 if required_key not in in_dict:
                     return False
 
+        elif key not in in_dict:
+            continue
+
         elif value == bool:
 
             in_dict[key] = (True

@@ -20,15 +20,6 @@ $('#add-job').click(function() {
 
 });
 
-function submitOnEnter(e) {
-	var key = (e.keyCode ? e.keyCode : e.which);
-	if (key === 13) {
-		$(e.target).siblings('button').each(function() {
-			$(this).click();
-		});
-	}
-}
-
 function onJobDeleteClick() {
 	$(this).parents('[data-job]').each(function() {
 		deleteJob($(this).attr('data-job'));
@@ -207,7 +198,7 @@ function updateJobsTable() {
 			var transforms = $(this).attr('data-transform') || '';
 			transforms = transforms.split(' ');
 
-			var descendants = $(this).children();
+			var descendants = $(this).children().clone(true);
 			$(this).text('');
 			if (job[attr] !== null) {
 				$(this).text(job[attr]);

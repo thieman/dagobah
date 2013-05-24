@@ -163,6 +163,11 @@ function drawForceGraph() {
 			.attr('class', function(d) { return 'node ' + d.status; })
 			.classed('selected', function(d) { return d === selected_node; });
 
+		d3.selectAll('.node-element')
+			.data(force.nodes())
+			.select('p')
+			.text(function(d) { return d.id; });
+
 	}
 
 	function updateForceLinks(forceLinks) {
@@ -310,6 +315,9 @@ function drawForceGraph() {
 
 		circle.select('rect')
 			.classed('selected', function(d) { return d === selected_node; });
+
+		circle.select('p')
+			.text(function(d) { return d.id; });
 
 		// remove old nodes
 		circle.exit().remove();

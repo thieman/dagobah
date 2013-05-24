@@ -1,6 +1,23 @@
 var tasksTableHeadersTemplate = Handlebars.compile($('#tasks-table-headers-template').html());
 var tasksTableResultsTemplate = Handlebars.compile($('#tasks-table-results-template').html());
 var tasksTableCommandsTemplate = Handlebars.compile($('#tasks-table-commands-template').html());
+var editTaskTemplate = Handlebars.compile($('#tasks-edit-template').html());
+
+var tasksNameTemplate = Handlebars.compile($('#tasks-data-name-template').html());
+var tasksCommandTemplate = Handlebars.compile($('#tasks-data-command-template').html());
+
+Handlebars.registerPartial('tasksName', tasksNameTemplate);
+Handlebars.registerPartial('tasksCommand', tasksCommandTemplate);
+
+var fieldMap = {
+	"Task": 'name',
+	"Command": 'command'
+};
+
+var fieldTemplateMap = {
+	"Task": tasksNameTemplate,
+	"Command": tasksCommandTemplate
+};
 
 function runWhenJobLoaded() {
 	if (typeof job != 'undefined' && job.loaded === true) {
@@ -15,12 +32,122 @@ function runWhenJobLoaded() {
 
 runWhenJobLoaded();
 
-function bindEvents() {
-	$('.task-delete').on('click', function() {
-		$(this).parents('[data-task]').each(function() {
-			deleteTask($(this).attr('data-task'));
-		});
+function onTaskDeleteClick() {
+	$(this).parents('[data-task]').each(function() {
+		deleteTask($(this).attr('data-task'));
 	});
+}
+
+function onEditTaskClick() {
+	var td = $(this).parent();
+	var tr = $(td).parent();
+
+	$(td).children().remove();
+	var original = $(td).text();
+
+	var index = $(tr).children('td').index(td);
+	var field = $('#tasks-headers > th:eq(' + index + ')').text();
+	td.remove();
+
+	if (index === 0) {
+		tr.prepend(editTaskTemplate({ original: original, field: field }));
+	} else {
+		$(tr).children().each(function() {
+			if ( $(tr).children().index(this) === (index - 1) ) {
+				$(this).after(editTaskTemplate({
+					original: original,
+					field: field
+				}));
+			}
+		});
+	}
+
+	$(tr).find('>:nth-child(' + (index + 1) + ')').find('input').select();
+	bindEvents();
+
+}
+
+function editTask(taskName, field, newValue) {
+
+	if (!job.loaded) {
+		return;
+	}
+
+	var postData = {job_name: job.name, task_name: taskName};
+	postData[fieldMap[field]] = newValue;
+
+	$.ajax({
+		type: 'POST',
+		url: $SCRIPT_ROOT + '/api/edit_task',
+		data: postData,
+		dataType: 'json',
+		async: true,
+		success: function() {
+			if (fieldMap[field] === 'name') {
+				$('tr[data-task="' + taskName + '"]').attr('data-task', newValue);
+				job.renameTask(taskName, newValue);
+			}
+			showAlert('table-alert', 'success', 'Task changed successfully.');
+		},
+		error: function() {
+			showAlert('table-alert', 'error', "There was a problem changing the task's information.");
+		}
+	});
+
+}
+
+function onSaveTaskEditClick() {
+
+	var input = $(this).siblings('input');
+	var field = $(input).attr('data-field');
+	var original = $(input).attr('data-original');
+	var newValue = $(input).val();
+
+	var td = $(this).parent();
+	var tr = $(td).parent();
+	var index = $(tr).children('td').index(td);
+
+	var taskName = $(tr).attr('data-task');
+
+	if (original !== null && newValue !== '' &&  original !== newValue) {
+		editTask(taskName, field, newValue);
+	} else {
+		showAlert('table-alert', 'info', 'Task was not changed.');
+		newValue = original;
+	}
+
+	td.remove();
+
+	var template = fieldTemplateMap[field];
+
+	if (index === 0) {
+		tr.prepend(template({ text: newValue }));
+	} else {
+		$(tr).children().each(function() {
+			if ( $(tr).children().index(this) === (index - 1) ) {
+				$(this).after(template({ text: newValue }));
+			}
+		});
+	}
+
+	bindEvents();
+
+}
+
+function bindEvents() {
+
+	$('.task-delete').off('click', onTaskDeleteClick);
+	$('.task-delete').on('click', onTaskDeleteClick);
+
+	$('.edit-task').off('click', onEditTaskClick);
+	$('.edit-task').on('click', onEditTaskClick);
+
+	$('.save-task-edit').off('click', onSaveTaskEditClick);
+	$('.save-task-edit').on('click', onSaveTaskEditClick);
+
+	$('.submit-on-enter').off('keydown', submitOnEnter);
+	$('.submit-on-enter').on('keydown', submitOnEnter);
+
 }
 
 function deleteDependency(fromTaskName, toTaskName) {
@@ -218,6 +345,8 @@ function updateTasksTable() {
 			var attr = $(this).attr('data-attr');
 			var transform = $(this).attr('data-transform');
 
+			var descendants = $(this).children().clone(true);
+
 			$(this).text('');
 			if (task[attr] !== null) {
 				$(this).text(task[attr]);
@@ -228,6 +357,8 @@ function updateTasksTable() {
 			} else {
 				applyTransformation($(this), task[attr], transform);
 			}
+
+			$(this).append(descendants);
 
 		});
 
@@ -275,11 +406,10 @@ function setControlButtonStates() {
 }
 
 function updateJobNextRun() {
-
-	job.update(function() {
-		$('#next-run').val(moment.utc(job.next_run).local().format('LLL'));
-	});
-
+	if (!job.loaded) {
+		return;
+	}
+	$('#next-run').val(moment.utc(job.next_run).local().format('LLL'));
 }
 
 $('#save-schedule').click(function() {
