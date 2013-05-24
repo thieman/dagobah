@@ -85,6 +85,8 @@ class Scheduler(threading.Thread):
 
         self.last_check = datetime.utcnow()
 
+        print 'init scheduler'
+
 
     def __repr__(self):
         return '<Scheduler for %s>' % self.parent

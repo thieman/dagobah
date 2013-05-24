@@ -27,6 +27,7 @@ class Dagobah(object):
 
     def __init__(self, backend=BaseBackend(), event_handler=None):
         """ Construct a new Dagobah instance with a specified Backend. """
+        print 'init dagobah'
         self.backend = backend
         self.event_handler = event_handler
         self.dagobah_id = self.backend.get_new_dagobah_id()
@@ -444,6 +445,8 @@ class Job(DAG):
         if self.state.status != 'failed':
             self._set_status('waiting')
             self.run_log = {}
+            print 'completing'
+            print self.state.status
             self.event_handler.emit('job_complete',
                                     self._serialize(include_run_logs=True))
 
@@ -548,6 +551,7 @@ class Task(object):
 
     def check_complete(self):
         """ Runs completion flow for this task if it's finished. """
+
         if self.process.poll() is None:
             self._start_check_timer()
             return
@@ -627,6 +631,9 @@ class Task(object):
 
     def _start_check_timer(self):
         """ Periodically checks to see if the task has completed. """
+        if self.timer:
+            self.timer.cancel()
+        print '%s: timer' % self.name
         self.timer = threading.Timer(2.5, self.check_complete)
         self.timer.daemon = True
         self.timer.start()

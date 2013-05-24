@@ -7,7 +7,6 @@ from dagobah.daemon.util import validate_dict, api_call
 
 dagobah = app.config['dagobah']
 
-
 @app.route('/api/jobs', methods=['GET'])
 @api_call
 def get_jobs():

@@ -120,7 +120,6 @@ def get_backend(config):
     raise ValueError('unknown backend type specified in conf')
 
 
-
 @app.route('/favicon.ico')
 def favicon_redirect():
     return send_from_directory(os.path.join(app.root_path,
@@ -131,10 +130,3 @@ def favicon_redirect():
 
 dagobah = init_dagobah()
 app.config['dagobah'] = dagobah
-
-from dagobah.daemon.views import *
-from dagobah.daemon.api import *
-
-if __name__ == '__main__':
-    app.debug = True
-    app.run(host='0.0.0.0', port=APP_PORT)
