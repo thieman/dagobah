@@ -11,13 +11,7 @@ dagobah = app.config['dagobah']
 @app.route('/', methods=['GET'])
 def index_route():
     """ Redirect to the dashboard. """
-    return redirect(url_for('dashboard'))
-
-
-@app.route('/dashboard', methods=['GET'])
-def dashboard():
-    """ Eventually might have some stuff. """
-    return render_template('dashboard.html')
+    return redirect(url_for('jobs'))
 
 
 @app.route('/jobs', methods=['GET'])

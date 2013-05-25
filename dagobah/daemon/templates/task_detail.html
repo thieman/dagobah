@@ -12,16 +12,19 @@
 {% endblock head %}
 
 {% block navbar_current %}
+<li><a href='{{ url_for('job_detail', job_id=job.job_id) }}'>Job: {{ job.name }}</a></li>
 <li><a href='#'>Task Detail: {{ task_name }}</a></li>
 {% endblock navbar_current %}
 
 {% block content %}
+
 <div class='page-header'>
   <h3>Task Detail: {{ task_name }}</h3>
   <h3 id='task-status' class='right'></h3>
 </div>
 
-<div class='row'>
+<div class='alert alert-caution'>
+  This page is still a work in progress. Information here may not be updated in realtime; refresh the page to make sure you're seeing accurate information.
 </div>
 
 <div id='logs' class='row'>
