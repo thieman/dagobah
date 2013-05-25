@@ -198,6 +198,11 @@ def schedule_job():
                          cron_schedule=str):
         abort(400)
 
+    if args['cron_schedule'] == '':
+        args['cron_schedule'] = None
+
+    print args
+
     job = dagobah.get_job(args['job_name'])
     job.schedule(args['cron_schedule'])
 

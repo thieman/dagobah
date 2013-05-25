@@ -409,7 +409,12 @@ function updateJobNextRun() {
 	if (!job.loaded) {
 		return;
 	}
-	$('#next-run').val(moment.utc(job.next_run).local().format('LLL'));
+
+    if (job.next_run === null) {
+        $('#next-run').val('Not scheduled');
+    } else {
+	    $('#next-run').val(moment.utc(job.next_run).local().format('LLL'));
+    }
 }
 
 $('#save-schedule').click(function() {

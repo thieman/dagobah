@@ -27,7 +27,6 @@ class Dagobah(object):
 
     def __init__(self, backend=BaseBackend(), event_handler=None):
         """ Construct a new Dagobah instance with a specified Backend. """
-        print 'init dagobah'
         self.backend = backend
         self.event_handler = event_handler
         self.dagobah_id = self.backend.get_new_dagobah_id()
@@ -267,11 +266,18 @@ class Job(DAG):
             raise DagobahError("job's schedule cannot be changed in state: %s"
                                % self.state.status)
 
-        if base_datetime is None:
-            base_datetime = datetime.utcnow()
-        self.cron_schedule = cron_schedule
-        self.cron_iter = croniter(cron_schedule, base_datetime)
-        self.next_run = self.cron_iter.get_next(datetime)
+        if cron_schedule is None:
+            self.cron_schedule = None
+            self.cron_iter = None
+            self.next_run =None
+
+        else:
+            if base_datetime is None:
+                base_datetime = datetime.utcnow()
+            self.cron_schedule = cron_schedule
+            self.cron_iter = croniter(cron_schedule, base_datetime)
+            self.next_run = self.cron_iter.get_next(datetime)
+
         self.commit()
 
 
