@@ -9,20 +9,71 @@ import yaml
 from dagobah.core import Dagobah, EventHandler
 from dagobah.email import get_email_handler
 from dagobah.backend.base import BaseBackend
-from dagobah.backend.mongo import MongoBackend
 
 app = Flask(__name__)
-APP_PORT = 9000
+
+location = os.path.realpath(os.path.join(os.getcwd(),
+                                         os.path.dirname(__file__)))
+
+def get_config_file():
+    """ Return the loaded config file if one exists. """
+
+    # config will be created here if we can't find one
+    new_config_path = os.path.expanduser('~/.dagobahd.yml')
+
+    config_dirs = ['/etc',
+                   os.path.expanduser('~')]
+    config_filenames = ['dagobahd.yml',
+                        'dagobahd.yaml',
+                        '.dagobahd.yml',
+                        '.dagobahd.yaml']
+
+    for directory in config_dirs:
+        for filename in config_filenames:
+            try:
+                if os.path.isfile(os.path.join(directory, filename)):
+                    to_load = open(os.path.join(directory, filename))
+                    config = yaml.load(to_load.read())
+                    to_load.close()
+                    return config
+            except:
+                pass
+
+    # if we made it to here, need to create a config file
+    # double up on notifications here to make sure first-time user sees it
+    print 'Creating new config file in home directory'
+    logging.info('Creating new config file in home directory')
+    new_config = open(new_config_path, 'w')
+    new_config.write(return_standard_conf())
+    new_config.close()
+
+    new_config = open(new_config_path, 'r')
+    config = yaml.load(new_config.read())
+    new_config.close()
+    return config
+
+
+def print_standard_conf():
+    """ Print the sample config file to stdout. """
+    config_file = open(os.path.join(location, 'dagobahd.yml'))
+    print config_file.read()
+    config_file.close()
+
+
+def return_standard_conf():
+    """ Return the sample config file. """
+    config_file = open(os.path.join(location, 'dagobahd.yml'))
+    result = config_file.read()
+    config_file.close()
+    return result
+
+
+def configure_app():
+    app.config['APP_HOST'] = config['Dagobahd']['host']
+    app.config['APP_PORT'] = config['Dagobahd']['port']
 
 
 def init_dagobah(testing=False):
-
-    location = os.path.realpath(os.path.join(os.getcwd(),
-                                             os.path.dirname(__file__)))
-
-    config_file = open(os.path.join(location, 'dagobahd.yaml'))
-    config = yaml.load(config_file.read())
-    config_file.close()
 
     init_logger(location, config)
 
@@ -95,6 +146,7 @@ def init_logger(location, config):
 
     logging.basicConfig(filename=path, level=numeric_level)
 
+    print 'Logging output to %s' % path
     logging.info('Logger initialized at level %s' % level_string)
 
 
@@ -106,15 +158,33 @@ def get_backend(config):
     if backend_string.lower() == 'none':
         return BaseBackend()
 
-    elif backend_string.lower() == 'mongo':
+    elif backend_string.lower() == 'sqlite':
+        backend_kwargs = {}
+        for conf_kwarg in ['filepath']:
+            backend_kwargs[conf_kwarg] = config['SQLiteBackend'][conf_kwarg]
 
+        try:
+            from dagobah.backend.sqlite import SQLiteBackend
+        except:
+            raise ImportError('Could not initialize the SQLite Backend. Are you sure' +
+                              ' the optional drivers are installed? If not, try running ' +
+                              '"pip install pysqlite sqlalchemy" to install them.')
+        return SQLiteBackend(**backend_kwargs)
+
+    elif backend_string.lower() == 'mongo':
         backend_kwargs = {}
         for conf_kwarg in ['host', 'port', 'db',
                            'dagobah_collection', 'job_collection',
                            'log_collection']:
             backend_kwargs[conf_kwarg] = config['MongoBackend'][conf_kwarg]
-
         backend_kwargs['port'] = int(backend_kwargs['port'])
+
+        try:
+            from dagobah.backend.mongo import MongoBackend
+        except:
+            raise ImportError('Could not initialize the MongoDB Backend. Are you sure' +
+                              ' the optional drivers are installed? If not, try running ' +
+                              '"pip install pymongo" to install them.')
         return MongoBackend(**backend_kwargs)
 
     raise ValueError('unknown backend type specified in conf')
@@ -128,5 +198,7 @@ def favicon_redirect():
                                mimetype='image/vnd.microsoft.icon')
 
 
+config = get_config_file()
 dagobah = init_dagobah()
 app.config['dagobah'] = dagobah
+configure_app()

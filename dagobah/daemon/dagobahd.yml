@@ -1,9 +1,14 @@
 Dagobahd:
 
+  # host and port for the Flask app. set host to 0.0.0.0 to listen on all IPs
+  host: 127.0.0.1
+  port: 9000
+
   # choose one of the available backends
   # None: Dagobah will not use a backend to permanently store data
-  # mongo: store results in Mongo. see the MongoBackend section in this file
-  backend: mongo
+  # sqlite: use a SQLite database. see the SQLite section in this file
+  # mongo: store results in MongoDB. see the MongoBackend section in this file
+  backend: sqlite
 
   # choose one of the available email templates
   # None: Dagobah won't send you emails when a job finishes or fails
@@ -14,7 +19,7 @@ Dagobahd:
 Logging:
 
   # change to False to disable logging entirely
-  enabled: False
+  enabled: True
 
   # specify a full path to the log file
   # alternatively, specify "default" to log to a file in the dagobahd directory
@@ -31,9 +36,9 @@ Email:
   host: smtp.gmail.com
   port: 587
 
-  # email authentication
-  user: dagobah.testing@gmail.com
-  password: dagobahdagobah
+  # email server authentication
+  user: None
+  password: None
 
   # tls is required for some mail servers, specifically Gmail
   use_tls: True
@@ -43,14 +48,20 @@ Email:
   # {HOSTNAME}: the machine's hostname
   from_address: dagobah@{HOSTNAME}
 
-  # email addresses
-  recipients: ['travis.thieman@gmail.com']
+  # list of email addresses to send reports to, e.g. ['myemail@gmail.com']
+  recipients: []
 
   # sets whether Dagobah sends you emails on successful job completion
   send_on_success: True
 
   # sets whether Dagobah sends you emails on job and task failures
   send_on_failure: True
+
+SQLiteBackend:
+
+  # specify a full path to the sqlite database file
+  # alternatively, specify "default" to create a database file in the dagobahd directory
+  filepath: default
 
 MongoBackend:
 

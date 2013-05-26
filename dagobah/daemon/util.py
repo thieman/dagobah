@@ -42,6 +42,7 @@ def api_call(fn):
                 abort(400)
             raise
         except Exception as e:
+            print e
             raise
 
         if request and request.endpoint == fn.__name__:

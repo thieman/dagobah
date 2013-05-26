@@ -530,3 +530,7 @@ $('#kill-job').click(function() {
 	});
 
 });
+
+$('.toggle-help').click(function() {
+    $('.chart-help').toggleClass('hidden');
+});

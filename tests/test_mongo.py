@@ -16,7 +16,7 @@ class TestMongo(object):
     def setup_class(self):
         location = os.path.realpath(os.path.join(os.getcwd(),
                                                  os.path.dirname(__file__)))
-        config_file = open(os.path.join(location, 'test_config.yaml'))
+        config_file = open(os.path.join(location, 'test_config.yml'))
         config = yaml.load(config_file.read())
         config_file.close()
 

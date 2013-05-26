@@ -411,11 +411,24 @@ class Job(DAG):
         for node in self.downstream(task_name):
             self._start_if_ready(node)
 
-        self._commit_run_log()
+        try:
+            self.backend.acquire_lock()
+            self._commit_run_log()
+        except:
+            raise
+        finally:
+            self.backend.release_lock()
+
         if kwargs.get('success', None) == False:
             task = self.tasks[task_name]
-            self.event_handler.emit('task_failed',
-                                    task._serialize(include_run_logs=True))
+            try:
+                self.backend.acquire_lock()
+                self.event_handler.emit('task_failed',
+                                        task._serialize(include_run_logs=True))
+            except:
+                raise
+            finally:
+                self.backend.release_lock()
 
         self._on_completion()
 
@@ -444,17 +457,27 @@ class Job(DAG):
         for job, results in self.run_log['tasks'].iteritems():
             if results.get('success', False) == False:
                 self._set_status('failed')
-                self.event_handler.emit('job_failed',
-                                        self._serialize(include_run_logs=True))
+                try:
+                    self.backend.acquire_lock()
+                    self.event_handler.emit('job_failed',
+                                            self._serialize(include_run_logs=True))
+                except:
+                    raise
+                finally:
+                    self.backend.release_lock()
                 break
 
         if self.state.status != 'failed':
             self._set_status('waiting')
             self.run_log = {}
-            print 'completing'
-            print self.state.status
-            self.event_handler.emit('job_complete',
-                                    self._serialize(include_run_logs=True))
+            try:
+                self.backend.acquire_lock()
+                self.event_handler.emit('job_complete',
+                                        self._serialize(include_run_logs=True))
+            except:
+                raise
+            finally:
+                self.backend.release_lock()
 
         self.completion_lock.release()
 
@@ -639,7 +662,6 @@ class Task(object):
         """ Periodically checks to see if the task has completed. """
         if self.timer:
             self.timer.cancel()
-        print '%s: timer' % self.name
         self.timer = threading.Timer(2.5, self.check_complete)
         self.timer.daemon = True
         self.timer.start()

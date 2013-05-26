@@ -1,3 +1,7 @@
+.page-header {
+    margin-bottom: 5px;
+}
+
 .page-header h3 {
 	display: inline-block;
 }
@@ -58,4 +62,21 @@ td:last-child {
 td > i {
 	cursor: pointer;
 	margin-left: 10px;
+}
+
+i.icon-info-sign {
+    float: right;
+    font-size: 24px;
+    color: #6495ED;
+    cursor: pointer;
+}
+
+div.relative-holder {
+    position: relative;
+}
+
+.chart-help {
+    border: 1px solid #EEEEEE;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }

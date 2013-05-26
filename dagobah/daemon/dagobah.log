@@ -1,0 +1,88 @@
+INFO:root:Logger initialized at level INFO
+INFO:root:Logger initialized at level INFO
+INFO:root:Logger initialized at level INFO
+INFO:werkzeug: * Running on http://127.0.0.1:9000/
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:15] "GET / HTTP/1.1" 302 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:15] "GET /jobs HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:15] "GET /api/jobs HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:16] "GET /static/lib/Kickstrap1.3.2/Kickstrap/apps/tinygrowl/tinygrowl.min.js?_=1369710316109 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /jobs HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /api/jobs HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /jobs HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /static/css/kickstrap.css HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /static/css/site.css HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /static/css/jobs.css HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /static/lib/d3.v3.min.js HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /static/lib/handlebars.js HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /static/lib/moment.min.js HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /static/js/site.js HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /static/js/navbar.js HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /static/js/jobs.js HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /jobs HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /static/css/kickstrap.css HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /static/css/site.css HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /api/jobs HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /jobs HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /static/css/kickstrap.css HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:17] "GET /static/css/site.css HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:18] "GET /api/jobs HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:18] "GET /static/lib/Kickstrap1.3.2/Kickstrap/apps/tinygrowl/tinygrowl.min.js?_=1369710318537 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:20] "POST /api/add_job HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:20] "GET /api/jobs HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:21] "GET /job/2 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:21] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:22] "GET /static/lib/Kickstrap1.3.2/Kickstrap/apps/tinygrowl/tinygrowl.min.js?_=1369710322304 HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:22] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:23] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:24] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:25] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:26] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:27] "POST /api/add_task_to_job HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:27] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:27] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:28] "POST /api/start_job HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:28] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:29] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:30] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:31] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:32] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:33] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:34] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:35] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:36] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:37] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:38] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:39] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:40] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:41] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:42] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:43] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:44] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:45] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:46] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:47] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:48] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:49] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:50] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:51] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:05:52] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:root:Logger initialized at level INFO
+INFO:werkzeug: * Running on http://127.0.0.1:9000/
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:26:37] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:root:Logger initialized at level INFO
+INFO:werkzeug: * Running on http://127.0.0.1:9000/
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:27:15] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:27:16] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:27:17] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:27:18] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:27:19] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:27:20] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:27:21] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:27:22] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:27:23] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:27:24] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:27:25] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:27:26] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:27:27] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:27:28] "GET /api/job?job_name=Test HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [27/May/2013 23:27:29] "GET /api/job?job_name=Test HTTP/1.1" 200 -

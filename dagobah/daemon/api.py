@@ -201,8 +201,6 @@ def schedule_job():
     if args['cron_schedule'] == '':
         args['cron_schedule'] = None
 
-    print args
-
     job = dagobah.get_job(args['job_name'])
     job.schedule(args['cron_schedule'])
 

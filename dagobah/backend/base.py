@@ -62,3 +62,11 @@ class BaseBackend(object):
 
     def get_latest_run_log(self, job_id, task_name):
         return {}
+
+
+    def acquire_lock(self):
+        return
+
+
+    def release_lock(self):
+        return

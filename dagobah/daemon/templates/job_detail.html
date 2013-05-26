@@ -81,6 +81,19 @@
 <div id='graph-alert' class='alert hidden'>
 </div>
 
+<div class='relative-holder'>
+  <i class='icon icon-info-sign toggle-help'></i>
+</div>
+
+<div class='chart-help hidden'>
+  <h4>Chart Help</h4>
+  <ul>
+    <li>To add a new task, scroll down below the graph to the "Add Task" section.</li>
+    <li>To add a new dependency, just click and drag on the graph. Start at the independent node, and drag to the dependent node. In other words, if task A needs to finish before task B can run, then drag a line from task A to task B.</li>
+    <li>To delete a task or dependency, first click on it to select it (it will become dashed). Then hit "d" on your keyboard (your mouse needs to be over the graph for this to work). You can also delete tasks in the table below.</li>
+  </ul>
+</div>
+
 <div class='job-graph'>
 </div>
 
@@ -130,6 +143,24 @@
   </div>
 </div>
 
+<div id='new-alert' class='alert hidden'>
+</div>
+
+<h3>Add New Task</h3>
+
+<form class='form'>
+
+  <label>Name</label>
+  <input id='new-task-name' class='input-xxlarge' type='text' placeholder='Task Name'></input>
+
+  <label>Command</label>
+  <textarea id='new-task-command' rows="3" placeholder='Task Command'></textarea>
+
+  <br />
+  <button id='add-task' class='btn btn-success' onclick='return false;'>Add Task</button>
+
+</form>
+
 <div class='row'>
   <div class='span12'>
     <h3 class='inline'>{{ job.name }}'s Tasks</h3>
@@ -151,24 +182,6 @@
 
   </div>
 </div>
-
-<div id='new-alert' class='alert hidden'>
-</div>
-
-<h3>Add New Task</h3>
-
-<form class='form'>
-
-  <label>Name</label>
-  <input id='new-task-name' class='input-xxlarge' type='text' placeholder='Task Name'></input>
-
-  <label>Command</label>
-  <textarea id='new-task-command' rows="3" placeholder='Task Command'></textarea>
-
-  <br />
-  <button id='add-task' class='btn btn-success' onclick='return false;'>Add Task</button>
-
-</form>
 
 {% endblock content %}
 
