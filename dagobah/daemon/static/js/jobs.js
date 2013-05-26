@@ -16,6 +16,7 @@ $('#add-job').click(function() {
 	if (newName === null || newName === '') {
 		showAlert('new-alert', 'error', 'Please enter a name for the new job.');
 	}
+    $('#new-job-name').val('');
 	addNewJob(newName);
 
 });

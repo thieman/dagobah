@@ -7,8 +7,9 @@ Dagobahd:
 
   # choose one of the available email templates
   # None: Dagobah won't send you emails when a job finishes or fails
-  # text: Send emails in a simple text format
-  email: text
+  # text: Simple text format
+  # basic: Simple, tabular HTML email
+  email: basic
 
 Logging:
 

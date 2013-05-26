@@ -1,0 +1,71 @@
+<body>
+
+  <h1 class='email-heading'>Task Failed: {{ task.name }}</h1>
+
+  <h2 class='section-heading'>Run Results</h2>
+
+  <table>
+    <thead>
+      <th>Task Name</th>
+      <th>Command</th>
+      <th>Result</th>
+      <th>Return Code</th>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ task.name }}</td>
+        <td>{{ task.command }}</td>
+        <td>{{ task.success }}</td>
+        <td>{{ task.run_log.return_code }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 class='section-heading'>Runtime Details</h2>
+
+  <table>
+    <thead>
+      <th>Task Name</th>
+      <th>Started At</th>
+      <th>Completed At</th>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ task.name }}</td>
+        <td>{{ task.started_at }}</td>
+        <td>{{ task.completed_at }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 class='section-heading'>Stdout Details</h2>
+
+  <table>
+    <thead>
+      <th>Task Name</th>
+      <th>Stdout</th>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ task.name }}</td>
+        <td><pre>{{ task.run_log.stdout }}</pre></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 class='section-heading'>Stderr Details</h2>
+
+  <table>
+    <thead>
+      <th>Task Name</th>
+      <th>Stderr</th>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ task.name }}</td>
+        <td><pre>{{ task.run_log.stderr }}</pre></td>
+      </tr>
+    </tbody>
+  </table>
+
+</body>

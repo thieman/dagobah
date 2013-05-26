@@ -1,12 +1,19 @@
 """ Common email class to base specific templates off of. """
 
+import os
 import smtplib
 import socket
 import email.utils
 
+import jinja2
+
 class EmailTemplate(object):
 
     def __init__(self, **kwargs):
+
+        self.location = os.path.realpath(os.path.join(os.getcwd(),
+                                                      os.path.dirname(__file__)))
+
         self.formatters = {'{HOSTNAME}': socket.gethostname}
         for kwarg, value in kwargs.iteritems():
             setattr(self, kwarg, value)
@@ -59,3 +66,10 @@ class EmailTemplate(object):
         s.sendmail(self.message['From'],
                    self.message['To'],
                    self.message.as_string())
+
+
+    def _get_template(self, template_name, template_file):
+        """ Returns a Jinja2 template of the specified file. """
+        template = os.path.join(self.location, 'templates',
+                                template_name, template_file)
+        return jinja2.Template(open(template).read())

@@ -1,0 +1,92 @@
+<body>
+
+  <h1 class='email-heading'>Job Successful: {{ job.name }}</h1>
+
+  <table class='halve'>
+    <tbody>
+      <tr>
+        <td>Parent ID: {{ job.parent_id }}</td>
+        <td>Schedule: {{ job.cron_schedule }}</td>
+      </tr>
+      <tr>
+        <td>Job ID: {{ job.job_id}}</td>
+        <td>Next run: {{ job.next_run }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 class='section-heading'>Run Results</h2>
+
+  <table>
+    <thead>
+      <th>Task Name</th>
+      <th>Command</th>
+      <th>Result</th>
+      <th>Return Code</th>
+    </thead>
+    <tbody>
+      {% for task in job.tasks %}
+        <tr>
+          <td>{{ task.name }}</td>
+          <td>{{ task.command }}</td>
+          <td>{{ task.success }}</td>
+          <td>{{ task.run_log.return_code }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2 class='section-heading'>Runtime Details</h2>
+
+  <table>
+    <thead>
+      <th>Task Name</th>
+      <th>Started At</th>
+      <th>Completed At</th>
+    </thead>
+    <tbody>
+      {% for task in job.tasks %}
+        <tr>
+          <td>{{ task.name }}</td>
+          <td>{{ task.started_at }}</td>
+          <td>{{ task.completed_at }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2 class='section-heading'>Stdout Details</h2>
+
+  <table>
+    <thead>
+      <th>Task Name</th>
+      <th>Stdout</th>
+    </thead>
+    <tbody>
+      {% for task in job.tasks %}
+        <tr>
+          <td>{{ task.name }}</td>
+          <td><pre>{{ task.run_log.stdout }}</pre></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2 class='section-heading'>Stderr Details</h2>
+
+  <table>
+    <thead>
+      <th>Task Name</th>
+      <th>Stderr</th>
+    </thead>
+    <tbody>
+      {% for task in job.tasks %}
+        <tr>
+          <td>{{ task.name }}</td>
+          <td><pre>{{ task.run_log.stderr }}</pre></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</body>

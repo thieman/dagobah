@@ -1,0 +1,32 @@
+body {
+    width: 720px;
+    color: #111111;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+h1.email-heading {
+    width: 100%;
+    font-weight: bold;
+    border-bottom: 2px solid black;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table thead, table th, table tr, table td {
+    border: 1px solid #CCCCCC;
+}
+
+table.halve thead, table.halve th, table.halve tr, table.halve td {
+    border: 0px;
+}
+
+table.halve td {
+    width: 50%;
+}
+
+table.halve td:last-child {
+    text-align: right;
+}
