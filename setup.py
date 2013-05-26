@@ -6,7 +6,16 @@ setup(name='dagobah',
       url='http://github.com/tthieman/dagobah',
       author='Travis Thieman',
       author_email='travis.thieman@gmail.com',
-      license='BSD License',
+      license='BSD',
       packages=['dagobah'],
+      package_data={'dagobah': ['dagobah/email/templates/*',
+                                'dagobah/daemon/dagobahd.yaml',
+                                'dagobah/daemon/static/*',
+                                'dagobah/daemon/templates/*']},
       zip_safe=False,
-      install_requires=['croniter', 'pyyaml', 'premailer'])
+      install_requires=['croniter', 'pyyaml', 'premailer'],
+      test_suite='nose.collector',
+      tests_require=['nose', 'pymongo'],
+      entry_points={'console_scripts':
+                    ['dagobahd = dagobah.daemon.app.daemon_entrypoint']
+                    })
