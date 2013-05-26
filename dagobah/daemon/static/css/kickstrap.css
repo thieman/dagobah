@@ -1,6 +1,6 @@
 @import url('http://fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,400,700');
 script#caching {
-  content: "<script class=\"extras\" type=\"text/javascript\">localStorage.clear()br-consoleLog('You are currently NOT caching your styles.', 'warn')br-</script>";
+  content: "<script class=\"extras\" type=\"text/javascript\">consoleLog('Style caching enabled.')br-consoleLog('if you expected something different, try typing \"clearCache()\"')br-</script>";
 }
 .hidden {
   display: none;
@@ -8,6 +8,9 @@ script#caching {
 script#console {
   content: "<script class=\"extras\">ks.opts.console=(ks.opts.console||true)</script>";
   ie8: "<script class=\"extras\">ks.opts.console=(ks.opts.console||true)</script>";
+}
+script#caching {
+  content: "<script class=\"extras\" type=\"text/javascript\">consoleLog('Style caching enabled.')br-consoleLog('if you expected something different, try typing \"clearCache()\"')br-</script>";
 }
 article,
 aside,
