@@ -8,16 +8,24 @@ from functools import wraps
 try:
     from pymongo.objectid import ObjectId
 except ImportError:
-    from bson import ObjectId
+    try:
+        from bson import ObjectId
+    except ImportError:
+        pass
 
 from dagobah.core import DagobahError
 
 
 class DagobahEncoder(json.JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, ObjectId):
-            return str(obj)
-        elif isinstance(obj, datetime) or isinstance(obj, date):
+
+        try:
+            if isinstance(obj, ObjectId):
+                return str(obj)
+        except NameError:
+            pass
+
+        if isinstance(obj, datetime) or isinstance(obj, date):
             return str(obj)
         return json.JSONEncoder.default(self, obj)
 

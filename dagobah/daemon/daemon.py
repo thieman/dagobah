@@ -8,7 +8,6 @@ import yaml
 
 from dagobah.core import Dagobah, EventHandler
 from dagobah.email import get_email_handler
-from dagobah.backend.base import BaseBackend
 
 app = Flask(__name__)
 
@@ -114,10 +113,12 @@ def configure_event_hooks(config):
     email_handler = get_email_handler(config['Dagobahd'].get('email', None),
                                       config['Email'])
 
-    if config['Email'].get('send_on_success', False) == True:
+    if (email_handler and
+        config['Email'].get('send_on_success', False) == True):
         handler.register('job_complete', job_complete_email, email_handler)
 
-    if config['Email'].get('send_on_failure', False) == True:
+    if (email_handler and
+        config['Email'].get('send_on_failure', False) == True):
         handler.register('job_failed', job_failed_email, email_handler)
         handler.register('task_failed', task_failed_email, email_handler)
 
@@ -156,6 +157,7 @@ def get_backend(config):
     backend_string = config['Dagobahd']['backend']
 
     if backend_string.lower() == 'none':
+        from dagobah.backend.base import BaseBackend
         return BaseBackend()
 
     elif backend_string.lower() == 'sqlite':
