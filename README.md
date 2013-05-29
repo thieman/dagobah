@@ -1,6 +1,8 @@
 Dagobah
 =======
 
+<img src="http://i.imgur.com/D5ZxGXA.png" height="400">
+
 Dagobah is a simple dependency-based job scheduler written in Python. Dagobah allows you to schedule periodic jobs using Cron syntax. Each job then kicks off a series of tasks (subprocesses) in an order defined by a dependency graph you can easily draw with click-and-drag in the web interface.
 
 Dagobah lets you retry individual tasks from failure, sends you helpful email reports on job completion and failure, keeps track of your tasks's stdout and stderr, and persists its information in various backends so you don't have to worry about losing your data.
@@ -28,6 +30,22 @@ To use a backend, you need to install the drivers using the commands and then te
 
 ## Features
 
+#### Manage multiple jobs scheduled with Cron syntax
+
+<img src="http://i.imgur.com/kLAj81e.png" height="400">
+
+#### Tasks can be anything you'd normally run at a shell prompt. Pipe and redirect your heart out.
+
+<img src="http://i.imgur.com/mWuQopx.png" height="400">
+
+#### Failed tasks don't break your entire job. Once you fix the task, the job picks up from where it left off.
+
+<img src="http://i.imgur.com/u2vDre2.png" height="400">
+
+#### On completion and failure, Dagobah sends you an email summary of the executed job (just set it up in the config file).
+
+<img src="http://i.imgur.com/yN6LUUZ.png" height="400">
+
 ## Other Information
 
 #### Known Issues
@@ -46,4 +64,4 @@ To use a backend, you need to install the drivers using the commands and then te
 
 #### Contributors
 
- * This could be you! [Email](mailto://travis.thieman@gmail.com) or [tweet](https://twitter.com/thieman) me if you have any questions, or create a new issue in this repository.
+ * This could be you! If you have any questions, go ahead and [email](mailto:travis.thieman@gmail.com) or [tweet at](https://twitter.com/thieman) me, or go ahead and create a new issue in this repository.
