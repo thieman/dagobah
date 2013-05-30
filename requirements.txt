@@ -3,7 +3,6 @@ Jinja2==2.6
 PyYAML==3.10
 Werkzeug==0.8.3
 croniter==0.3.3
--e git+git@github.com:tthieman/dagobah@8030625e37799f14fe1f61eae1b3b738693125e9#egg=dagobah-dev
 nose==1.3.0
 pymongo==2.5
 python-dateutil==2.1
@@ -11,3 +10,4 @@ requests==1.2.0
 six==1.3.0
 wsgiref==0.1.2
 zope.interface==4.0.5
+premailer==1.13
