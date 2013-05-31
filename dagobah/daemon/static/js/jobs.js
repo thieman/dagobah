@@ -10,15 +10,24 @@ var jobsDataTimeout = null;
 updateJobsData();
 resetJobsTable();
 
-$('#add-job').click(function() {
+function attachEventHandlers() {
+	$('body').on('click', '.job-delete', onJobDeleteClick);
+	$('body').on('click', '.edit-job', onEditJobClick);
+	$('body').on('click', '.save-job-name', onSaveJobClick);
+	$('body').on('keydown', '.submit-on-enter', submitOnEnter);
+} 
+attachEventHandlers();
 
+$('#add-job').click(function() {
 	var newName = $('#new-job-name').val();
+
 	if (newName === null || newName === '') {
 		showAlert('new-alert', 'error', 'Please enter a name for the new job.');
 	}
-    $('#new-job-name').val('');
-	addNewJob(newName);
-
+	else{
+		$('#new-job-name').val('');
+		addNewJob(newName);
+	}
 });
 
 function onJobDeleteClick() {
@@ -34,7 +43,6 @@ function onEditJobClick() {
 	td.remove();
 	tr.prepend(editJobNameTemplate({ jobName: $(tr).attr('data-job') }));
 	$(tr).find('>:first-child').find('input').select();
-	bindEvents();
 }
 
 function onSaveJobClick() {
@@ -55,23 +63,6 @@ function onSaveJobClick() {
 
 	td.remove();
 	tr.prepend(jobNameTemplate({ jobName: newName }));
-	bindEvents();
-
-}
-
-function bindEvents() {
-
-	$('.job-delete').off('click', onJobDeleteClick);
-	$('.job-delete').on('click', onJobDeleteClick);
-
-	$('.edit-job').off('click', onEditJobClick);
-	$('.edit-job').on('click', onEditJobClick);
-
-	$('.save-job-name').off('click', onSaveJobClick);
-	$('.save-job-name').on('click', onSaveJobClick);
-
-	$('.submit-on-enter').off('keydown', submitOnEnter);
-	$('.submit-on-enter').on('keydown', submitOnEnter);
 
 }
 
@@ -155,7 +146,6 @@ function resetJobsTable() {
 		);
 	}
 
-	bindEvents();
 	updateJobsTable();
 
 }
@@ -163,16 +153,16 @@ function resetJobsTable() {
 function updateJobsData(redrawTable) {
 
 	$.getJSON($SCRIPT_ROOT + '/api/jobs',
-			  {},
-			  function(data) {
-				  jobsData = data['result'];
-				  if (redrawTable === true) {
-					  resetJobsTable();
-				  }
-				  updateViews();
-				  clearTimeout(jobsDataTimeout);
-				  jobsDataTimeout = setTimeout(updateJobsData, updateDataDelayMs);
-			  }
+		{},
+		function(data) {
+			jobsData = data['result'];
+			if (redrawTable === true) {
+				resetJobsTable();
+			}
+			updateViews();
+			clearTimeout(jobsDataTimeout);
+			jobsDataTimeout = setTimeout(updateJobsData, updateDataDelayMs);
+		}
 	);
 
 }
@@ -216,6 +206,5 @@ function updateJobsTable() {
 
 	});
 
-	bindEvents();
 
 }

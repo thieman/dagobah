@@ -25,7 +25,8 @@ svg:not(.active):not(.ctrl) path.link {
 }
 
 path.link.selected {
-	stroke-dasharray: 10,2;
+	stroke-dasharray: 10,3;
+	stroke: #003FB6;
 }
 
 path.link.dragline {
@@ -37,38 +38,45 @@ path.link.hidden {
 }
 
 rect.node {
-	stroke: #888888;
-	stroke-width: 1.5px;
+	stroke: #AAA;
+	stroke-width: 2px;
 	cursor: pointer;
 }
 
 rect.node.selected {
-	stroke-width: 5px;
-	stroke-dasharray: 10,2;
-	stroke: #333333;
+	stroke-width: 2px;
+	stroke-dasharray: 10,3;
+	stroke: #003FB6;
+	fill: #9BB3E0;
 }
 
 .node.waiting {
-	fill: #CCCCCC;
+	fill: #DDD;
 }
 
 .node.running {
-	fill: orange;
+	fill: #FA9F29;
+	stroke: #C67409;
 }
 
 .node.complete {
 	fill: #32cd32;
+	stroke: #0D8D0D;
 }
 
 .node.failed {
-	fill: red;
+	fill: #E05B57;
+	stroke: #A11F1B;
 }
 
 p {
-	font: 16px sans-serif;
+  font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size: 16px;
 	font-weight: bold;
-	color: black;
+	color: #222;
+	padding: 5px;
 }
+
 
 .node-object {
 	cursor: pointer;

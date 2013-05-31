@@ -7,13 +7,14 @@ var width  = 940,
 	nodeHeight = 50,
     colors = d3.scale.category10();
 
+
 var svg = d3.select('.job-graph')
 		.append('svg')
 		.attr('width', width)
 		.attr('height', height)
 		.attr('pointer-events', 'all')
 		.append('g')
-		.call(d3.behavior.zoom().on('zoom', zoomGraph))
+		.call(d3.behavior.zoom().scaleExtent([0.33,1]).on('zoom', zoomGraph))
 		.attr('transform', 'translate(' + (width / 2) + ',' + (height / 2) + ') scale(' + getInitialZoom() + ')')
 		// .on('mousedown.zoom', null)   // comment this out to allow pan
 		.append('g');
@@ -230,7 +231,7 @@ function drawForceGraph() {
 			.attr('y', -1 * (nodeHeight / 2));
 
 		g.append('foreignObject')
-		    .call(d3.behavior.zoom().on('zoom', null))
+			.call(d3.behavior.zoom().on('zoom', null))
 			.attr('class', 'node-object')
 			.attr('x', -1 * (nodeWidth / 2))
 			.attr('y', -1 * (nodeHeight / 2))
@@ -246,7 +247,7 @@ function drawForceGraph() {
 			.on('mouseout', function(d) {
 				if(!mousedown_node || d === mousedown_node) return;
 				// unenlarge target node
-				d3.select(this).attr('transform', '');p
+				d3.select(this).attr('transform', '');
 			})
 			.on('mousedown', function(d) {
 				if(d3.event.ctrlKey) return;
