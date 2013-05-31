@@ -1,4 +1,4 @@
-include dagobah/daemon/dagobahd.yaml
+include dagobah/daemon/dagobahd.yml
 recursive-include dagobah/email/templates *
 recursive-include dagobah/daemon/static *
 recursive-include dagobah/daemon/templates *
