@@ -20,8 +20,9 @@ class TestMongo(object):
         config = yaml.load(config_file.read())
         config_file.close()
 
-        self.mongo_host = config['MongoBackend']['host']
-        self.mongo_port = config['MongoBackend']['port']
+        # default for use with Travis
+        self.mongo_host = '127.0.0.1'
+        self.mongo_port = 27017
 
         try:
             try:

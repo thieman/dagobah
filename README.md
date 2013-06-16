@@ -3,6 +3,8 @@ Dagobah
 
 <img src="http://i.imgur.com/D5ZxGXA.png" height="400">
 
+[![Build Status](https://travis-ci.org/tthieman/dagobah.png?branch=master)](https://travis-ci.org/tthieman/dagobah?branch=master) ![PyPi version](https://pypip.in/v/dagobah/badge.png)
+
 Dagobah is a simple dependency-based job scheduler written in Python. Dagobah allows you to schedule periodic jobs using Cron syntax. Each job then kicks off a series of tasks (subprocesses) in an order defined by a dependency graph you can easily draw with click-and-drag in the web interface.
 
 Dagobah lets you retry individual tasks from failure, sends you helpful email reports on job completion and failure, keeps track of your tasks's stdout and stderr, and persists its information in various backends so you don't have to worry about losing your data.

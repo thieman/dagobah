@@ -6,7 +6,7 @@ from time import sleep
 from nose import with_setup
 from nose.tools import nottest, raises
 
-from dagobah.core.core import Dagobah, Job, Task
+from dagobah.core.core import Dagobah, Job, Task, DagobahError
 from dagobah.backend.base import BaseBackend
 
 dagobah = None
@@ -24,7 +24,7 @@ def test_dagobah_add_job():
 
 
 @with_setup(blank_dagobah)
-@raises(KeyError)
+@raises(DagobahError)
 def test_dagobah_add_job_unavailable_name():
     dagobah.add_job('test_job')
     dagobah.add_job('test_job')
@@ -39,7 +39,7 @@ def test_dagobah_delete_job():
 
 
 @with_setup(blank_dagobah)
-@raises(KeyError)
+@raises(DagobahError)
 def test_dagobah_delete_job_does_not_exist():
     dagobah.delete_job('test_job')
 
@@ -73,7 +73,7 @@ def test_dagobah_delete_job():
 
 
 @with_setup(blank_dagobah)
-@raises(KeyError)
+@raises(DagobahError)
 def test_dagobah_delete_job_does_not_exist():
     dagobah.add_job('test_job')
     dagobah.delete_job('test_job_2')
@@ -88,7 +88,7 @@ def test_job_states():
 
 
 @with_setup(blank_dagobah)
-@raises(ValueError)
+@raises(DagobahError)
 def test_job_states_invalid():
     dagobah.add_job('test_job')
     job = dagobah.get_job('test_job')
@@ -134,7 +134,7 @@ def test_add_task_to_job():
 
 
 @with_setup(blank_dagobah)
-@raises(KeyError)
+@raises(DagobahError)
 def test_add_task_to_job_bad_job():
     dagobah.add_job('test_job')
     dagobah.add_task_to_job('test_job_2', 'ls')
@@ -149,8 +149,8 @@ def test_run_job():
 
     tries = 0
     while tries < 5:
-        if job.status != 'running':
-            assert job.status != 'failed'
+        if job.state.status != 'running':
+            assert job.state.status != 'failed'
             return
         sleep(1)
         tries += 1
@@ -159,7 +159,7 @@ def test_run_job():
 
 
 @with_setup(blank_dagobah)
-@raises(ValueError)
+@raises(DagobahError)
 def test_start_running_job():
     dagobah.add_job('test_job')
     dagobah.add_task_to_job('test_job', 'ls', 'list')
@@ -215,7 +215,7 @@ def test_scheduler_monitoring():
     job.schedule('%d * * * *' % ((curr_minute + 1) % 60))
 
     for i in range(65):
-        if job.status == 'running':
+        if job.state.status == 'running':
             for task in job.tasks.values():
                 task.terminate()
             return

@@ -5,22 +5,24 @@ import requests
 from nose.tools import nottest
 
 from dagobah.core import Dagobah
-from dagobah.daemon import daemon
+from dagobah.daemon.app import app
 from dagobah.backend.base import BaseBackend
 
 class TestAPI(object):
 
     @classmethod
     def setup_class(self):
-        self.dagobah = daemon.dagobah
-        self.app = daemon.app.test_client()
+        self.dagobah = app.config['dagobah']
+        self.app = app.test_client()
         self.app.testing = True
 
-        if type(self.dagobah.backend) != BaseBackend:
-            raise TypeError('API tests should be run with the Base backend, ' +
-                            'change your daemon conf')
+        # force BaseBackend and eliminate registered jobs
+        # picked up from default backend
+        self.dagobah.set_backend(BaseBackend())
+        for job in self.dagobah.jobs:
+            job.delete()
 
-        self.base_url = 'http://localhost:9000'
+        self.base_url = 'http://localhost:60000'
 
 
     @classmethod

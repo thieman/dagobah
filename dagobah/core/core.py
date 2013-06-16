@@ -44,6 +44,20 @@ class Dagobah(object):
         return '<Dagobah with Backend %s>' % self.backend
 
 
+    def set_backend(self, backend):
+        """ Manually set backend after construction. """
+
+        self.backend = backend
+        self.dagobah_id = self.backend.get_new_dagobah_id()
+
+        for job in self.jobs:
+            job.backend = backend
+            for task in job.tasks:
+                task.backend = backend
+
+        self.commit(cascade=True)
+
+
     def from_backend(self, dagobah_id):
         """ Reconstruct this Dagobah instance from the backend. """
 
@@ -423,8 +437,9 @@ class Job(DAG):
             task = self.tasks[task_name]
             try:
                 self.backend.acquire_lock()
-                self.event_handler.emit('task_failed',
-                                        task._serialize(include_run_logs=True))
+                if self.event_handler:
+                    self.event_handler.emit('task_failed',
+                                            task._serialize(include_run_logs=True))
             except:
                 raise
             finally:
@@ -459,8 +474,9 @@ class Job(DAG):
                 self._set_status('failed')
                 try:
                     self.backend.acquire_lock()
-                    self.event_handler.emit('job_failed',
-                                            self._serialize(include_run_logs=True))
+                    if self.event_handler:
+                        self.event_handler.emit('job_failed',
+                                                self._serialize(include_run_logs=True))
                 except:
                     raise
                 finally:
@@ -472,8 +488,9 @@ class Job(DAG):
             self.run_log = {}
             try:
                 self.backend.acquire_lock()
-                self.event_handler.emit('job_complete',
-                                        self._serialize(include_run_logs=True))
+                if self.event_handler:
+                    self.event_handler.emit('job_complete',
+                                            self._serialize(include_run_logs=True))
             except:
                 raise
             finally:
@@ -496,7 +513,10 @@ class Job(DAG):
 
     def _set_status(self, status):
         """ Enforces enum-like behavior on the status field. """
-        self.state.set_status(status)
+        try:
+            self.state.set_status(status)
+        except:
+            raise DagobahError('could not set status %s' % status)
 
 
     def _commit_run_log(self):
