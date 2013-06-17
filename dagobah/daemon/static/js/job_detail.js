@@ -397,7 +397,6 @@ function setControlButtonStates() {
 		$('#kill-job').prop('disabled', true);
 	} else if (job.status == 'running') {
 		$('#start-job').prop('disabled', true);
-		$('#retry-job').prop('disabled', true);
 	} else if (job.status == 'failed') {
 		$('#terminate-job').prop('disabled', true);
 		$('#kill-job').prop('disabled', true);
@@ -477,10 +476,10 @@ $('#retry-job').click(function() {
 		data: {job_name: job.name},
 		dataType: 'json',
 		success: function() {
-			showAlert('state-alert', 'success', 'Retrying job from previous state');
+			showAlert('state-alert', 'success', 'Retrying failed tasks');
 		},
 		error: function() {
-			showAlert('state-alert', 'error', 'Unable to retry job');
+			showAlert('state-alert', 'error', 'Unable to retry failed tasks');
 		},
 		async: true
 	});
