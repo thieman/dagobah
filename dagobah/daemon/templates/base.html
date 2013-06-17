@@ -39,6 +39,9 @@
 
 	    <ul id='navbar-right' class='nav pull-right'>
           {% block navbar_current %}{% endblock navbar_current %}
+          {% if current_user.is_authenticated() %}
+            <li id='logout'><a href={{ url_for('do_logout') }}><i class='icon icon-off'></i></a></li>
+          {% endif %}
 	    </ul>
 
 	  </div>

@@ -1,4 +1,5 @@
-from dagobah.daemon.daemon import app
+from dagobah.daemon.daemon import app, login_manager
+from dagobah.daemon.auth import *
 from dagobah.daemon.api import *
 from dagobah.daemon.views import *
 

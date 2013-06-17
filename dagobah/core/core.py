@@ -52,7 +52,7 @@ class Dagobah(object):
 
         for job in self.jobs:
             job.backend = backend
-            for task in job.tasks:
+            for task in job.tasks.values():
                 task.backend = backend
 
         self.commit(cascade=True)

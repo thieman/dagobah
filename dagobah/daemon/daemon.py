@@ -4,12 +4,17 @@ import os
 import logging
 
 from flask import Flask, send_from_directory
+from flask_login import LoginManager
 import yaml
 
 from dagobah.core import Dagobah, EventHandler
 from dagobah.email import get_email_handler
 
 app = Flask(__name__)
+
+login_manager = LoginManager()
+login_manager.login_view = "login"
+login_manager.init_app(app)
 
 location = os.path.realpath(os.path.join(os.getcwd(),
                                          os.path.dirname(__file__)))
@@ -68,6 +73,10 @@ def return_standard_conf():
 
 
 def configure_app():
+    app.secret_key = config['Dagobahd']['app_secret']
+    app.config['APP_PASSWORD'] = config['Dagobahd']['password']
+    app.config['AUTH_RATE_LIMIT'] = 30
+    app.config['AUTH_ATTEMPTS'] = []
     app.config['APP_HOST'] = config['Dagobahd']['host']
     app.config['APP_PORT'] = config['Dagobahd']['port']
 
