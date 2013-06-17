@@ -16,7 +16,7 @@ class TestAPI(object):
         self.app = app.test_client()
         self.app.testing = True
 
-        self.app.post('/do-login', data={'password': 'dagobah'})
+        self.app.post('/do-login', data={'password': app.config['APP_PASSWORD']})
 
         # force BaseBackend and eliminate registered jobs
         # picked up from default backend
