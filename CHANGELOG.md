@@ -1,3 +1,7 @@
+### v0.1.2 ()
+
+ * Add single-user auth mechanism
+
 v0.1.1 (May 31, 2013)
 =====================
 
