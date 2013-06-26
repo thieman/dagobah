@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" type="text/css" href="/static/css/login.css"></link>
+{% endblock head %}
+
+{% block body_scripts %}
+<script>
+  $(document).ready(function() {
+    $('#password').select();
+  });
+</script>
+{% endblock body_scripts %}
+
+{% block content %}
+
+<div class='row'>
+  <div class='span6 offset3'>
+
+    {% if alert %}
+      <div class='alert alert-error'>{{ alert }}</div>
+    {% endif %}
+
+    <form class='form form-horizontal' action='{{ url_for('do_login') }}' method='post'>
+
+      <div class='control-group'>
+    	<label class='control-label' for='password'>Password</label>
+    	<div class='controls'>
+    	  <input type='password' id='password' name='password' placeholder='Password'></input>
+    	</div>
+      </div>
+
+      <div class='control-group'>
+        <div class='controls'>
+          <button id='submit' type='submit' class='btn btn-success'>Authenticate</button>
+        </div>
+      </div>
+
+    </form>
+
+  </div>
+</div>
+
+{% endblock content %}

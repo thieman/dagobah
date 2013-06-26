@@ -4,6 +4,14 @@ Dagobahd:
   host: 127.0.0.1
   port: 9000
 
+  # the app's secret key, used for maintaining user sessions
+  # WARNING: change this to your own random value!
+  # an easy way to create a key with python is "import os; os.urandom(24)"
+  app_secret: 'g\xde\xf5\x06@K\xf5:\x1fmZ\xac\x1fO\xe8\xcd\xde\xcf\x90\xaeY7\x8c\x96'
+
+  # credentials for single-user auth
+  password: dagobah
+
   # choose one of the available backends
   # None: Dagobah will not use a backend to permanently store data
   # sqlite: use a SQLite database. see the SQLite section in this file

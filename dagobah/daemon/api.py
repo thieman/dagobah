@@ -1,6 +1,7 @@
 """ HTTP API methods for Dagobah daemon. """
 
 from flask import request, abort
+from flask_login import login_required
 
 from dagobah.daemon.daemon import app
 from dagobah.daemon.util import validate_dict, api_call
@@ -8,12 +9,14 @@ from dagobah.daemon.util import validate_dict, api_call
 dagobah = app.config['dagobah']
 
 @app.route('/api/jobs', methods=['GET'])
+@login_required
 @api_call
 def get_jobs():
     return dagobah._serialize().get('jobs', {})
 
 
 @app.route('/api/job', methods=['GET'])
+@login_required
 @api_call
 def get_job():
     args = dict(request.args)
@@ -27,6 +30,7 @@ def get_job():
 
 
 @app.route('/api/head', methods=['GET'])
+@login_required
 @api_call
 def head_task():
     args = dict(request.args)
@@ -51,6 +55,7 @@ def head_task():
 
 
 @app.route('/api/tail', methods=['GET'])
+@login_required
 @api_call
 def tail_task():
     args = dict(request.args)
@@ -75,6 +80,7 @@ def tail_task():
 
 
 @app.route('/api/add_job', methods=['POST'])
+@login_required
 @api_call
 def add_job():
     args = dict(request.form)
@@ -87,6 +93,7 @@ def add_job():
 
 
 @app.route('/api/delete_job', methods=['POST'])
+@login_required
 @api_call
 def delete_job():
     args = dict(request.form)
@@ -99,6 +106,7 @@ def delete_job():
 
 
 @app.route('/api/start_job', methods=['POST'])
+@login_required
 @api_call
 def start_job():
     args = dict(request.form)
@@ -112,6 +120,7 @@ def start_job():
 
 
 @app.route('/api/retry_job', methods=['POST'])
+@login_required
 @api_call
 def retry_job():
     args = dict(request.form)
@@ -125,6 +134,7 @@ def retry_job():
 
 
 @app.route('/api/add_task_to_job', methods=['POST'])
+@login_required
 @api_call
 def add_task_to_job():
     args = dict(request.form)
@@ -141,6 +151,7 @@ def add_task_to_job():
 
 
 @app.route('/api/delete_task', methods=['POST'])
+@login_required
 @api_call
 def delete_task():
     args = dict(request.form)
@@ -155,6 +166,7 @@ def delete_task():
 
 
 @app.route('/api/add_dependency', methods=['POST'])
+@login_required
 @api_call
 def add_dependency():
     args = dict(request.form)
@@ -172,6 +184,7 @@ def add_dependency():
 
 
 @app.route('/api/delete_dependency', methods=['POST'])
+@login_required
 @api_call
 def delete_dependency():
     args = dict(request.form)
@@ -189,6 +202,7 @@ def delete_dependency():
 
 
 @app.route('/api/schedule_job', methods=['POST'])
+@login_required
 @api_call
 def schedule_job():
     args = dict(request.form)
@@ -206,18 +220,21 @@ def schedule_job():
 
 
 @app.route('/api/stop_scheduler', methods=['POST'])
+@login_required
 @api_call
 def stop_scheduler():
     dagobah.scheduler.stop()
 
 
 @app.route('/api/restart_scheduler', methods=['POST'])
+@login_required
 @api_call
 def restart_scheduler():
     dagobah.scheduler.restart()
 
 
 @app.route('/api/terminate_all_tasks', methods=['POST'])
+@login_required
 @api_call
 def terminate_all_tasks():
     args = dict(request.form)
@@ -231,6 +248,7 @@ def terminate_all_tasks():
 
 
 @app.route('/api/kill_all_tasks', methods=['POST'])
+@login_required
 @api_call
 def kill_all_tasks():
     args = dict(request.form)
@@ -244,6 +262,7 @@ def kill_all_tasks():
 
 
 @app.route('/api/terminate_task', methods=['POST'])
+@login_required
 @api_call
 def terminate_task():
     args = dict(request.form)
@@ -261,6 +280,7 @@ def terminate_task():
 
 
 @app.route('/api/kill_task', methods=['POST'])
+@login_required
 @api_call
 def kill_task():
     args = dict(request.form)
@@ -278,6 +298,7 @@ def kill_task():
 
 
 @app.route('/api/edit_job', methods=['POST'])
+@login_required
 @api_call
 def edit_job():
     args = dict(request.form)
@@ -293,6 +314,7 @@ def edit_job():
 
 
 @app.route('/api/edit_task', methods=['POST'])
+@login_required
 @api_call
 def edit_task():
     args = dict(request.form)

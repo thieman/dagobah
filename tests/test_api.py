@@ -16,11 +16,13 @@ class TestAPI(object):
         self.app = app.test_client()
         self.app.testing = True
 
+        self.app.post('/do-login', data={'password': app.config['APP_PASSWORD']})
+
         # force BaseBackend and eliminate registered jobs
         # picked up from default backend
         self.dagobah.set_backend(BaseBackend())
         for job in self.dagobah.jobs:
-            job.delete()
+            self.dagobah.delete_job(job.name)
 
         self.base_url = 'http://localhost:60000'
 
