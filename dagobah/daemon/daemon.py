@@ -73,12 +73,26 @@ def return_standard_conf():
 
 
 def configure_app():
-    app.secret_key = config['Dagobahd']['app_secret']
-    app.config['APP_PASSWORD'] = config['Dagobahd']['password']
+
+    app.secret_key = get_conf(config, 'Dagobahd.app_secret', 'default_secret')
+    app.config['APP_PASSWORD'] = get_conf(config,
+                                          'Dagobahd.password', 'dagobah')
+
     app.config['AUTH_RATE_LIMIT'] = 30
     app.config['AUTH_ATTEMPTS'] = []
-    app.config['APP_HOST'] = config['Dagobahd']['host']
-    app.config['APP_PORT'] = config['Dagobahd']['port']
+    app.config['APP_HOST'] = get_conf(config, 'Dagobahd.host', '127.0.0.1')
+    app.config['APP_PORT'] = get_conf(config, 'Dagobahd.port', '9000')
+
+
+def get_conf(config, path, default=None):
+    current = config
+    for level in path.split('.'):
+        if level not in current:
+            logging.info('Defaulting missing config key %s to %s' %
+                         (path, default))
+            return default
+        current = current[level]
+    return current
 
 
 def init_dagobah(testing=False):
@@ -119,15 +133,15 @@ def configure_event_hooks(config):
 
     handler = EventHandler()
 
-    email_handler = get_email_handler(config['Dagobahd'].get('email', None),
-                                      config['Email'])
+    email_handler = get_email_handler(get_conf(config, 'Dagobahd.email', None),
+                                      get_conf(config, 'Email', {}))
 
     if (email_handler and
-        config['Email'].get('send_on_success', False) == True):
+        get_conf(config, 'Email.send_on_success', False) == True):
         handler.register('job_complete', job_complete_email, email_handler)
 
     if (email_handler and
-        config['Email'].get('send_on_failure', False) == True):
+        get_conf(config, 'Email.send_on_failure', False) == True):
         handler.register('job_failed', job_failed_email, email_handler)
         handler.register('task_failed', task_failed_email, email_handler)
 
@@ -141,17 +155,17 @@ def init_logger(location, config):
         def emit(self, record):
             pass
 
-    if config['Logging'].get('enabled', False) == False:
+    if get_conf(config, 'Logging.enabled', False) == False:
         handler = NullHandler()
         logging.getLogger("dagobah").addHandler(handler)
         return
 
-    if config['Logging'].get('logfile', 'default') == 'default':
+    if get_conf(config, 'Logging.logfile', 'default') == 'default':
         path = os.path.join(location, 'dagobah.log')
     else:
         path = config['Logging']['logfile']
 
-    level_string = config['Logging'].get('loglevel', 'info').upper()
+    level_string = get_conf(config, 'Logging.loglevel', 'info').upper()
     numeric_level = getattr(logging, level_string, None)
 
     logging.basicConfig(filename=path, level=numeric_level)
@@ -163,7 +177,7 @@ def init_logger(location, config):
 def get_backend(config):
     """ Returns a backend instance based on the Daemon config file. """
 
-    backend_string = config['Dagobahd']['backend']
+    backend_string = get_conf(config, 'Dagobahd.backend', 'none')
 
     if backend_string.lower() == 'none':
         from dagobah.backend.base import BaseBackend
@@ -172,7 +186,8 @@ def get_backend(config):
     elif backend_string.lower() == 'sqlite':
         backend_kwargs = {}
         for conf_kwarg in ['filepath']:
-            backend_kwargs[conf_kwarg] = config['SQLiteBackend'][conf_kwarg]
+            backend_kwargs[conf_kwarg] = get_conf(config,
+                                                  'SQLiteBackend.%s' % conf_kwarg)
 
         try:
             from dagobah.backend.sqlite import SQLiteBackend
@@ -187,7 +202,8 @@ def get_backend(config):
         for conf_kwarg in ['host', 'port', 'db',
                            'dagobah_collection', 'job_collection',
                            'log_collection']:
-            backend_kwargs[conf_kwarg] = config['MongoBackend'][conf_kwarg]
+            backend_kwargs[conf_kwarg] = get_conf(config,
+                                                  'MongoBackend.%s' % conf_kwarg)
         backend_kwargs['port'] = int(backend_kwargs['port'])
 
         try:
