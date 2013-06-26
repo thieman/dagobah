@@ -28,6 +28,11 @@ td:last-child {
 }
 
 td > i {
+	opacity: 0;
 	cursor: pointer;
 	margin-left: 10px;
+}
+
+td:hover > i {
+	opacity: 1;
 }
