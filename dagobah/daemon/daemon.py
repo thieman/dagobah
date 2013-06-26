@@ -88,8 +88,9 @@ def get_conf(config, path, default=None):
     current = config
     for level in path.split('.'):
         if level not in current:
-            logging.info('Defaulting missing config key %s to %s' %
-                         (path, default))
+            msg = 'Defaulting missing config key %s to %s' % (path, default)
+            print msg
+            logging.warning(msg)
             return default
         current = current[level]
     return current

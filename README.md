@@ -14,13 +14,13 @@ Dagobah lets you retry individual tasks from failure, sends you helpful email re
     pip install dagobah
     dagobahd  # start the web interface on localhost:9000
 
-On first start, `dagobahd` will create a config file at `~/.dagobahd.yml`. You'll probably want to check that out to get your backend and email options set up before you start using Dagobah.
+On first start, `dagobahd` will create a [config file](dagobah/daemon/dagobahd.yml) at `~/.dagobahd.yml`. You'll probably want to check that out to get your backend and email options set up before you start using Dagobah.
 
-Dagobah does not require a backend, but unless you specify one, your jobs and tasks will be lost when the daemon exists. Each backend requires its own set of drivers. Once you've installed the drivers, you then need to specify any backend-specific options in the config. See the config file for details.
+Dagobah does not require a backend, but unless you specify one, your jobs and tasks will be lost when the daemon exists. Each backend requires its own set of drivers. Once you've installed the drivers, you then need to specify any backend-specific options in the config. [See the config file for details.](dagobah/daemon/dagobahd.yml)
 
 ### Available Backends
 
-To use a backend, you need to install the drivers using the commands and then tell Dagobah to use the backend in the config file (default location `~/.dagobahd.yml`).
+To use a backend, you need to install the drivers using the commands below and then tell Dagobah to use the backend in the config file (default location `~/.dagobahd.yml`).
 
 #### SQLite
 
@@ -32,9 +32,13 @@ To use a backend, you need to install the drivers using the commands and then te
 
 ## Features
 
-#### Manage multiple jobs scheduled with Cron syntax
+#### Single-user auth (new in 0.1.2)
 
-<img src="http://i.imgur.com/kLAj81e.png" height="400">
+<img src="http://i.imgur.com/f843YXK.png" height="200">
+
+#### Manage multiple jobs scheduled with Cron syntax. Run times are shown in your local timezone.
+
+<img src="http://i.imgur.com/PjPQedn.png" height="400">
 
 #### Tasks can be anything you'd normally run at a shell prompt. Pipe and redirect your heart out.
 
