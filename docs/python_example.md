@@ -32,7 +32,7 @@ my_job.add_dependency('Required Task', 'Dependent Task')
 # Here, we'll tell it to run every morning at 10 AM.
 my_job.schedule('0 10 * * *')
 
-# Run indefinitely. Usually Flask.run() does this for us.
+# Run indefinitely and wait for the Scheduler to start the Job.
 from time import sleep
 while True:
 	  sleep(1)
@@ -40,4 +40,4 @@ while True:
 
 ### Using Backends in Python
 
-Backends can be used directly in Python by passing a Backend instance to the Dagobah constructor. Please see the [Backend directory](dagobah/backend/) for details.
+Backends can be used directly in Python by passing a Backend instance to the Dagobah constructor. Please see the [Backend directory](/dagobah/backend/) for details.
