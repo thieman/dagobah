@@ -26,12 +26,14 @@
   <table>
     <thead>
       <th>Task Name</th>
+      <th>Retries</th>
       <th>Started At</th>
       <th>Completed At</th>
     </thead>
     <tbody>
       <tr>
         <td>{{ task.name }}</td>
+        <td>{{ task.retry_count }}</td>
         <td>{{ task.started_at }}</td>
         <td>{{ task.completed_at }}</td>
       </tr>

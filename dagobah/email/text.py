@@ -36,6 +36,7 @@ class TextEmail(EmailTemplate):
         return '\n'.join(['Task: %s' % task.get('name', None),
                           'Command: %s' % task.get('command', None),
                           'Result: %s' % success_lu[success],
+                          'Retries: %s' % task.get('retry_count', 0),
                           'Started at: %s' % started,
                           'Completed at: %s' % completed,
                           'Return Code: %s' % run_log.get('return_code', None),

@@ -451,7 +451,8 @@ class Job(DAG):
     def _put_task_in_run_log(self, task_name):
         """ Initializes the run log task entry for this task. """
         data = {'start_time': datetime.utcnow(),
-                'command': self.tasks[task_name].command}
+                'command': self.tasks[task_name].command,
+                'retry_count': 0}
         self.run_log['tasks'][task_name] = data
 
 
@@ -575,27 +576,42 @@ class Task(object):
         self.completed_at = None
         self.successful = None
 
+        self.max_retries = 0
+        self.retry_count = 0
 
-    def reset(self):
+
+    def reset(self, retry=False):
         """ Reset this Task to a clean state prior to execution. """
 
         self.stdout_file = os.tmpfile()
         self.stderr_file = os.tmpfile()
 
-        self.started_at = None
-        self.completed_at = None
-        self.successful = None
+        if not retry:
+            self.started_at = None
+            self.completed_at = None
+            self.successful = None
 
 
-    def start(self):
+    def start(self, retry=False):
         """ Begin execution of this task. """
-        self.reset()
+
+        self.reset(retry)
         self.process = subprocess.Popen(self.command,
                                         shell=True,
                                         stdout=self.stdout_file,
                                         stderr=self.stderr_file)
-        self.started_at = datetime.utcnow()
+
+        if not retry:
+            self.started_at = datetime.utcnow()
+
         self._start_check_timer()
+
+
+    def retry(self):
+        """ Retry a task without transitioning to the failure state. """
+
+        self.retry_count += 1
+        self.start(retry=True)
 
 
     def check_complete(self):
@@ -612,6 +628,12 @@ class Task(object):
 
         self.stdout_file = None
         self.stderr_file = None
+
+        # if task failed, retry if applicable
+        if (self.process.returncode != 0 and
+            self.max_retries > self.retry_count):
+            self.retry()
+            return
 
         self._task_complete(success=True if self.process.returncode == 0 else False,
                             return_code=self.process.returncode,
@@ -760,7 +782,8 @@ class Task(object):
                   'name': self.name,
                   'started_at': self.started_at,
                   'completed_at': self.completed_at,
-                  'success': self.successful}
+                  'success': self.successful,
+                  'retry_count': self.retry_count}
 
         if include_run_logs:
             last_run = self.backend.get_latest_run_log(self.parent_job.job_id,
