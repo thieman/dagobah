@@ -103,15 +103,16 @@ class Scheduler(threading.Thread):
 
     def run(self):
         """ Continually monitors Jobs of the parent Dagobah. """
-        while not self.stopped:
-            now = datetime.utcnow()
-            for job in self.parent.jobs:
-                if not job.next_run:
-                    continue
-                if job.next_run >= self.last_check and job.next_run <= now:
-                    if job.state.allow_start:
-                        job.start()
-                    else:
-                        job.next_run = job.cron_iter.get_next(datetime)
-            self.last_checked = now
+        while True:
+            if not self.stopped:
+                now = datetime.utcnow()
+                for job in self.parent.jobs:
+                    if not job.next_run:
+                        continue
+                    if job.next_run >= self.last_check and job.next_run <= now:
+                        if job.state.allow_start:
+                            job.start()
+                        else:
+                            job.next_run = job.cron_iter.get_next(datetime)
+                self.last_checked = now
             time.sleep(1)
