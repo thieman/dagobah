@@ -283,7 +283,7 @@ class Job(DAG):
         if cron_schedule is None:
             self.cron_schedule = None
             self.cron_iter = None
-            self.next_run =None
+            self.next_run = None
 
         else:
             if base_datetime is None:
@@ -556,7 +556,8 @@ class Task(object):
     current serialization of the task with run logs.
     """
 
-    def __init__(self, parent_job, command, name):
+    def __init__(self, parent_job, command, name,
+                 soft_timeout=None, hard_timeout=None):
         self.parent_job = parent_job
         self.backend = self.parent_job.backend
         self.event_handler = self.parent_job.event_handler
@@ -575,6 +576,27 @@ class Task(object):
         self.completed_at = None
         self.successful = None
 
+        self.terminate_sent = False
+        self.kill_sent = False
+
+        self.set_soft_timeout(soft_timeout)
+        self.set_hard_timeout(hard_timeout)
+
+    def set_soft_timeout(self, timeout):
+        if timeout is None:
+            self.soft_timeout = timeout
+            return
+        if not isinstance(timeout, (int, float)) or timeout < 0:
+            raise ValueError('timeouts must be non-negative numbers')
+        self.soft_timeout = timeout
+
+    def set_hard_timeout(self, timeout):
+        if timeout is None:
+            self.hard_timeout = timeout
+            return
+        if not isinstance(timeout, (int, float)) or timeout < 0:
+            raise ValueError('timeouts must be non-negative numbers')
+        self.hard_timeout = timeout
 
     def reset(self):
         """ Reset this Task to a clean state prior to execution. """
@@ -585,6 +607,9 @@ class Task(object):
         self.started_at = None
         self.completed_at = None
         self.successful = None
+
+        self.terminate_sent = False
+        self.kill_sent = False
 
 
     def start(self):
@@ -602,6 +627,16 @@ class Task(object):
         """ Runs completion flow for this task if it's finished. """
 
         if self.process.poll() is None:
+
+            # timeout check
+            if ((datetime.utcnow() - self.started_at).seconds >= self.soft_timeout and
+                not self.terminate_sent):
+                self.terminate()
+
+            if ((datetime.utcnow() - self.started_at).seconds >= self.hard_timeout and
+                not self.kill_sent):
+                self.kill()
+
             self._start_check_timer()
             return
 
@@ -624,6 +659,7 @@ class Task(object):
         """ Send SIGTERM to the task's process. """
         if not self.process:
             raise DagobahError('task does not have a running process')
+        self.terminate_sent = True
         self.process.terminate()
 
 
@@ -631,6 +667,7 @@ class Task(object):
         """ Send SIGKILL to the task's process. """
         if not self.process:
             raise DagobahError('task does not have a running process')
+        self.kill_sent = True
         self.process.kill()
 
 
