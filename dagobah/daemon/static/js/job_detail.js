@@ -1,22 +1,31 @@
 var tasksTableHeadersTemplate = Handlebars.compile($('#tasks-table-headers-template').html());
 var tasksTableResultsTemplate = Handlebars.compile($('#tasks-table-results-template').html());
 var tasksTableCommandsTemplate = Handlebars.compile($('#tasks-table-commands-template').html());
+var tasksTableTimeoutsTemplate = Handlebars.compile($('#tasks-table-timeouts-template').html());
 var editTaskTemplate = Handlebars.compile($('#tasks-edit-template').html());
 
 var tasksNameTemplate = Handlebars.compile($('#tasks-data-name-template').html());
 var tasksCommandTemplate = Handlebars.compile($('#tasks-data-command-template').html());
+var tasksSoftTimeoutTemplate = Handlebars.compile($('#tasks-data-soft-timeout-template').html());
+var tasksHardTimeoutTemplate = Handlebars.compile($('#tasks-data-hard-timeout-template').html());
 
 Handlebars.registerPartial('tasksName', tasksNameTemplate);
 Handlebars.registerPartial('tasksCommand', tasksCommandTemplate);
+Handlebars.registerPartial('tasksSoftTimeout', tasksSoftTimeoutTemplate);
+Handlebars.registerPartial('tasksHardTimeout', tasksHardTimeoutTemplate);
 
 var fieldMap = {
 	"Task": 'name',
-	"Command": 'command'
+	"Command": 'command',
+	"Soft Timeout": 'soft_timeout',
+	"Hard Timeout": 'hard_timeout'
 };
 
 var fieldTemplateMap = {
 	"Task": tasksNameTemplate,
-	"Command": tasksCommandTemplate
+	"Command": tasksCommandTemplate,
+	"Soft Timeout": tasksSoftTimeoutTemplate,
+	"Hard Timeout": tasksHardTimeoutTemplate
 };
 
 function runWhenJobLoaded() {
@@ -280,6 +289,8 @@ function resetTasksTable(tableMode) {
 		var headers = ['Task', 'Started', 'Completed', 'Result', ''];
 	} else if (tableMode === 'commands') {
 		var headers = ['Task', 'Command', ''];
+	} else if (tableMode === 'timeouts') {
+		var headers = ['Task', 'Soft Timeout', 'Hard Timeout', ''];
 	}
 
 	for (var i = 0; i < headers.length; i++) {
@@ -303,6 +314,13 @@ function resetTasksTable(tableMode) {
 		} else if (tableMode === 'commands') {
 			$('#tasks-body').append(
 				tasksTableCommandsTemplate({
+					taskName: thisTask.name,
+					taskURL: $SCRIPT_ROOT + '/job/' + job.id + '/' + thisTask.name
+				})
+			);
+		} else if (tableMode === 'timeouts') {
+			$('#tasks-body').append(
+				tasksTableTimeoutsTemplate({
 					taskName: thisTask.name,
 					taskURL: $SCRIPT_ROOT + '/job/' + job.id + '/' + thisTask.name
 				})

@@ -323,7 +323,9 @@ def edit_task():
                          job_name=str,
                          task_name=str,
                          name=str,
-                         command=str):
+                         command=str,
+                         soft_timeout=int,
+                         hard_timeout=int):
         abort(400)
 
     job = dagobah.get_job(args['job_name'])

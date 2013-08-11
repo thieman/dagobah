@@ -412,6 +412,12 @@ class Job(DAG):
             if key in kwargs and isinstance(kwargs[key], str):
                 setattr(task, key, kwargs[key])
 
+        if 'soft_timeout' in kwargs:
+            task.set_soft_timeout(kwargs['soft_timeout'])
+
+        if 'hard_timeout' in kwargs:
+            task.set_hard_timeout(kwargs['hard_timeout'])
+
         if 'name' in kwargs and isinstance(kwargs['name'], str):
             self.rename_edges(task_name, kwargs['name'])
             self.tasks[kwargs['name']] = task

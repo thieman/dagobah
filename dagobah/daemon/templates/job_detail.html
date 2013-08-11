@@ -41,6 +41,18 @@
     </tr>
   </script>
 
+  <script id="tasks-table-timeouts-template" type="text/x-handlebars-template">
+    <tr data-task='{{ taskName }}'>
+      {{> tasksName }}
+      {{> tasksSoftTimeout }}
+      {{> tasksHardTimeout }}
+      <td>
+        <button class='btn btn-primary' onclick="window.location.href = '{{ taskURL }}';">View Task</button>
+        <button class='btn btn-danger task-delete' onclick="return false;"><i class='icon-trash'></i>
+      </td>
+    </tr>
+  </script>
+
   <script id="tasks-data-name-template" type="text/x-handlebars-template">
     <td data-attr='name'>
       {{#if text}}{{text}}{{/if}}
@@ -52,6 +64,18 @@
     <td data-attr='command'>
       {{#if text}}{{text}}{{/if}}
       <i class='icon-pencil edit-task'></i>
+    </td>
+  </script>
+
+  <script id="tasks-data-soft-timeout-template" type="text/x-handlebars-template">
+    <td data-attr='soft_timeout'>
+      {{text}}<i class='icon-pencil edit-task'></i>
+    </td>
+  </script>
+
+  <script id="tasks-data-hard-timeout-template" type="text/x-handlebars-template">
+    <td data-attr='hard_timeout'>
+      {{text}}<i class='icon-pencil edit-task'></i>
     </td>
   </script>
 
@@ -168,6 +192,7 @@
     <div id='table-toggle' class='btn-group' data-toggle='buttons-radio'>
       <button class='btn active' value='results'>Results</button>
       <button class='btn' value='commands'>Commands</button>
+      <button class='btn' value='timeouts'>Timeouts</button>
     </div>
 
     <div id='table-alert' class='alert hidden'>
