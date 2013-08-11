@@ -22,10 +22,8 @@ class Dagobah(Base):
     def __init__(self):
         self.created_jobs = 0
 
-
     def __repr__(self):
         return "<SQLite:Dagobah (%d)>" % self.id
-
 
     @property
     def json(self):
@@ -52,10 +50,8 @@ class DagobahJob(Base):
         self.name = name
         self.status = 'waiting'
 
-
     def __repr__(self):
         return "<SQLite:DagobahJob (%d)>" % self.id
-
 
     @property
     def json(self):
@@ -68,13 +64,11 @@ class DagobahJob(Base):
                 'tasks': [task.json for task in self.tasks],
                 'dependencies': self._gather_dependencies()}
 
-
     def update_from_dict(self, data):
         for key in ['parent_id', 'name', 'status', 'cron_schedule',
                     'next_run']:
             if key in data:
                 setattr(self, key, data[key])
-
 
     def _gather_dependencies(self):
         result = defaultdict(list)
@@ -93,15 +87,17 @@ class DagobahTask(Base):
     started_at = Column(DateTime)
     completed_at = Column(DateTime)
     success = Column(String(30))
+    soft_timeout = Column(Integer)
+    hard_timeout = Column(Integer)
 
     def __init__(self, name, command):
         self.name = name
         self.command = command
-
+        self.soft_timeout = 0
+        self.hard_timeout = 0
 
     def __repr__(self):
         return "<SQLite:DagobahTask (%d)>" % self.id
-
 
     @property
     def json(self):
@@ -109,12 +105,14 @@ class DagobahTask(Base):
                 'command': self.command,
                 'started_at': self.started_at,
                 'completed_at': self.completed_at,
-                'success': self.success}
-
+                'success': self.success,
+                'soft_timeout': self.soft_timeout,
+                'hard_timeout': self.hard_timeout}
 
     def update_from_dict(self, data):
         for key in ['job_id', 'name', 'command', 'started_at',
-                    'completed_at', 'success']:
+                    'completed_at', 'success', 'soft_timeout',
+                    'hard_timeout']:
             if key in data:
                 setattr(self, key, data[key])
 
@@ -134,10 +132,8 @@ class DagobahDependency(Base):
         self.from_task_id = from_task_id
         self.to_task_id = to_task_id
 
-
     def __repr__(self):
         return "<SQLite:DagobahDependency (%d)>" % self.id
-
 
     def update_from_dict(self, data):
         for key in ['job_id']:
@@ -159,10 +155,8 @@ class DagobahLog(Base):
     def __init__(self):
         self.save_date = datetime.utcnow()
 
-
     def __repr__(self):
         return "<SQLite:DagobahLog (%d)>" % self.id
-
 
     @property
     def json(self):
@@ -174,13 +168,11 @@ class DagobahLog(Base):
                 'tasks': {task.name: task.json
                           for task in self.tasks}}
 
-
     def update_from_dict(self, data):
         for key in ['job_id', 'start_time', 'last_retry_time']:
             if key in data:
                 setattr(self, key, data[key])
         self.save_date = datetime.utcnow()
-
 
 
 class DagobahLogTask(Base):
@@ -201,10 +193,8 @@ class DagobahLogTask(Base):
         self.name = name
         self.save_date = datetime.utcnow()
 
-
     def __repr__(self):
         return "<SQLite:DagobahLogTask (%d)>" % self.id
-
 
     @property
     def json(self):
@@ -213,7 +203,6 @@ class DagobahLogTask(Base):
                 'complete_time': self.complete_time,
                 'stdout': self.stdout,
                 'stderr': self.stderr}
-
 
     def update_from_dict(self, data):
         for key in ['name', 'start_time', 'complete_time',

@@ -27,6 +27,57 @@
   This page is still a work in progress. Information here may not be updated in realtime; refresh the page to make sure you're seeing accurate information.
 </div>
 
+<div class='row' id='timeout'>
+
+  <div class='span12'>
+    <h3>Task Timeouts (in seconds, 0 to disable)</h3>
+  </div>
+
+  <div class='span6'>
+
+    <div id='soft-timeout-alert' class='alert hidden'>
+    </div>
+
+    <form id='soft-timeout-form' class='form form-horizontal'>
+      <div class='control-group'>
+        <label class='control-label' for='soft-timeout'>Soft Timeout (TERM)</label>
+        <div class='controls'>
+          <input id='soft-timeout' type='text' class='input'
+                 value={{ task.soft_timeout }}></input>
+        </div>
+      </div>
+      <div class='control-group'>
+        <div class='controls'>
+          <button id='save-soft-timeout' class='btn btn-success' onclick='return false;'>Set Soft Timeout</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class='span6'>
+
+    <div id='hard-timeout-alert' class='alert hidden'>
+    </div>
+
+    <form id='hard-timeout-form' class='form form-horizontal'>
+      <div class='control-group'>
+        <label class='control-label' for='hard-timeout'>Hard Timeout (KILL)</label>
+        <div class='controls'>
+          <input id='hard-timeout' type='text' class='input'
+                 value={{ task.hard_timeout }}></input>
+        </div>
+      </div>
+      <div class='control-group'>
+        <div class='controls'>
+          <button id='save-hard-timeout' class='btn btn-success' onclick='return false;'>Set Hard Timeout</button>
+        </div>
+      </div>
+    </form>
+
+  </div>
+
+</div>
+
 <div id='logs' class='row'>
   <div class='span12'>
 

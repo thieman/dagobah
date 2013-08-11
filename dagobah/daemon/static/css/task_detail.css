@@ -26,3 +26,7 @@ textarea {
 	font-size: 26.25px;
 	color: #2d2d2d;
 }
+
+.span6 .alert {
+	width: 80%;
+}

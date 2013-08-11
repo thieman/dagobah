@@ -82,7 +82,9 @@ class Dagobah(object):
             for task in job_json.get('tasks', []):
                 self.add_task_to_job(job,
                                      str(task['command']),
-                                     str(task['name']))
+                                     str(task['name']),
+                                     soft_timeout=task.get('soft_timeout', 0),
+                                     hard_timeout=task.get('hard_timeout', 0))
 
             dependencies = job_json.get('dependencies', {})
             for from_node, to_nodes in dependencies.iteritems():
@@ -583,15 +585,19 @@ class Task(object):
         self.set_soft_timeout(soft_timeout)
         self.set_hard_timeout(hard_timeout)
 
+        self.parent_job.commit()
+
     def set_soft_timeout(self, timeout):
         if not isinstance(timeout, (int, float)) or timeout < 0:
             raise ValueError('timeouts must be non-negative numbers')
         self.soft_timeout = timeout
+        self.parent_job.commit()
 
     def set_hard_timeout(self, timeout):
         if not isinstance(timeout, (int, float)) or timeout < 0:
             raise ValueError('timeouts must be non-negative numbers')
         self.hard_timeout = timeout
+        self.parent_job.commit()
 
     def reset(self):
         """ Reset this Task to a clean state prior to execution. """
@@ -641,6 +647,11 @@ class Task(object):
                                     self._read_temp_file(self.stderr_file))
         for temp_file in [self.stdout_file, self.stderr_file]:
             temp_file.close()
+
+        if self.terminate_sent:
+            self.stderr += '\nDAGOBAH SENT SIGTERM TO THIS PROCESS\n'
+        if self.kill_sent:
+            self.stderr += '\nDAGOBAH SENT SIGKILL TO THIS PROCESS\n'
 
         self.stdout_file = None
         self.stderr_file = None
@@ -794,7 +805,9 @@ class Task(object):
                   'name': self.name,
                   'started_at': self.started_at,
                   'completed_at': self.completed_at,
-                  'success': self.successful}
+                  'success': self.successful,
+                  'soft_timeout': self.soft_timeout,
+                  'hard_timeout': self.hard_timeout}
 
         if include_run_logs:
             last_run = self.backend.get_latest_run_log(self.parent_job.job_id,
