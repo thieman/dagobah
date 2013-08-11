@@ -121,3 +121,33 @@ class TestAPI(object):
         assert len(d['result']) == 1
         assert len(d['result'][0]['tasks']) == 3
         assert d['result'][0]['dependencies']['from node'] == ['grep']
+
+
+    def test_set_soft_timeout(self):
+        self.reset_dagobah()
+        p_args = {'job_name': 'Test Job',
+                  'task_name': 'grep',
+                  'soft_timeout': 30}
+        r = self.app.post('/api/set_soft_timeout', data=p_args)
+        self.validate_api_call(r)
+        assert self.dagobah.get_job('Test Job').tasks['grep'].soft_timeout == 30
+
+        p_args['soft_timeout'] = 0
+        r = self.app.post('/api/set_soft_timeout', data=p_args)
+        self.validate_api_call(r)
+        assert self.dagobah.get_job('Test Job').tasks['grep'].soft_timeout == 0
+
+
+    def test_set_hard_timeout(self):
+        self.reset_dagobah()
+        p_args = {'job_name': 'Test Job',
+                  'task_name': 'grep',
+                  'hard_timeout': 30}
+        r = self.app.post('/api/set_hard_timeout', data=p_args)
+        self.validate_api_call(r)
+        assert self.dagobah.get_job('Test Job').tasks['grep'].hard_timeout == 30
+
+        p_args['hard_timeout'] = 0
+        r = self.app.post('/api/set_hard_timeout', data=p_args)
+        self.validate_api_call(r)
+        assert self.dagobah.get_job('Test Job').tasks['grep'].hard_timeout == 0

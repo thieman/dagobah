@@ -146,7 +146,8 @@ class Dagobah(object):
         raise DagobahError('no job with name %s exists' % job_name)
 
 
-    def add_task_to_job(self, job_or_job_name, task_command, task_name=None):
+    def add_task_to_job(self, job_or_job_name, task_command, task_name=None,
+                        **kwargs):
         """ Add a task to a job owned by the Dagobah instance. """
 
         if isinstance(job_or_job_name, Job):
@@ -161,7 +162,7 @@ class Dagobah(object):
             raise DagobahError("job's graph is immutable in its current state: %s"
                                % job.state.status)
 
-        job.add_task(task_command, task_name)
+        job.add_task(task_command, task_name, **kwargs)
         job.commit()
 
 
@@ -221,7 +222,7 @@ class Job(DAG):
         self.parent.commit()
 
 
-    def add_task(self, command, name=None):
+    def add_task(self, command, name=None, **kwargs):
         """ Adds a new Task to the graph with no edges. """
 
         if not self.state.allow_change_graph:
@@ -230,7 +231,7 @@ class Job(DAG):
 
         if name is None:
             name = command
-        new_task = Task(self, command, name)
+        new_task = Task(self, command, name, **kwargs)
         self.tasks[name] = new_task
         self.add_node(name)
         self.commit()
@@ -557,7 +558,7 @@ class Task(object):
     """
 
     def __init__(self, parent_job, command, name,
-                 soft_timeout=None, hard_timeout=None):
+                 soft_timeout=0, hard_timeout=0):
         self.parent_job = parent_job
         self.backend = self.parent_job.backend
         self.event_handler = self.parent_job.event_handler
@@ -583,17 +584,11 @@ class Task(object):
         self.set_hard_timeout(hard_timeout)
 
     def set_soft_timeout(self, timeout):
-        if timeout is None:
-            self.soft_timeout = timeout
-            return
         if not isinstance(timeout, (int, float)) or timeout < 0:
             raise ValueError('timeouts must be non-negative numbers')
         self.soft_timeout = timeout
 
     def set_hard_timeout(self, timeout):
-        if timeout is None:
-            self.hard_timeout = timeout
-            return
         if not isinstance(timeout, (int, float)) or timeout < 0:
             raise ValueError('timeouts must be non-negative numbers')
         self.hard_timeout = timeout
@@ -629,11 +624,13 @@ class Task(object):
         if self.process.poll() is None:
 
             # timeout check
-            if ((datetime.utcnow() - self.started_at).seconds >= self.soft_timeout and
+            if (self.soft_timeout != 0 and
+                (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout and
                 not self.terminate_sent):
                 self.terminate()
 
-            if ((datetime.utcnow() - self.started_at).seconds >= self.hard_timeout and
+            if (self.hard_timeout != 0 and
+                (datetime.utcnow() - self.started_at).seconds >= self.hard_timeout and
                 not self.kill_sent):
                 self.kill()
 
