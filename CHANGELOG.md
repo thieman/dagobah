@@ -1,3 +1,7 @@
+### v0.1.3 ()
+
+  * Add soft (SIGTERM) and hard (SIGKILL) timeouts to Tasks
+
 ### v0.1.2 (June 26, 2013)
 
  * Add single-user auth mechanism
