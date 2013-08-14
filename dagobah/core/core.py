@@ -683,9 +683,10 @@ class Task(object):
 
         self._task_complete(success=True if self.process.returncode == 0 else False,
                             return_code=self.process.returncode,
-                            stdout = self.stdout,
-                            stderr = self.stderr,
-                            complete_time = datetime.utcnow())
+                            stdout=self.stdout,
+                            stderr=self.stderr,
+                            complete_time=datetime.utcnow(),
+                            retry_count=self.retry_count)
 
 
     def terminate(self):
@@ -831,6 +832,7 @@ class Task(object):
                   'started_at': self.started_at,
                   'completed_at': self.completed_at,
                   'success': self.successful,
+                  'max_retries': self.max_retries,
                   'retry_count': self.retry_count,
                   'soft_timeout': self.soft_timeout,
                   'hard_timeout': self.hard_timeout}

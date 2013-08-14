@@ -87,12 +87,14 @@ class DagobahTask(Base):
     started_at = Column(DateTime)
     completed_at = Column(DateTime)
     success = Column(String(30))
-    soft_timeout = Column(Integer)
-    hard_timeout = Column(Integer)
+    max_retries = Column(Integer, nullable=False)
+    soft_timeout = Column(Integer, nullable=False)
+    hard_timeout = Column(Integer, nullable=False)
 
     def __init__(self, name, command):
         self.name = name
         self.command = command
+        self.max_retries = 0
         self.soft_timeout = 0
         self.hard_timeout = 0
 
@@ -106,13 +108,14 @@ class DagobahTask(Base):
                 'started_at': self.started_at,
                 'completed_at': self.completed_at,
                 'success': self.success,
+                'max_retries': self.max_retries,
                 'soft_timeout': self.soft_timeout,
                 'hard_timeout': self.hard_timeout}
 
     def update_from_dict(self, data):
         for key in ['job_id', 'name', 'command', 'started_at',
-                    'completed_at', 'success', 'soft_timeout',
-                    'hard_timeout']:
+                    'completed_at', 'success', 'max_retries',
+                    'soft_timeout', 'hard_timeout']:
             if key in data:
                 setattr(self, key, data[key])
 
