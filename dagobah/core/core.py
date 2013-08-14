@@ -82,7 +82,9 @@ class Dagobah(object):
             for task in job_json.get('tasks', []):
                 self.add_task_to_job(job,
                                      str(task['command']),
-                                     str(task['name']))
+                                     str(task['name']),
+                                     soft_timeout=task.get('soft_timeout', 0),
+                                     hard_timeout=task.get('hard_timeout', 0))
 
             dependencies = job_json.get('dependencies', {})
             for from_node, to_nodes in dependencies.iteritems():
@@ -146,7 +148,8 @@ class Dagobah(object):
         raise DagobahError('no job with name %s exists' % job_name)
 
 
-    def add_task_to_job(self, job_or_job_name, task_command, task_name=None):
+    def add_task_to_job(self, job_or_job_name, task_command, task_name=None,
+                        **kwargs):
         """ Add a task to a job owned by the Dagobah instance. """
 
         if isinstance(job_or_job_name, Job):
@@ -161,7 +164,7 @@ class Dagobah(object):
             raise DagobahError("job's graph is immutable in its current state: %s"
                                % job.state.status)
 
-        job.add_task(task_command, task_name)
+        job.add_task(task_command, task_name, **kwargs)
         job.commit()
 
 
@@ -221,7 +224,7 @@ class Job(DAG):
         self.parent.commit()
 
 
-    def add_task(self, command, name=None):
+    def add_task(self, command, name=None, **kwargs):
         """ Adds a new Task to the graph with no edges. """
 
         if not self.state.allow_change_graph:
@@ -230,7 +233,7 @@ class Job(DAG):
 
         if name is None:
             name = command
-        new_task = Task(self, command, name)
+        new_task = Task(self, command, name, **kwargs)
         self.tasks[name] = new_task
         self.add_node(name)
         self.commit()
@@ -283,7 +286,7 @@ class Job(DAG):
         if cron_schedule is None:
             self.cron_schedule = None
             self.cron_iter = None
-            self.next_run =None
+            self.next_run = None
 
         else:
             if base_datetime is None:
@@ -408,6 +411,12 @@ class Job(DAG):
         for key in ['name', 'command']:
             if key in kwargs and isinstance(kwargs[key], str):
                 setattr(task, key, kwargs[key])
+
+        if 'soft_timeout' in kwargs:
+            task.set_soft_timeout(kwargs['soft_timeout'])
+
+        if 'hard_timeout' in kwargs:
+            task.set_hard_timeout(kwargs['hard_timeout'])
 
         if 'name' in kwargs and isinstance(kwargs['name'], str):
             self.rename_edges(task_name, kwargs['name'])
@@ -557,7 +566,8 @@ class Task(object):
     current serialization of the task with run logs.
     """
 
-    def __init__(self, parent_job, command, name):
+    def __init__(self, parent_job, command, name,
+                 soft_timeout=0, hard_timeout=0):
         self.parent_job = parent_job
         self.backend = self.parent_job.backend
         self.event_handler = self.parent_job.event_handler
@@ -578,7 +588,25 @@ class Task(object):
 
         self.max_retries = 0
         self.retry_count = 0
+        self.terminate_sent = False
+        self.kill_sent = False
 
+        self.set_soft_timeout(soft_timeout)
+        self.set_hard_timeout(hard_timeout)
+
+        self.parent_job.commit()
+
+    def set_soft_timeout(self, timeout):
+        if not isinstance(timeout, (int, float)) or timeout < 0:
+            raise ValueError('timeouts must be non-negative numbers')
+        self.soft_timeout = timeout
+        self.parent_job.commit()
+
+    def set_hard_timeout(self, timeout):
+        if not isinstance(timeout, (int, float)) or timeout < 0:
+            raise ValueError('timeouts must be non-negative numbers')
+        self.hard_timeout = timeout
+        self.parent_job.commit()
 
     def reset(self, retry=False):
         """ Reset this Task to a clean state prior to execution. """
@@ -591,6 +619,8 @@ class Task(object):
             self.completed_at = None
             self.successful = None
 
+        self.terminate_sent = False
+        self.kill_sent = False
 
     def start(self, retry=False):
         """ Begin execution of this task. """
@@ -606,7 +636,6 @@ class Task(object):
 
         self._start_check_timer()
 
-
     def retry(self):
         """ Retry a task without transitioning to the failure state. """
 
@@ -618,6 +647,18 @@ class Task(object):
         """ Runs completion flow for this task if it's finished. """
 
         if self.process.poll() is None:
+
+            # timeout check
+            if (self.soft_timeout != 0 and
+                (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout and
+                not self.terminate_sent):
+                self.terminate()
+
+            if (self.hard_timeout != 0 and
+                (datetime.utcnow() - self.started_at).seconds >= self.hard_timeout and
+                not self.kill_sent):
+                self.kill()
+
             self._start_check_timer()
             return
 
@@ -625,6 +666,11 @@ class Task(object):
                                     self._read_temp_file(self.stderr_file))
         for temp_file in [self.stdout_file, self.stderr_file]:
             temp_file.close()
+
+        if self.terminate_sent:
+            self.stderr += '\nDAGOBAH SENT SIGTERM TO THIS PROCESS\n'
+        if self.kill_sent:
+            self.stderr += '\nDAGOBAH SENT SIGKILL TO THIS PROCESS\n'
 
         self.stdout_file = None
         self.stderr_file = None
@@ -646,6 +692,7 @@ class Task(object):
         """ Send SIGTERM to the task's process. """
         if not self.process:
             raise DagobahError('task does not have a running process')
+        self.terminate_sent = True
         self.process.terminate()
 
 
@@ -653,6 +700,7 @@ class Task(object):
         """ Send SIGKILL to the task's process. """
         if not self.process:
             raise DagobahError('task does not have a running process')
+        self.kill_sent = True
         self.process.kill()
 
 
@@ -783,7 +831,9 @@ class Task(object):
                   'started_at': self.started_at,
                   'completed_at': self.completed_at,
                   'success': self.successful,
-                  'retry_count': self.retry_count}
+                  'retry_count': self.retry_count,
+                  'soft_timeout': self.soft_timeout,
+                  'hard_timeout': self.hard_timeout}
 
         if include_run_logs:
             last_run = self.backend.get_latest_run_log(self.parent_job.job_id,

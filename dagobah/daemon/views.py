@@ -38,4 +38,8 @@ def task_detail(job_id=None, task_name=None):
     """ Show a detailed description of a specific task. """
     jobs = get_jobs()
     job = [job for job in jobs if str(job['job_id']) == job_id][0]
-    return render_template('task_detail.html', job=job, task_name=task_name)
+    return render_template('task_detail.html',
+                           job=job,
+                           task_name=task_name,
+                           task=[task for task in job['tasks']
+                                 if task['name'] == task_name][0])

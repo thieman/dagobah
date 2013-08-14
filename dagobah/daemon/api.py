@@ -323,7 +323,9 @@ def edit_task():
                          job_name=str,
                          task_name=str,
                          name=str,
-                         command=str):
+                         command=str,
+                         soft_timeout=int,
+                         hard_timeout=int):
         abort(400)
 
     job = dagobah.get_job(args['job_name'])
@@ -334,3 +336,43 @@ def edit_task():
     del args['job_name']
     del args['task_name']
     job.edit_task(task.name, **args)
+
+
+@app.route('/api/set_soft_timeout', methods=['POST'])
+@login_required
+@api_call
+def set_soft_timeout():
+    args = dict(request.form)
+    if not validate_dict(args,
+                         required=['job_name', 'task_name', 'soft_timeout'],
+                         job_name=str,
+                         task_name=str,
+                         soft_timeout=int):
+        abort(400)
+
+    job = dagobah.get_job(args['job_name'])
+    task = job.tasks.get(args['task_name'], None)
+    if not task:
+        abort(400)
+
+    task.set_soft_timeout(args['soft_timeout'])
+
+
+@app.route('/api/set_hard_timeout', methods=['POST'])
+@login_required
+@api_call
+def set_hard_timeout():
+    args = dict(request.form)
+    if not validate_dict(args,
+                         required=['job_name', 'task_name', 'hard_timeout'],
+                         job_name=str,
+                         task_name=str,
+                         hard_timeout=int):
+        abort(400)
+
+    job = dagobah.get_job(args['job_name'])
+    task = job.tasks.get(args['task_name'], None)
+    if not task:
+        abort(400)
+
+    task.set_hard_timeout(args['hard_timeout'])

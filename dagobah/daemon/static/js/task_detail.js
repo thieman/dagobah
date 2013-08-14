@@ -1,3 +1,47 @@
+$('#save-soft-timeout').click(function() {
+
+	$.ajax({
+		type: 'POST',
+		url: $SCRIPT_ROOT + '/api/set_soft_timeout',
+		data: {
+			job_name: jobName,
+			task_name: taskName,
+			soft_timeout: $('#soft-timeout').val()
+		},
+		dataType: 'json',
+		async: true,
+		success: function() {
+			showAlert('soft-timeout-alert', 'success', 'Soft timeout set');
+		},
+		error: function() {
+			showAlert('soft-timeout-alert', 'error', 'There was an error setting the soft timeout');
+		}
+	});
+
+});
+
+$('#save-hard-timeout').click(function() {
+
+	$.ajax({
+		type: 'POST',
+		url: $SCRIPT_ROOT + '/api/set_hard_timeout',
+		data: {
+			job_name: jobName,
+			task_name: taskName,
+			hard_timeout: $('#hard-timeout').val()
+		},
+		dataType: 'json',
+		async: true,
+		success: function() {
+			showAlert('hard-timeout-alert', 'success', 'Hard timeout set');
+		},
+		error: function() {
+			showAlert('hard-timeout-alert', 'error', 'There was an error setting the hard timeout');
+		}
+	});
+
+});
+
 function showLogText(logType, value) {
 	var newText = '';
 	for (var i = 0; i < value.length; i++) {

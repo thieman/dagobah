@@ -180,6 +180,8 @@ class SQLiteBackend(BaseBackend):
 
             existing.update_from_dict(task_data)
 
+        self.session.commit()
+
 
     def get_latest_run_log(self, job_id, task_name):
         log = self.session.query(DagobahLog).\

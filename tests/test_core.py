@@ -188,13 +188,17 @@ def test_serialize_dagobah():
                                         'retry_count': 0,
                                         'completed_at': None,
                                         'started_at': None,
-                                        'success': None},
+                                        'success': None,
+                                        'soft_timeout': 0,
+                                        'hard_timeout': 0},
                                        {'command': 'grep',
                                         'name': 'grep',
                                         'retry_count': 0,
                                         'completed_at': None,
                                         'started_at': None,
-                                        'success': None},],
+                                        'success': None,
+                                        'soft_timeout': 0,
+                                        'hard_timeout': 0},],
                              'dependencies': {'list': ['grep'],
                                               'grep': []},
                              'status': 'waiting',
@@ -224,3 +228,16 @@ def test_scheduler_monitoring():
         sleep(1)
 
     raise ValueError('scheduler did not start job')
+
+
+@with_setup(blank_dagobah)
+def test_construct_with_timeouts():
+    dagobah.add_job('test_job')
+    dagobah.add_task_to_job('test_job', 'echo "dagobah"', 'From Dagobah',
+                            soft_timeout=60, hard_timeout=120)
+    job = dagobah.get_job('test_job')
+    job.add_task('echo "job"', 'From Job', soft_timeout=10, hard_timeout=20)
+    assert job.tasks['From Dagobah'].soft_timeout == 60
+    assert job.tasks['From Dagobah'].hard_timeout == 120
+    assert job.tasks['From Job'].soft_timeout == 10
+    assert job.tasks['From Job'].hard_timeout == 20
