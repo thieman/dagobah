@@ -5,6 +5,11 @@ from datetime import datetime
 import time
 import threading
 import subprocess
+import paramiko
+import base64
+import StringIO
+import select
+from multiprocessing import Process, Manager
 
 from croniter import croniter
 
@@ -84,7 +89,9 @@ class Dagobah(object):
                                      str(task['command']),
                                      str(task['name']),
                                      soft_timeout=task.get('soft_timeout', 0),
-                                     hard_timeout=task.get('hard_timeout', 0))
+                                     hard_timeout=task.get('hard_timeout', 0),
+                                     task_target=task.get('task_target', None),
+                                     task_target_key=task.get('task_target_key', None))
 
             dependencies = job_json.get('dependencies', {})
             for from_node, to_nodes in dependencies.iteritems():
@@ -99,7 +106,6 @@ class Dagobah(object):
 
         If cascade is True, all child Jobs are commited as well.
         """
-
         self.backend.commit_dagobah(self._serialize())
         if cascade:
             [job.commit() for job in self.jobs]
@@ -151,7 +157,6 @@ class Dagobah(object):
     def add_task_to_job(self, job_or_job_name, task_command, task_name=None,
                         **kwargs):
         """ Add a task to a job owned by the Dagobah instance. """
-
         if isinstance(job_or_job_name, Job):
             job = job_or_job_name
         else:
@@ -566,13 +571,17 @@ class Task(object):
     """
 
     def __init__(self, parent_job, command, name,
-                 soft_timeout=0, hard_timeout=0):
+                 soft_timeout=0, hard_timeout=0, task_target=None, task_target_key=None):
         self.parent_job = parent_job
         self.backend = self.parent_job.backend
         self.event_handler = self.parent_job.event_handler
         self.command = command
         self.name = name
+        self.task_target = task_target
+        self.task_target_key = task_target_key
 
+        self.remote_process = None
+        
         self.process = None
         self.stdout = None
         self.stderr = None
@@ -622,19 +631,51 @@ class Task(object):
     def start(self):
         """ Begin execution of this task. """
         self.reset()
-        self.process = subprocess.Popen(self.command,
-                                        shell=True,
-                                        stdout=self.stdout_file,
-                                        stderr=self.stderr_file)
-        self.started_at = datetime.utcnow()
+        if self.task_target:
+            self.stdout = Manager().Value(unicode, '')
+            self.stderr = Manager().Value(unicode, '')
+            self.remote_exit_status = Manager().Value('i', -1)
+
+            self.remote_process = Process(target=self.remote_ssh, args=[self.stdout, self.stderr, self.remote_exit_status])
+            self.remote_process.start()
+        else:
+            self.process = subprocess.Popen(self.command,
+                                            shell=True,
+                                            stdout=self.stdout_file,
+                                            stderr=self.stderr_file)
+        
+        self.started_at = datetime.utcnow() 
         self._start_check_timer()
 
+    def remote_ssh(self, stdout, stderr, exit_status):
+        try:
+            private_key = StringIO.StringIO(str(self.task_target_key))
+            key = paramiko.DSSKey.from_private_key(private_key)
+        except paramiko.SSHException:
+            private_key = StringIO.StringIO(str(self.task_target_key))
+            key = paramiko.RSAKey.from_private_key(private_key)
+        
+        username_host = self.task_target.split("@")
+
+        client = paramiko.SSHClient()
+        client.load_system_host_keys()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(username_host[1], username=username_host[0], pkey=key)
+
+        stdin_remote, stdout_remote, stderr_remote = client.exec_command(self.command)
+
+        stdout.value = "".join(stdout_remote.readlines())
+        if stderr_remote:
+            stderr.value = "".join(stderr_remote.readlines())
+        exit_status.value = stdout_remote.channel.recv_exit_status() 
 
     def check_complete(self):
         """ Runs completion flow for this task if it's finished. """
+        if self.remote_process and self.remote_process.is_alive():
+            self._start_check_timer()
+            return
 
-        if self.process.poll() is None:
-
+        if self.process and self.process.poll() is None:
             # timeout check
             if (self.soft_timeout != 0 and
                 (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout and
@@ -649,10 +690,16 @@ class Task(object):
             self._start_check_timer()
             return
 
-        self.stdout, self.stderr = (self._read_temp_file(self.stdout_file),
+        if self.remote_process:
+            return_code = self.remote_exit_status.value
+            self.stdout = self.stdout.value
+            self.stderr = self.stderr.value
+        else:
+            return_code = self.process.returncode
+            self.stdout, self.stderr = (self._read_temp_file(self.stdout_file),
                                     self._read_temp_file(self.stderr_file))
-        for temp_file in [self.stdout_file, self.stderr_file]:
-            temp_file.close()
+            for temp_file in [self.stdout_file, self.stderr_file]:
+                temp_file.close()
 
         if self.terminate_sent:
             self.stderr += '\nDAGOBAH SENT SIGTERM TO THIS PROCESS\n'
@@ -662,8 +709,8 @@ class Task(object):
         self.stdout_file = None
         self.stderr_file = None
 
-        self._task_complete(success=True if self.process.returncode == 0 else False,
-                            return_code=self.process.returncode,
+        self._task_complete(success=True if return_code == 0 else False,
+                            return_code=return_code,
                             stdout = self.stdout,
                             stderr = self.stderr,
                             complete_time = datetime.utcnow())
@@ -671,6 +718,9 @@ class Task(object):
 
     def terminate(self):
         """ Send SIGTERM to the task's process. """
+        if self.remote_process:
+            self.remote_process.terminate()
+            return
         if not self.process:
             raise DagobahError('task does not have a running process')
         self.terminate_sent = True
@@ -679,6 +729,10 @@ class Task(object):
 
     def kill(self):
         """ Send SIGKILL to the task's process. """
+        if self.remote_process:
+            self.remote_process.terminate()
+            return
+
         if not self.process:
             raise DagobahError('task does not have a running process')
         self.kill_sent = True
@@ -813,7 +867,9 @@ class Task(object):
                   'completed_at': self.completed_at,
                   'success': self.successful,
                   'soft_timeout': self.soft_timeout,
-                  'hard_timeout': self.hard_timeout}
+                  'hard_timeout': self.hard_timeout,
+                  'task_target': self.task_target,
+                  'task_target_key': self.task_target_key }
 
         if include_run_logs:
             last_run = self.backend.get_latest_run_log(self.parent_job.job_id,

@@ -226,6 +226,8 @@ $('#add-task').click(function() {
 
 	var newName = $('#new-task-name').val();
 	var newCommand = $('#new-task-command').val();
+	var newTargetHost = $('#target-host').val();
+	var newTargetHostKey = $('#target-host-key').val()
 
 	if (newName === null || newName === '') {
 		showAlert('new-alert', 'error', 'Please enter a name for the new task.');
@@ -236,40 +238,69 @@ $('#add-task').click(function() {
 		return;
 	}
 
-	addNewTask(newName, newCommand);
+	addNewTask(newName, newCommand, newTargetHost, newTargetHostKey);
 
 });
 
-function addNewTask(newName, newCommand) {
+function addNewTask(newName, newCommand, newTargetHost, newTargetHostKey) {
 
 	if (!job.loaded) {
 		return;
 	}
 
-	$.ajax({
-		type: 'POST',
-		url: $SCRIPT_ROOT + '/api/add_task_to_job',
-		data: {
-			job_name: job.name,
-			task_name: newName,
-			task_command: newCommand
-		},
-		dataType: 'json',
-		success: function() {
-			showAlert('new-alert', 'success', 'Task added to job.');
-			job.update(function() {
-				job.addTaskToGraph(newName);
-				resetTasksTable();
-			});
-			$('#new-task-name').val('');
-			$('#new-task-command').val('');
-		},
-		error: function() {
-			showAlert('new-alert', 'error', 'There was an error adding the task to this job.');
-		},
-		async: true
-	});
-
+	if(newTargetHost){
+		$.ajax({
+			type: 'POST',
+			url: $SCRIPT_ROOT + '/api/add_task_to_job',
+			data: {
+				job_name: job.name,
+				task_name: newName,
+				task_command: newCommand,
+				task_target: newTargetHost,
+				task_target_key: newTargetHostKey
+			},
+			dataType: 'json',
+			success: function() {
+				showAlert('new-alert', 'success', 'Task added to job.');
+				job.update(function() {
+					job.addTaskToGraph(newName);
+					resetTasksTable();
+				});
+				$('#new-task-name').val('');
+				$('#new-task-command').val('');
+				$('#target-host').val('');
+				$('#target-host-key').val('');
+			},
+			error: function() {
+				showAlert('new-alert', 'error', 'There was an error adding the task to this job.');
+			},
+			async: true
+		});
+	} else {
+		$.ajax({
+			type: 'POST',
+			url: $SCRIPT_ROOT + '/api/add_task_to_job',
+			data: {
+				job_name: job.name,
+				task_name: newName,
+				task_command: newCommand
+			},
+			dataType: 'json',
+			success: function() {
+				showAlert('new-alert', 'success', 'Task added to job.');
+				job.update(function() {
+					job.addTaskToGraph(newName);
+					resetTasksTable();
+				});
+				$('#new-task-name').val('');
+				$('#new-task-command').val('');
+			},
+			error: function() {
+				showAlert('new-alert', 'error', 'There was an error adding the task to this job.');
+			},
+			async: true
+		});
+	}
 }
 
 function resetTasksTable(tableMode) {
