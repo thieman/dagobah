@@ -10,6 +10,7 @@ Dagobahd:
   app_secret: 'g\xde\xf5\x06@K\xf5:\x1fmZ\xac\x1fO\xe8\xcd\xde\xcf\x90\xaeY7\x8c\x96'
 
   # credentials for single-user auth
+  auth_disabled: False
   password: dagobah
 
   # choose one of the available backends

@@ -14,7 +14,6 @@ app = Flask(__name__)
 
 login_manager = LoginManager()
 login_manager.login_view = "login"
-login_manager.init_app(app)
 
 location = os.path.realpath(os.path.join(os.getcwd(),
                                          os.path.dirname(__file__)))
@@ -75,6 +74,9 @@ def return_standard_conf():
 def configure_app():
 
     app.secret_key = get_conf(config, 'Dagobahd.app_secret', 'default_secret')
+    app.config['LOGIN_DISABLED'] = get_conf(config,
+                                            'Dagobahd.auth_disabled',
+                                            False)
     app.config['APP_PASSWORD'] = get_conf(config,
                                           'Dagobahd.password', 'dagobah')
 
@@ -82,6 +84,8 @@ def configure_app():
     app.config['AUTH_ATTEMPTS'] = []
     app.config['APP_HOST'] = get_conf(config, 'Dagobahd.host', '127.0.0.1')
     app.config['APP_PORT'] = get_conf(config, 'Dagobahd.port', '9000')
+
+    login_manager.init_app(app)
 
 
 def get_conf(config, path, default=None):
