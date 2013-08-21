@@ -84,7 +84,8 @@ class Dagobah(object):
                                      str(task['command']),
                                      str(task['name']),
                                      soft_timeout=task.get('soft_timeout', 0),
-                                     hard_timeout=task.get('hard_timeout', 0))
+                                     hard_timeout=task.get('hard_timeout', 0),
+                                     task_target=task.get('task_target', None))
 
             dependencies = job_json.get('dependencies', {})
             for from_node, to_nodes in dependencies.iteritems():
@@ -99,7 +100,6 @@ class Dagobah(object):
 
         If cascade is True, all child Jobs are commited as well.
         """
-
         self.backend.commit_dagobah(self._serialize())
         if cascade:
             [job.commit() for job in self.jobs]
@@ -566,12 +566,13 @@ class Task(object):
     """
 
     def __init__(self, parent_job, command, name,
-                 soft_timeout=0, hard_timeout=0):
+                 soft_timeout=0, hard_timeout=0, task_target=None):
         self.parent_job = parent_job
         self.backend = self.parent_job.backend
         self.event_handler = self.parent_job.event_handler
         self.command = command
         self.name = name
+        self.task_target = task_target
 
         self.process = None
         self.stdout = None
@@ -622,10 +623,17 @@ class Task(object):
     def start(self):
         """ Begin execution of this task. """
         self.reset()
-        self.process = subprocess.Popen(self.command,
-                                        shell=True,
-                                        stdout=self.stdout_file,
-                                        stderr=self.stderr_file)
+        if self.task_target:
+            self.process = subprocess.Popen(["ssh", "stack@%s" % self.task_target, self.command],
+                                            shell=False,
+                                            stdout=self.stdout_file,
+                                            stderr=self.stderr_file)
+        else:
+            self.process = subprocess.Popen(self.command,
+                                            shell=True,
+                                            stdout=self.stdout_file,
+                                            stderr=self.stderr_file)
+
         self.started_at = datetime.utcnow()
         self._start_check_timer()
 
@@ -813,7 +821,8 @@ class Task(object):
                   'completed_at': self.completed_at,
                   'success': self.successful,
                   'soft_timeout': self.soft_timeout,
-                  'hard_timeout': self.hard_timeout}
+                  'hard_timeout': self.hard_timeout,
+                  'task_target': self.task_target }
 
         if include_run_logs:
             last_run = self.backend.get_latest_run_log(self.parent_job.job_id,

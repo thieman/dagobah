@@ -69,7 +69,6 @@ class SQLiteBackend(BaseBackend):
 
 
     def commit_dagobah(self, dagobah_json):
-
         rec = self.session.query(Dagobah).\
             filter_by(id=dagobah_json['dagobah_id']).\
             first()
@@ -249,7 +248,6 @@ class SQLiteBackend(BaseBackend):
 
         # update and create tasks
         for task_data in job_tasks:
-
             existing = self.session.query(DagobahTask).\
                 filter_by(job_id=job_rec.id).\
                 filter_by(name=task_data['name']).\

@@ -145,9 +145,15 @@ def add_task_to_job():
                          task_name=str):
         abort(400)
 
-    dagobah.add_task_to_job(args['job_name'],
-                            args['task_command'],
-                            args['task_name'])
+    if args['task_target']:
+        dagobah.add_task_to_job(args['job_name'],
+                                args['task_command'],
+                                args['task_name'],
+                                task_target=args['task_target'][0])
+    else:
+        dagobah.add_task_to_job(args['job_name'],
+                                args['task_command'],
+                                args['task_name'])
 
 
 @app.route('/api/delete_task', methods=['POST'])
