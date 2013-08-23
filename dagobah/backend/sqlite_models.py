@@ -66,7 +66,7 @@ class DagobahJob(Base):
 
     def update_from_dict(self, data):
         for key in ['parent_id', 'name', 'status', 'cron_schedule',
-                    'next_run', 'task_target']:
+                    'next_run', 'task_target', 'task_target_key']:
             if key in data:
                 setattr(self, key, data[key])
 
@@ -77,7 +77,7 @@ class DagobahJob(Base):
         return result
 
 #Note: Update "def from_backend(self, dagobah_id)" in core.py if you change the model.
-#Else it will overwrite the data
+#Else it will overwrite the data and in Task._serialize
 class DagobahTask(Base):
     __tablename__ = 'dagobah_task'
 
@@ -86,6 +86,7 @@ class DagobahTask(Base):
     name = Column(String(1000), nullable=False)
     command = Column(String(1000), nullable=False)
     task_target = Column(String(1000))
+    task_target_key = Column(String(10000))
     started_at = Column(DateTime)
     completed_at = Column(DateTime)
     success = Column(String(30))
@@ -110,12 +111,13 @@ class DagobahTask(Base):
                 'success': self.success,
                 'soft_timeout': self.soft_timeout,
                 'hard_timeout': self.hard_timeout,
-                'task_target': self.task_target}
+                'task_target': self.task_target,
+                'task_target_key': self.task_target_key}
 
     def update_from_dict(self, data):
         for key in ['job_id', 'name', 'command', 'started_at',
                     'completed_at', 'success', 'soft_timeout',
-                    'hard_timeout', 'task_target']:
+                    'hard_timeout', 'task_target', 'task_target_key']:
             if key in data:
                 setattr(self, key, data[key])
 

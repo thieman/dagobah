@@ -6,7 +6,10 @@ import time
 import threading
 import subprocess
 import paramiko
-from multiprocessing import Process
+import base64
+import StringIO
+import select
+from multiprocessing import Process, Manager
 
 from croniter import croniter
 
@@ -87,7 +90,8 @@ class Dagobah(object):
                                      str(task['name']),
                                      soft_timeout=task.get('soft_timeout', 0),
                                      hard_timeout=task.get('hard_timeout', 0),
-                                     task_target=task.get('task_target', None))
+                                     task_target=task.get('task_target', None),
+                                     task_target_key=task.get('task_target_key', None))
 
             dependencies = job_json.get('dependencies', {})
             for from_node, to_nodes in dependencies.iteritems():
@@ -153,7 +157,6 @@ class Dagobah(object):
     def add_task_to_job(self, job_or_job_name, task_command, task_name=None,
                         **kwargs):
         """ Add a task to a job owned by the Dagobah instance. """
-
         if isinstance(job_or_job_name, Job):
             job = job_or_job_name
         else:
@@ -568,16 +571,17 @@ class Task(object):
     """
 
     def __init__(self, parent_job, command, name,
-                 soft_timeout=0, hard_timeout=0, task_target=None):
+                 soft_timeout=0, hard_timeout=0, task_target=None, task_target_key=None):
         self.parent_job = parent_job
         self.backend = self.parent_job.backend
         self.event_handler = self.parent_job.event_handler
         self.command = command
         self.name = name
         self.task_target = task_target
+        self.task_target_key = task_target_key
 
         self.remote_process = None
-
+        
         self.process = None
         self.stdout = None
         self.stderr = None
@@ -628,8 +632,7 @@ class Task(object):
         """ Begin execution of this task. """
         self.reset()
         if self.task_target:
-            import multiprocessing
-            self.stdout = multiprocessing.Manager().Value(unicode, 'a')
+            self.stdout = Manager().Value(unicode, '')
             self.remote_process = Process(target=self.remote_ssh, args=[self.stdout])
             self.remote_process.start()
         else:
@@ -642,13 +645,26 @@ class Task(object):
         self._start_check_timer()
 
     def remote_ssh(self, stdout):
+        private_key = StringIO.StringIO(str(self.task_target_key))
+        key = paramiko.RSAKey.from_private_key(private_key)
+        username_host = self.task_target.split("@")
+
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(self.task_target, username='x', password='x') #Pass this from UI
+
+        client.connect(username_host[1], username=username_host[0], pkey=key)
+        
         channel = client.get_transport().open_session()
         channel.exec_command(self.command)
         stdout.value = channel.recv(1024)
+        
+        #rl, wl, xl = select.select([channel],[],[],0.0)
+        #if len(rl) > 0:
+        #Try to handle stderr
+        # if len(xl) > 0:
+        #     stderr.value = channel.recv(1024)
+        
 
 
     def check_complete(self):
@@ -849,7 +865,8 @@ class Task(object):
                   'success': self.successful,
                   'soft_timeout': self.soft_timeout,
                   'hard_timeout': self.hard_timeout,
-                  'task_target': self.task_target }
+                  'task_target': self.task_target,
+                  'task_target_key': self.task_target_key }
 
         if include_run_logs:
             last_run = self.backend.get_latest_run_log(self.parent_job.job_id,

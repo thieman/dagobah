@@ -227,6 +227,7 @@ $('#add-task').click(function() {
 	var newName = $('#new-task-name').val();
 	var newCommand = $('#new-task-command').val();
 	var newTargetHost = $('#target-host').val();
+	var newTargetHostKey = $('#target-host-key').val()
 
 	if (newName === null || newName === '') {
 		showAlert('new-alert', 'error', 'Please enter a name for the new task.');
@@ -237,11 +238,11 @@ $('#add-task').click(function() {
 		return;
 	}
 
-	addNewTask(newName, newCommand, newTargetHost);
+	addNewTask(newName, newCommand, newTargetHost, newTargetHostKey);
 
 });
 
-function addNewTask(newName, newCommand, newTargetHost) {
+function addNewTask(newName, newCommand, newTargetHost, newTargetHostKey) {
 
 	if (!job.loaded) {
 		return;
@@ -255,7 +256,8 @@ function addNewTask(newName, newCommand, newTargetHost) {
 				job_name: job.name,
 				task_name: newName,
 				task_command: newCommand,
-				task_target: newTargetHost
+				task_target: newTargetHost,
+				task_target_key: newTargetHostKey
 			},
 			dataType: 'json',
 			success: function() {
@@ -267,6 +269,7 @@ function addNewTask(newName, newCommand, newTargetHost) {
 				$('#new-task-name').val('');
 				$('#new-task-command').val('');
 				$('#target-host').val('');
+				$('#target-host-key').val('');
 			},
 			error: function() {
 				showAlert('new-alert', 'error', 'There was an error adding the task to this job.');

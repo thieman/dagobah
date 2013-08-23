@@ -149,7 +149,8 @@ def add_task_to_job():
         dagobah.add_task_to_job(args['job_name'],
                                 args['task_command'],
                                 args['task_name'],
-                                task_target=args['task_target'][0])
+                                task_target=args['task_target'][0],
+                                task_target_key=args['task_target_key'][0])
     else:
         dagobah.add_task_to_job(args['job_name'],
                                 args['task_command'],

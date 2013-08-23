@@ -77,7 +77,10 @@
 
 </div>
 
-Remote host: {{ task.task_target }}
+Remote host:
+<input class="input-xxlarge" id="disabledInput" type="text" placeholder={{ task.task_target }}  disabled>
+
+
 <div id='logs' class='row'>
   <div class='span12'>
 
