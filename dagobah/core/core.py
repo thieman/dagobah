@@ -699,6 +699,9 @@ class Task(object):
 
     def terminate(self):
         """ Send SIGTERM to the task's process. """
+        if self.remote_process:
+            self.remote_process.terminate()
+            return
         if not self.process:
             raise DagobahError('task does not have a running process')
         self.terminate_sent = True
@@ -707,6 +710,10 @@ class Task(object):
 
     def kill(self):
         """ Send SIGKILL to the task's process. """
+        if self.remote_process:
+            self.remote_process.terminate()
+            return
+
         if not self.process:
             raise DagobahError('task does not have a running process')
         self.kill_sent = True
