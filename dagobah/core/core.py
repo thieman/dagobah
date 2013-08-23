@@ -633,7 +633,8 @@ class Task(object):
         self.reset()
         if self.task_target:
             self.stdout = Manager().Value(unicode, '')
-            self.remote_process = Process(target=self.remote_ssh, args=[self.stdout])
+            self.remote_existstaus = Manager().Value('i', -1)
+            self.remote_process = Process(target=self.remote_ssh, args=[self.stdout, self.remote_existstaus])
             self.remote_process.start()
         else:
             self.process = subprocess.Popen(self.command,
@@ -644,7 +645,7 @@ class Task(object):
         self.started_at = datetime.utcnow() 
         self._start_check_timer()
 
-    def remote_ssh(self, stdout):
+    def remote_ssh(self, stdout, exitstatus):
         private_key = StringIO.StringIO(str(self.task_target_key))
         key = paramiko.RSAKey.from_private_key(private_key)
         username_host = self.task_target.split("@")
@@ -658,7 +659,8 @@ class Task(object):
         channel = client.get_transport().open_session()
         channel.exec_command(self.command)
         stdout.value = channel.recv(1024)
-        
+        exitstatus.value = channel.recv_exit_status()
+
         #rl, wl, xl = select.select([channel],[],[],0.0)
         #if len(rl) > 0:
         #Try to handle stderr
@@ -689,7 +691,7 @@ class Task(object):
             return
 
         if self.remote_process:
-            returncode = self.remote_process.exitcode
+            returncode = self.remote_existstaus.value
             self.stdout = self.stdout.value
         else:
             returncode = self.process.returncode
