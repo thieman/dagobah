@@ -5,6 +5,8 @@ from datetime import datetime
 import time
 import threading
 import subprocess
+import paramiko
+from multiprocessing import Process
 
 from croniter import croniter
 
@@ -574,6 +576,8 @@ class Task(object):
         self.name = name
         self.task_target = task_target
 
+        self.remote_process = None
+
         self.process = None
         self.stdout = None
         self.stderr = None
@@ -624,25 +628,36 @@ class Task(object):
         """ Begin execution of this task. """
         self.reset()
         if self.task_target:
-            self.process = subprocess.Popen(["ssh", "stack@%s" % self.task_target, self.command],
-                                            shell=False,
-                                            stdout=self.stdout_file,
-                                            stderr=self.stderr_file)
+            import multiprocessing
+            self.stdout = multiprocessing.Manager().Value(unicode, 'a')
+            self.remote_process = Process(target=self.remote_ssh, args=[self.stdout])
+            self.remote_process.start()
         else:
             self.process = subprocess.Popen(self.command,
                                             shell=True,
                                             stdout=self.stdout_file,
                                             stderr=self.stderr_file)
-
-        self.started_at = datetime.utcnow()
+        
+        self.started_at = datetime.utcnow() 
         self._start_check_timer()
+
+    def remote_ssh(self, stdout):
+        client = paramiko.SSHClient()
+        client.load_system_host_keys()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(self.task_target, username='x', password='x') #Pass this from UI
+        channel = client.get_transport().open_session()
+        channel.exec_command(self.command)
+        stdout.value = channel.recv(1024)
 
 
     def check_complete(self):
         """ Runs completion flow for this task if it's finished. """
+        if self.remote_process and self.remote_process.is_alive():
+            self._start_check_timer()
+            return
 
-        if self.process.poll() is None:
-
+        if self.process and self.process.poll() is None:
             # timeout check
             if (self.soft_timeout != 0 and
                 (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout and
@@ -657,10 +672,15 @@ class Task(object):
             self._start_check_timer()
             return
 
-        self.stdout, self.stderr = (self._read_temp_file(self.stdout_file),
+        if self.remote_process:
+            returncode = self.remote_process.exitcode
+            self.stdout = self.stdout.value
+        else:
+            returncode = self.process.returncode
+            self.stdout, self.stderr = (self._read_temp_file(self.stdout_file),
                                     self._read_temp_file(self.stderr_file))
-        for temp_file in [self.stdout_file, self.stderr_file]:
-            temp_file.close()
+            for temp_file in [self.stdout_file, self.stderr_file]:
+                temp_file.close()
 
         if self.terminate_sent:
             self.stderr += '\nDAGOBAH SENT SIGTERM TO THIS PROCESS\n'
@@ -670,8 +690,8 @@ class Task(object):
         self.stdout_file = None
         self.stderr_file = None
 
-        self._task_complete(success=True if self.process.returncode == 0 else False,
-                            return_code=self.process.returncode,
+        self._task_complete(success=True if returncode == 0 else False,
+                            return_code=returncode,
                             stdout = self.stdout,
                             stderr = self.stderr,
                             complete_time = datetime.utcnow())

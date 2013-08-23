@@ -145,7 +145,7 @@ def add_task_to_job():
                          task_name=str):
         abort(400)
 
-    if args['task_target']:
+    if args.get('task_target', None):
         dagobah.add_task_to_job(args['job_name'],
                                 args['task_command'],
                                 args['task_name'],
