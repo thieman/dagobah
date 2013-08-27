@@ -633,8 +633,10 @@ class Task(object):
         self.reset()
         if self.task_target:
             self.stdout = Manager().Value(unicode, '')
-            self.remote_existstaus = Manager().Value('i', -1)
-            self.remote_process = Process(target=self.remote_ssh, args=[self.stdout, self.remote_existstaus])
+            self.stderr = Manager().Value(unicode, '')
+            self.remote_exit_status = Manager().Value('i', -1)
+
+            self.remote_process = Process(target=self.remote_ssh, args=[self.stdout, self.stderr, self.remote_exit_status])
             self.remote_process.start()
         else:
             self.process = subprocess.Popen(self.command,
@@ -645,29 +647,27 @@ class Task(object):
         self.started_at = datetime.utcnow() 
         self._start_check_timer()
 
-    def remote_ssh(self, stdout, exitstatus):
-        private_key = StringIO.StringIO(str(self.task_target_key))
-        key = paramiko.RSAKey.from_private_key(private_key)
+    def remote_ssh(self, stdout, stderr, exit_status):
+        try:
+            private_key = StringIO.StringIO(str(self.task_target_key))
+            key = paramiko.DSSKey.from_private_key(private_key)
+        except paramiko.SSHException:
+            private_key = StringIO.StringIO(str(self.task_target_key))
+            key = paramiko.RSAKey.from_private_key(private_key)
+        
         username_host = self.task_target.split("@")
 
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
         client.connect(username_host[1], username=username_host[0], pkey=key)
-        
-        channel = client.get_transport().open_session()
-        channel.exec_command(self.command)
-        stdout.value = channel.recv(1024)
-        exitstatus.value = channel.recv_exit_status()
 
-        #rl, wl, xl = select.select([channel],[],[],0.0)
-        #if len(rl) > 0:
-        #Try to handle stderr
-        # if len(xl) > 0:
-        #     stderr.value = channel.recv(1024)
-        
+        stdin_remote, stdout_remote, stderr_remote = client.exec_command(self.command)
 
+        stdout.value = "".join(stdout_remote.readlines())
+        if stderr_remote:
+            stderr.value = "".join(stderr_remote.readlines())
+        exit_status.value = stdout_remote.channel.recv_exit_status() 
 
     def check_complete(self):
         """ Runs completion flow for this task if it's finished. """
@@ -691,10 +691,11 @@ class Task(object):
             return
 
         if self.remote_process:
-            returncode = self.remote_existstaus.value
+            return_code = self.remote_exit_status.value
             self.stdout = self.stdout.value
+            self.stderr = self.stderr.value
         else:
-            returncode = self.process.returncode
+            return_code = self.process.returncode
             self.stdout, self.stderr = (self._read_temp_file(self.stdout_file),
                                     self._read_temp_file(self.stderr_file))
             for temp_file in [self.stdout_file, self.stderr_file]:
@@ -708,8 +709,8 @@ class Task(object):
         self.stdout_file = None
         self.stderr_file = None
 
-        self._task_complete(success=True if returncode == 0 else False,
-                            return_code=returncode,
+        self._task_complete(success=True if return_code == 0 else False,
+                            return_code=return_code,
                             stdout = self.stdout,
                             stderr = self.stderr,
                             complete_time = datetime.utcnow())
