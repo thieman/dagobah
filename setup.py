@@ -37,7 +37,7 @@ setup(name='dagobah',
                                 'daemon/static/lib/Kickstrap1.3.2/Kickstrap/apps/tinygrowl/*',
                                 'daemon/templates/*',
                                 'daemon/dagobahd.yml']},
-      install_requires=['croniter', 'pyyaml', 'flask', 'premailer', 'flask-login'],
+      install_requires=['croniter', 'pyyaml', 'flask', 'premailer', 'flask-login', 'paramiko'],
       test_suite='nose.collector',
       tests_require=['nose', 'pymongo'],
       entry_points={'console_scripts':

@@ -91,7 +91,8 @@ class Dagobah(object):
                                      soft_timeout=task.get('soft_timeout', 0),
                                      hard_timeout=task.get('hard_timeout', 0),
                                      task_target=task.get('task_target', None),
-                                     task_target_key=task.get('task_target_key', None))
+                                     task_target_key=task.get('task_target_key', None),
+                                     task_target_password=task.get('task_target_password', None))
 
             dependencies = job_json.get('dependencies', {})
             for from_node, to_nodes in dependencies.iteritems():
@@ -231,7 +232,6 @@ class Job(DAG):
 
     def add_task(self, command, name=None, **kwargs):
         """ Adds a new Task to the graph with no edges. """
-
         if not self.state.allow_change_graph:
             raise DagobahError("job's graph is immutable in its current state: %s"
                                % self.state.status)
@@ -423,6 +423,9 @@ class Job(DAG):
         if 'hard_timeout' in kwargs:
             task.set_hard_timeout(kwargs['hard_timeout'])
 
+        if 'task_target' in kwargs:
+            task.set_task_target(kwargs['task_target'][0])
+
         if 'name' in kwargs and isinstance(kwargs['name'], str):
             self.rename_edges(task_name, kwargs['name'])
             self.tasks[kwargs['name']] = task
@@ -571,7 +574,8 @@ class Task(object):
     """
 
     def __init__(self, parent_job, command, name,
-                 soft_timeout=0, hard_timeout=0, task_target=None, task_target_key=None):
+                 soft_timeout=0, hard_timeout=0, task_target=None, task_target_key=None,
+                 task_target_password=None):
         self.parent_job = parent_job
         self.backend = self.parent_job.backend
         self.event_handler = self.parent_job.event_handler
@@ -579,6 +583,7 @@ class Task(object):
         self.name = name
         self.task_target = task_target
         self.task_target_key = task_target_key
+        self.task_target_password = task_target_password
 
         self.remote_process = None
         
@@ -614,6 +619,10 @@ class Task(object):
         self.hard_timeout = timeout
         self.parent_job.commit()
 
+    def set_task_target(self, task_target):
+        self.task_target = task_target
+        self.parent_job.commit()
+
     def reset(self):
         """ Reset this Task to a clean state prior to execution. """
 
@@ -636,16 +645,18 @@ class Task(object):
             self.stderr = Manager().Value(unicode, '')
             self.remote_exit_status = Manager().Value('i', -1)
 
-            self.remote_process = Process(target=self.remote_ssh, args=[self.stdout, self.stderr, self.remote_exit_status])
+            self.remote_process = Process(target=self.remote_ssh, args=[
+                                          self.stdout, self.stderr, self.remote_exit_status])
             self.remote_process.start()
         else:
             self.process = subprocess.Popen(self.command,
                                             shell=True,
                                             stdout=self.stdout_file,
                                             stderr=self.stderr_file)
-        
-        self.started_at = datetime.utcnow() 
+
+        self.started_at = datetime.utcnow()
         self._start_check_timer()
+
 
     def remote_ssh(self, stdout, stderr, exit_status):
         try:
@@ -654,20 +665,28 @@ class Task(object):
         except paramiko.SSHException:
             private_key = StringIO.StringIO(str(self.task_target_key))
             key = paramiko.RSAKey.from_private_key(private_key)
-        
+
         username_host = self.task_target.split("@")
 
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(username_host[1], username=username_host[0], pkey=key)
 
-        stdin_remote, stdout_remote, stderr_remote = client.exec_command(self.command)
+        if self.task_target_password:
+            client.connect(username_host[1], username=username_host[
+                           0], password=self.task_target_password)
+        else:
+            client.connect(
+                username_host[1], username=username_host[0], pkey=key)
+
+        stdin_remote, stdout_remote, stderr_remote = client.exec_command(
+            self.command)
 
         stdout.value = "".join(stdout_remote.readlines())
         if stderr_remote:
             stderr.value = "".join(stderr_remote.readlines())
-        exit_status.value = stdout_remote.channel.recv_exit_status() 
+        exit_status.value = stdout_remote.channel.recv_exit_status()
+
 
     def check_complete(self):
         """ Runs completion flow for this task if it's finished. """
@@ -697,7 +716,7 @@ class Task(object):
         else:
             return_code = self.process.returncode
             self.stdout, self.stderr = (self._read_temp_file(self.stdout_file),
-                                    self._read_temp_file(self.stderr_file))
+                                        self._read_temp_file(self.stderr_file))
             for temp_file in [self.stdout_file, self.stderr_file]:
                 temp_file.close()
 
@@ -869,7 +888,8 @@ class Task(object):
                   'soft_timeout': self.soft_timeout,
                   'hard_timeout': self.hard_timeout,
                   'task_target': self.task_target,
-                  'task_target_key': self.task_target_key }
+                  'task_target_key': self.task_target_key,
+                  'task_target_password': self.task_target_password }
 
         if include_run_logs:
             last_run = self.backend.get_latest_run_log(self.parent_job.job_id,
