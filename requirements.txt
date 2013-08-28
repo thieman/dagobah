@@ -12,3 +12,4 @@ wsgiref==0.1.2
 zope.interface==4.0.5
 premailer==1.13
 flask-login==0.1.3
+paramiko==1.11.0
