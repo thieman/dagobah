@@ -76,8 +76,7 @@ class DagobahJob(Base):
             result[dep.from_task.name].append(dep.to_task.name)
         return result
 
-#Note: Update "def from_backend(self, dagobah_id)" in core.py if you change the model.
-#Else it will overwrite the data and in Task._serialize
+
 class DagobahTask(Base):
     __tablename__ = 'dagobah_task'
 
