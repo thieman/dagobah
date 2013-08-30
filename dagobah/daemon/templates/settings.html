@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block head %}
+{{ super() }}
+
+<link rel="stylesheet" href="/static/css/settings.css"></link>
+{% endblock head %}
+
+{% block content %}
+
+<div class='page-header'>
+  <h3>Settings</h3>
+</div>
+
+{% endblock content %}
+
+{% block body_scripts %}
+  <script src="/static/js/settings.js"></script>
+{% endblock body_scripts %}

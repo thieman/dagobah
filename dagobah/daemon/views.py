@@ -43,3 +43,10 @@ def task_detail(job_id=None, task_name=None):
                            task_name=task_name,
                            task=[task for task in job['tasks']
                                  if task['name'] == task_name][0])
+
+
+@app.route('/settings', methods=['GET'])
+@login_required
+def settings_view():
+    """ View for managing app-wide configuration. """
+    return render_template('settings.html')
