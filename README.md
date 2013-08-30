@@ -18,7 +18,7 @@ You can also [use Dagobah directly in Python.](docs/python_example.md)
 
 On first start, `dagobahd` will create a [config file](dagobah/daemon/dagobahd.yml) at `~/.dagobahd.yml`. You'll probably want to check that out to get your backend and email options set up before you start using Dagobah.
 
-Dagobah does not require a backend, but unless you specify one, your jobs and tasks will be lost when the daemon exists. Each backend requires its own set of drivers. Once you've installed the drivers, you then need to specify any backend-specific options in the config. [See the config file for details.](dagobah/daemon/dagobahd.yml)
+Dagobah does not require a backend, but unless you specify one, your jobs and tasks will be lost when the daemon exits. Each backend requires its own set of drivers. Once you've installed the drivers, you then need to specify any backend-specific options in the config. [See the config file for details.](dagobah/daemon/dagobahd.yml)
 
 ### Available Backends
 
