@@ -24,7 +24,7 @@ form button {
 }
 
 td:last-child {
-	width: 17%;
+	width: 21%;
 }
 
 td > i {
@@ -35,4 +35,16 @@ td > i {
 
 td:hover > i {
 	opacity: 1;
+}
+
+.inline.control-label {
+	width: 30%;
+}
+
+.aligned-input {
+	width: 300px !important;
+}
+
+.aligned-input[type=file] {
+	padding-right: 7px;
 }

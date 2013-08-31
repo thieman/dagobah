@@ -1,10 +1,13 @@
 """ HTTP API methods for Dagobah daemon. """
 
-from flask import request, abort
+import StringIO
+import json
+
+from flask import request, abort, send_file
 from flask_login import login_required
 
 from dagobah.daemon.daemon import app
-from dagobah.daemon.util import validate_dict, api_call
+from dagobah.daemon.util import validate_dict, api_call, allowed_file
 
 dagobah = app.config['dagobah']
 
@@ -376,3 +379,33 @@ def set_hard_timeout():
         abort(400)
 
     task.set_hard_timeout(args['hard_timeout'])
+
+
+@app.route('/api/export_job', methods=['GET'])
+@login_required
+def export_job():
+    args = dict(request.args)
+    if not validate_dict(args,
+                         required=['job_name'],
+                         job_name=str):
+        abort(400)
+
+    job = dagobah.get_job(args['job_name'])
+
+    to_send = StringIO.StringIO()
+    to_send.write(json.dumps(job._serialize(strict_json=True)))
+    to_send.write('\n')
+    to_send.seek(0)
+
+    return send_file(to_send,
+                     attachment_filename='%s.json' % job.name,
+                     as_attachment=True)
+
+
+@app.route('/api/import_job', methods=['POST'])
+@login_required
+@api_call
+def import_job():
+    file = request.files['file']
+    if (file and allowed_file(file.filename, ['json'])):
+        dagobah.add_job_from_json(file.read(), destructive=True)

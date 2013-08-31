@@ -6,6 +6,8 @@ from datetime import datetime
 from collections import defaultdict
 import time
 import threading
+import json
+from bson import ObjectId
 
 
 class EventHandler(object):
@@ -115,3 +117,12 @@ class Scheduler(threading.Thread):
                         job.next_run = job.cron_iter.get_next(datetime)
             self.last_checked = now
             time.sleep(1)
+
+
+class StrictJSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, ObjectId):
+            return str(o)
+        elif isinstance(o, datetime):
+            return o.isoformat()
+        return json.JSONEncoder.default(self, o)

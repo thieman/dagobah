@@ -1,6 +1,7 @@
 ### v0.1.3 ()
 
   * Added soft (SIGTERM) and hard (SIGKILL) timeouts to Tasks
+  * Added job-level JSON import and export
   * Added Dagobahd.auth_disabled config key
   * Single-user auth can now be disabled through the app config
   * Updated Flask-Login to 0.2.6

@@ -18,7 +18,11 @@
       <td>
         <button class='btn btn-primary'
                 onclick="window.location.href = '{{ jobURL }}';">
-                View Job
+                View
+        </button>
+        <button class='btn btn-info job-export'
+                onclick="window.location.href = '{{ exportURL }}';">
+                Export
         </button>
         <button class='btn btn-danger job-delete' onclick="return false;"><i class='icon-trash'></i>
         </button>
@@ -68,11 +72,33 @@
   <div id='new-alert' class='alert hidden'>
   </div>
 
-  <h4 class='inline'>Add New Job</h4>
-  <form class='form form-horizontal'>
-    <input id='new-job-name' type='text' placeholder='Job Name'></input>
-    <button id='add-job' class='btn btn-success' onclick='return false;'>Add Job</button>
-  </form>
+  <div class='row'>
+    <div class='span12'>
+
+      <h4 class='inline control-label'>Add New Job</h4>
+      <form class='form form-inline'>
+        <input id='new-job-name' type='text' class='aligned-input' placeholder='Job Name'></input>
+        <button id='add-job' class='btn btn-success' onclick='return false;'>Add Job</button>
+      </form>
+
+    </div>
+  </div>
+
+  <div class='row'>
+    <div class='span12'>
+
+      <h4 class='inline control-label'>Import Job from JSON</h4>
+      <form id='job-importer' class='form form-inline'
+            enctype='multipart/form-data'
+            action='{{ url_for('jobs_import_view') }}'
+            method='post'>
+        <input id='new-job-name' type='file' name='file' class='aligned-input'></input>
+        <button id='import-job' type='submit'
+                class='btn btn-success' onsubmit='return false;'>Import Job</button>
+      </form>
+
+    </div>
+  </div>
 
 {% endblock content %}
 
