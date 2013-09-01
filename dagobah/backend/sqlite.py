@@ -100,11 +100,11 @@ class SQLiteBackend(BaseBackend):
                 first()
 
             if existing:
-                self._update_host_rec(existing, dagobah_json, 'dagobah')
+                self._update_host_rec(existing, dagobah_json)
             else:
                 new_host = DagobahHost(host['name'])
                 rec.hosts.append(new_host)
-                self._update_host_rec(new_host, dagobah_json, 'dagobah')
+                self._update_host_rec(new_host, dagobah_json)
 
         self.session.commit()
 
@@ -300,13 +300,27 @@ class SQLiteBackend(BaseBackend):
                 task_rec.update_from_dict(task)
 
 
-    def delete_host(self, host_id):
-        pass
+    def delete_host(self, host_id): 
+        host = self.session.query(DagobahHost).filter_by(id=host_id).one()
+        self.session.delete(host)
+        self.session.commit()
 
 
     def commit_host(self, host_json):
-        pass
+        rec = self.session.query(DagobahHost).\
+            filter_by(id=host_json['host_id']).\
+            first()
+
+        if not rec:
+            rec = DagobahHost(host_json['name'])
+            self.session.add(rec)
+
+        self._update_host_rec(rec, host_json)
+        self.session.commit()
 
 
-    def _update_host_rec(self, host_rec, in_data, data_type):
-        pass
+    def _update_host_rec(self, host_rec, job_data):
+        for host in job_data.get('hosts', []):
+            if host.get('name', None) == host_rec.name:
+                host_rec.update_from_dict(host)
+

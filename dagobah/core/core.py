@@ -89,6 +89,9 @@ class Dagobah(object):
         for job_json in rec.get('jobs', []):
             self._add_job_from_spec(job_json)
 
+        for host_json in rec.get('hosts', []):
+            self.add_host(str(host_json['name']), host_json['host_id'])
+
         self.commit(cascade=True)
 
 
@@ -101,9 +104,6 @@ class Dagobah(object):
             except:
                 pass
         self._add_job_from_spec(rec, use_job_id=False)
-
-        for host_json in rec.get('hosts', []):
-            self.add_host(str(host_json['name']), host_json['host_id'])
 
         self.commit(cascade=True)
 
@@ -168,22 +168,6 @@ class Dagobah(object):
         job.commit()
 
 
-    def add_host(self, host_name, host_id=None):
-        """ Create a new Host. """
-        if not self._host_is_added(host_name):
-            raise DagobahError('name %s is already added' % host_name)
-
-        if not host_id:
-            host_id = self.backend.get_new_job_id()
-
-        self.hosts.append(Host(self,
-                             self.backend,
-                             host_id,
-                             host_name))
-
-        host = self.get_host(host_name)
-        host.commit()
-
     def get_job(self, job_name):
         """ Returns a Job by name, or None if none exists. """
         for job in self.jobs:
@@ -242,6 +226,7 @@ class Dagobah(object):
         host = self.get_host(host_name)
         host.commit()
 
+
     def _host_is_added(self, host_name):
         """ Returns Boolean of whether the specified host is already added. """
         return (False
@@ -261,7 +246,8 @@ class Dagobah(object):
                   'created_jobs': self.created_jobs,
                   'jobs': [job._serialize(include_run_logs=include_run_logs,
                                           strict_json=strict_json)
-                           for job in self.jobs]}
+                           for job in self.jobs],
+                   'hosts': [host._serialize() for host in self.hosts]}
         if strict_json:
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
@@ -501,9 +487,6 @@ class Job(DAG):
         if 'hard_timeout' in kwargs:
             task.set_hard_timeout(kwargs['hard_timeout'])
 
-        if 'task_target' in kwargs:
-            task.set_task_target(kwargs['task_target'][0])
-
         if 'name' in kwargs and isinstance(kwargs['name'], str):
             self.rename_edges(task_name, kwargs['name'])
             self.tasks[kwargs['name']] = task
@@ -664,6 +647,7 @@ class Task(object):
         self.command = command
         self.name = name
 
+        self.host_id = None
         self.remote_process = None
         
         self.process = None
@@ -698,6 +682,9 @@ class Task(object):
         self.hard_timeout = timeout
         self.parent_job.commit()
 
+    def add_host_to_task(host_id):
+        pass
+
     def reset(self):
         """ Reset this Task to a clean state prior to execution. """
 
@@ -715,7 +702,7 @@ class Task(object):
     def start(self):
         """ Begin execution of this task. """
         self.reset()
-        if self.task_target:
+        if self.host_id:
             self.stdout = Manager().Value(unicode, '')
             self.stderr = Manager().Value(unicode, '')
             self.remote_exit_status = Manager().Value('i', -1)
@@ -734,25 +721,26 @@ class Task(object):
 
 
     def remote_ssh(self, stdout, stderr, exit_status):
-        try:
-            private_key = StringIO.StringIO(str("MY_KEY"))
-            key = paramiko.DSSKey.from_private_key(private_key)
-        except paramiko.SSHException:
-            private_key = StringIO.StringIO(str("MY_KEY"))
-            key = paramiko.RSAKey.from_private_key(private_key)
-
-        username_host = self.task_target.split("@")
+        # Get it from self.host_id
+        host = ''
+        username = ''
+        password = ''
+        key = ''
 
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-        if self.task_target_password:
-            client.connect(username_host[1], username=username_host[
-                           0], password="MY_PASSWORD")
+        if self.password:
+            client.connect(host, username=username, password=password)
         else:
-            client.connect(
-                username_host[1], username=username_host[0], pkey=key)
+            try:
+                private_key = StringIO.StringIO(str(key))
+                key = paramiko.DSSKey.from_private_key(private_key)
+            except paramiko.SSHException:
+                private_key = StringIO.StringIO(str(key))
+                key = paramiko.RSAKey.from_private_key(private_key)
+            client.connect(host, username=username, pkey=key)
 
         stdin_remote, stdout_remote, stderr_remote = client.exec_command(
             self.command)
