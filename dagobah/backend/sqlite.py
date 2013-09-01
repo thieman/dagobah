@@ -57,6 +57,10 @@ class SQLiteBackend(BaseBackend):
         count = self.session.query(sqlalchemy.func.max(DagobahJob.id)).scalar()
         return max(count, 0) + 1
 
+    def get_new_host_id(self):
+        count = self.session.query(sqlalchemy.func.max(DagobahHost.id)).scalar()
+        return max(count, 0) + 1
+
     def get_new_log_id(self):
         count = self.session.query(sqlalchemy.func.max(DagobahLog.id)).scalar()
         return max(count, 0) + 1
@@ -95,14 +99,14 @@ class SQLiteBackend(BaseBackend):
 
         for host in dagobah_json.get('hosts', []):
 
-            existing = self.session.query(DagobahJob).\
+            existing = self.session.query(DagobahHost).\
                 filter_by(id=host['host_id']).\
                 first()
 
             if existing:
                 self._update_host_rec(existing, dagobah_json)
             else:
-                new_host = DagobahHost(host['name'])
+                new_host = DagobahHost(host['host_name'])
                 rec.hosts.append(new_host)
                 self._update_host_rec(new_host, dagobah_json)
 
@@ -312,7 +316,11 @@ class SQLiteBackend(BaseBackend):
             first()
 
         if not rec:
-            rec = DagobahHost(host_json['name'])
+            rec = DagobahHost(host_json['host_name'], host_json['host_username'])
+            if host_json['host_password']:
+                rec.password = host_json['host_password']
+            else:
+                rec.key = host_json['host_key']
             self.session.add(rec)
 
         self._update_host_rec(rec, host_json)
@@ -321,6 +329,6 @@ class SQLiteBackend(BaseBackend):
 
     def _update_host_rec(self, host_rec, job_data):
         for host in job_data.get('hosts', []):
-            if host.get('name', None) == host_rec.name:
+            if host.get('host_name', None) == host_rec.name:
                 host_rec.update_from_dict(host)
 

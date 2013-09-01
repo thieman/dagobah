@@ -124,14 +124,15 @@ class Host(object):
     Controler for remote hosts
     """
 
-    def __init__(self, parent, backend, host_name, host_username, host_key=None,
+    def __init__(self, parent, backend, host_id, host_name, host_username, host_key=None,
                  host_password=None):
         self.parent = parent
         self.backend = backend
-        self.host_name = host_name
-        self.host_username = host_username
-        self.host_password = host_password
-        self.host_key = host_key
+        self.id = host_id
+        self.name = host_name
+        self.username = host_username
+        self.password = host_password
+        self.key = host_key
 
     def commit(self):
         """ Store metadata on this Host to the backend. """
@@ -142,10 +143,11 @@ class Host(object):
     def _serialize(self):
         """ Serialize a representation of this Host to a Python dict. """
 
-        result = {'host_name': self.host_name,
-                  'host_username': self.host_username,
-                  'host_password': self.host_password,
-                  'host_key': self.host_key }
+        result = {'host_id': self.id,
+                  'host_name': self.name,
+                  'host_username': self.username,
+                  'host_password': self.password,
+                  'host_key': self.key }
 
         return result
 

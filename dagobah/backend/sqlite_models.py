@@ -18,6 +18,7 @@ class Dagobah(Base):
     created_jobs = Column(Integer, nullable=False)
 
     jobs = relationship('DagobahJob', backref='parent')
+    hosts = relationship('DagobahHost', backref='parent')
 
     def __init__(self):
         self.created_jobs = 0
@@ -29,7 +30,8 @@ class Dagobah(Base):
     def json(self):
         return {'dagobah_id': self.id,
                 'created_jobs': self.created_jobs,
-                'jobs': [job.json for job in self.jobs]}
+                'jobs': [job.json for job in self.jobs],
+                'hosts': [host.json for host in self.hosts]}
 
 
 class DagobahJob(Base):
@@ -84,14 +86,13 @@ class DagobahTask(Base):
     job_id = Column(Integer, ForeignKey('dagobah_job.id'), index=True)
     name = Column(String(1000), nullable=False)
     command = Column(String(1000), nullable=False)
-    task_target = Column(String(1000))
     started_at = Column(DateTime)
     completed_at = Column(DateTime)
     success = Column(String(30))
     soft_timeout = Column(Integer)
     hard_timeout = Column(Integer)
 
-    hosts = relationship('DagobahHost', backref='task')
+    host_id = Column(Integer, ForeignKey('dagobah_host.id'), index=True)
 
     def __init__(self, name, command):
         self.name = name
@@ -111,13 +112,12 @@ class DagobahTask(Base):
                 'success': self.success,
                 'soft_timeout': self.soft_timeout,
                 'hard_timeout': self.hard_timeout,
-                'task_target': self.task_target,
-                'hosts': [host.json for host in self.hosts]}
+                'host_id': self.host_id}
 
     def update_from_dict(self, data):
         for key in ['job_id', 'name', 'command', 'started_at',
                     'completed_at', 'success', 'soft_timeout',
-                    'hard_timeout', 'task_target']:
+                    'hard_timeout', 'host_id']:
             if key in data:
                 setattr(self, key, data[key])
 
@@ -222,11 +222,13 @@ class DagobahHost(Base):
     __tablename__ = 'dagobah_host'
 
     id = Column(Integer, primary_key=True)
-    task_id = Column(Integer, ForeignKey('dagobah_task.id'), index=True)
+    parent_id = Column(Integer, ForeignKey('dagobah.id'), index=True)
     name = Column(String(1000), nullable=False)
     username = Column(String(1000), nullable=False)
     password = Column(String(1000))
     key = Column(String(1000))
+
+    tasks = relationship('DagobahTask', backref='host')
 
     def __init__(self, name, username):
         self.name = name

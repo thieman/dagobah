@@ -415,21 +415,23 @@ def import_job():
 @login_required
 @api_call
 def add_host():
-    #TODO: Why is a list being passed?
-    import ipdb; ipdb.set_trace()
     args = dict(request.form)
     if not validate_dict(args,
                          required=['host_name', 'host_username'],
                          host_name=str,
                          host_username=str):
         abort(400)
-    if not args['host_key'] and args['host_password']:
+    if args.get('host_key', None) is None and args.get('host_password', None) is None:
         abort(400)
 
-    dagobah.add_host(args['host_name'][0],
-                     args['host_username'][0],
-                     args['host_password'][0],
-                     args['host_key'][0])
+    if args.get('host_password', None): 
+        dagobah.add_host(args['host_name'],
+                         args['host_username'],
+                         host_password=args['host_password'][0])
+    else:
+        dagobah.add_host(args['host_name'],
+                 args['host_username'],
+                 host_key=args['host_key'][0])
 
 
 @app.route('/api/add_host_to_task', methods=['POST'])

@@ -32,6 +32,8 @@ class BaseBackend(object):
     def get_new_job_id(self):
         return binascii.hexlify(os.urandom(16))
 
+    def get_new_host_id(self):
+        return binascii.hexlify(os.urandom(16))
 
     def get_new_log_id(self):
         return binascii.hexlify(os.urandom(16))

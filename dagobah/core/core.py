@@ -211,17 +211,22 @@ class Dagobah(object):
         job.add_task(task_command, task_name, **kwargs)
         job.commit()
 
-    def add_host(self, host_name, host_username, host_password=None, host_key=None):
+    def add_host(self, host_name, host_username, host_password=None, 
+                    host_key=None, host_id=None):
         """ Add a new host """
         if not self._host_is_added(host_name):
             raise DagobahError('Host %s is already added.' % host_name)
 
+        if not host_id:
+            host_id = self.backend.get_new_host_id()
+
         self.hosts.append(Host(self,
                                self.backend,
+                               host_id,
                                host_name,
                                host_username,
-                               host_password,
-                               host_key))
+                               host_password=host_password,
+                               host_key=host_key))
 
         host = self.get_host(host_name)
         host.commit()
