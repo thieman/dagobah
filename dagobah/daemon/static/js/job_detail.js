@@ -39,6 +39,15 @@ function runWhenJobLoaded() {
 		setInterval(updateJobStatusViews, 500);
 		setInterval(updateJobNextRun, 500);
 		setInterval(updateTasksTable, 500);
+		//Get hosts
+		$.getJSON($SCRIPT_ROOT + '/api/hosts', {},
+			function(result) {
+				var options = $("#target_hosts_dropdown");
+				$.each(result['result'], function() {
+					options.append($("<option />").val(this.host_id).text(this.host_name));
+				});
+			}
+		);
 	} else {
 		setTimeout(runWhenJobLoaded, 50);
 	}

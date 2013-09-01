@@ -411,6 +411,13 @@ def import_job():
         dagobah.add_job_from_json(file.read(), destructive=True)
 
 
+@app.route('/api/hosts', methods=['GET'])
+@login_required
+@api_call
+def get_hosts():
+    return dagobah._serialize().get('hosts', {})
+
+
 @app.route('/api/add_host', methods=['POST'])
 @login_required
 @api_call
