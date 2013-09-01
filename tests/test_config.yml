@@ -1,3 +1,7 @@
+SQLiteBackend:
+
+  filepath: memory
+
 MongoBackend:
 
     host: localhost

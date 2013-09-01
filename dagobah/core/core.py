@@ -5,6 +5,7 @@ from datetime import datetime
 import time
 import threading
 import subprocess
+import json
 import paramiko
 import base64
 import StringIO
@@ -14,6 +15,7 @@ from multiprocessing import Process, Manager
 from croniter import croniter
 
 from dagobah.core.dag import DAG
+from dagobah.core.components import Scheduler, JobState, StrictJSONEncoder
 from dagobah.core.components import Scheduler, JobState, Host
 from dagobah.backend.base import BaseBackend
 
@@ -69,42 +71,65 @@ class Dagobah(object):
 
     def from_backend(self, dagobah_id):
         """ Reconstruct this Dagobah instance from the backend. """
-
         rec = self.backend.get_dagobah_json(dagobah_id)
         if not rec:
-            raise DagobahError('dagobah with id %s does not exist in backend' %
-                               dagobah_id)
+            raise DagobahError('dagobah with id %s does not exist '
+                               'in backend' % dagobah_id)
+        self._construct_from_json(rec)
 
-        # delete current version of this Dagobah instance
+
+    def _construct_from_json(self, rec):
+        """ Construct this Dagobah instance from a JSON document. """
+
         self.delete()
 
         for required_key in ['dagobah_id', 'created_jobs']:
             setattr(self, required_key, rec[required_key])
 
         for job_json in rec.get('jobs', []):
+            self._add_job_from_spec(job_json)
 
-            self.add_job(str(job_json['name']), job_json['job_id'])
-            job = self.get_job(job_json['name'])
-            if job_json.get('cron_schedule', None):
-                job.schedule(job_json['cron_schedule'])
+        self.commit(cascade=True)
 
-            for task in job_json.get('tasks', []):
-                self.add_task_to_job(job,
-                                     str(task['command']),
-                                     str(task['name']),
-                                     soft_timeout=task.get('soft_timeout', 0),
-                                     hard_timeout=task.get('hard_timeout', 0),
-                                     task_target=task.get('task_target', None))
 
-            dependencies = job_json.get('dependencies', {})
-            for from_node, to_nodes in dependencies.iteritems():
-                for to_node in to_nodes:
-                    job.add_dependency(from_node, to_node)
+    def add_job_from_json(self, job_json, destructive=False):
+        """ Construct a new Job from an imported JSON spec. """
+        rec = self.backend.decode_import_json(job_json)
+        if destructive:
+            try:
+                dagobah.delete_job(rec['name'])
+            except:
+                pass
+        self._add_job_from_spec(rec, use_job_id=False)
 
         for host_json in rec.get('hosts', []):
             self.add_host(str(host_json['name']), host_json['host_id'])
 
         self.commit(cascade=True)
+
+    def _add_job_from_spec(self, job_json, use_job_id=True):
+        """ Add a single job to the Dagobah from a spec. """
+
+        job_id = (job_json['job_id']
+                  if use_job_id
+                  else self.backend.get_new_job_id())
+        self.add_job(str(job_json['name']), job_id)
+        job = self.get_job(job_json['name'])
+        if job_json.get('cron_schedule', None):
+            job.schedule(job_json['cron_schedule'])
+
+        for task in job_json.get('tasks', []):
+            self.add_task_to_job(job,
+                                 str(task['command']),
+                                 str(task['name']),
+                                 soft_timeout=task.get('soft_timeout', 0),
+                                 hard_timeout=task.get('hard_timeout', 0))
+
+        dependencies = job_json.get('dependencies', {})
+        for from_node, to_nodes in dependencies.iteritems():
+            for to_node in to_nodes:
+                job.add_dependency(from_node, to_node)
+
 
 
     def commit(self, cascade=False):
@@ -173,13 +198,13 @@ class Dagobah(object):
                 return host
         return None
 
-
     def delete_job(self, job_name):
         """ Delete a job by name, or error out if no such job exists. """
         for idx, job in enumerate(self.jobs):
             if job.name == job_name:
                 self.backend.delete_job(job.job_id)
                 del self.jobs[idx]
+                self.commit()
                 return
         raise DagobahError('no job with name %s exists' % job_name)
 
@@ -230,13 +255,16 @@ class Dagobah(object):
                 else True)
 
 
-    def _serialize(self, include_run_logs=False):
+    def _serialize(self, include_run_logs=False, strict_json=False):
         """ Serialize a representation of this Dagobah object to JSON. """
-        return {'dagobah_id': self.dagobah_id,
-                'created_jobs': self.created_jobs,
-                'jobs': [job._serialize(include_run_logs=include_run_logs)
-                         for job in self.jobs],
-                'hosts': [host._serialize() for host in self.hosts]}
+        result = {'dagobah_id': self.dagobah_id,
+                  'created_jobs': self.created_jobs,
+                  'jobs': [job._serialize(include_run_logs=include_run_logs,
+                                          strict_json=strict_json)
+                           for job in self.jobs]}
+        if strict_json:
+            result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
+        return result
 
 
 class Job(DAG):
@@ -591,29 +619,34 @@ class Job(DAG):
         self.backend.commit_log(self.run_log)
 
 
-    def _serialize(self, include_run_logs=False):
+    def _serialize(self, include_run_logs=False, strict_json=False):
         """ Serialize a representation of this Job to a Python dict object. """
 
         # return tasks in sorted order if graph is in a valid state
         try:
             topo_sorted = self._topological_sort()
-            t = [self.tasks[task]._serialize(include_run_logs=include_run_logs)
+            t = [self.tasks[task]._serialize(include_run_logs=include_run_logs,
+                                             strict_json=strict_json)
                  for task in topo_sorted]
         except:
-            t = [task._serialize(include_run_logs=include_run_logs)
+            t = [task._serialize(include_run_logs=include_run_logs,
+                                 strict_json=strict_json)
                  for task in self.tasks.itervalues()]
 
-        return {'job_id': self.job_id,
-                'name': self.name,
-                'parent_id': self.parent.dagobah_id,
-                'tasks': t,
-                'dependencies': {k: list(v)
-                                 for k, v
-                                 in self.graph.iteritems()},
-                'status': self.state.status,
-                'cron_schedule': self.cron_schedule,
-                'next_run': self.next_run}
+        result = {'job_id': self.job_id,
+                  'name': self.name,
+                  'parent_id': self.parent.dagobah_id,
+                  'tasks': t,
+                  'dependencies': {k: list(v)
+                                   for k, v
+                                   in self.graph.iteritems()},
+                  'status': self.state.status,
+                  'cron_schedule': self.cron_schedule,
+                  'next_run': self.next_run}
 
+        if strict_json:
+            result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
+        return result
 
 class Task(object):
     """ Handles execution and reporting for an individual process.
@@ -624,13 +657,12 @@ class Task(object):
     """
 
     def __init__(self, parent_job, command, name,
-                 soft_timeout=0, hard_timeout=0, task_target=None):
+                 soft_timeout=0, hard_timeout=0):
         self.parent_job = parent_job
         self.backend = self.parent_job.backend
         self.event_handler = self.parent_job.event_handler
         self.command = command
         self.name = name
-        self.task_target = task_target
 
         self.remote_process = None
         
@@ -664,10 +696,6 @@ class Task(object):
         if not isinstance(timeout, (int, float)) or timeout < 0:
             raise ValueError('timeouts must be non-negative numbers')
         self.hard_timeout = timeout
-        self.parent_job.commit()
-
-    def set_task_target(self, task_target):
-        self.task_target = task_target
         self.parent_job.commit()
 
     def reset(self):
@@ -924,7 +952,7 @@ class Task(object):
         self.parent_job._complete_task(self.name, **kwargs)
 
 
-    def _serialize(self, include_run_logs=False):
+    def _serialize(self, include_run_logs=False, strict_json=False):
         """ Serialize a representation of this Task to a Python dict. """
 
         result = {'command': self.command,
@@ -933,8 +961,7 @@ class Task(object):
                   'completed_at': self.completed_at,
                   'success': self.successful,
                   'soft_timeout': self.soft_timeout,
-                  'hard_timeout': self.hard_timeout,
-                  'task_target': self.task_target }
+                  'hard_timeout': self.hard_timeout}
 
         if include_run_logs:
             last_run = self.backend.get_latest_run_log(self.parent_job.job_id,
@@ -944,5 +971,7 @@ class Task(object):
                 if run_log:
                     result['run_log'] = run_log
 
+        if strict_json:
+            result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
 

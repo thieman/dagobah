@@ -6,6 +6,7 @@ from copy import deepcopy
 import threading
 
 import sqlalchemy
+from dateutil import parser
 
 from dagobah.backend.base import BaseBackend
 from dagobah.backend.sqlite_models import (Base, Dagobah, DagobahJob,
@@ -26,7 +27,11 @@ class SQLiteBackend(BaseBackend):
             self.filepath = os.path.join(location, 'dagobah.db')
 
         connect_args = {'check_same_thread': False}
-        self.engine = sqlalchemy.create_engine('sqlite:///' + self.filepath,
+        self.connect_string = ('sqlite:///' + self.filepath
+                               if self.filepath != 'memory'
+                               else 'sqlite://')
+
+        self.engine = sqlalchemy.create_engine(self.connect_string,
                                                connect_args=connect_args)
         self.Session = sqlalchemy.orm.sessionmaker(bind=self.engine)
         self.session = self.Session()
@@ -35,10 +40,8 @@ class SQLiteBackend(BaseBackend):
 
         self.lock = threading.Lock()
 
-
     def __repr__(self):
         return '<SQLiteBackend (path: %s)>' % (self.filepath)
-
 
     def get_known_dagobah_ids(self):
         results = []
@@ -46,27 +49,27 @@ class SQLiteBackend(BaseBackend):
             results.append(rec.id)
         return results
 
-
     def get_new_dagobah_id(self):
         count = self.session.query(sqlalchemy.func.max(Dagobah.id)).scalar()
         return max(count, 0) + 1
-
 
     def get_new_job_id(self):
         count = self.session.query(sqlalchemy.func.max(DagobahJob.id)).scalar()
         return max(count, 0) + 1
 
-
     def get_new_log_id(self):
         count = self.session.query(sqlalchemy.func.max(DagobahLog.id)).scalar()
         return max(count, 0) + 1
-
 
     def get_dagobah_json(self, dagobah_id):
         return self.session.query(Dagobah).\
             filter_by(id=dagobah_id).\
             one().json
 
+    def decode_import_json(self, json_doc):
+        transformers = [([], parser.parse)]
+        return super(SQLiteBackend, self).decode_import_json(json_doc,
+                                                             transformers)
 
     def commit_dagobah(self, dagobah_json):
         rec = self.session.query(Dagobah).\
@@ -105,7 +108,6 @@ class SQLiteBackend(BaseBackend):
 
         self.session.commit()
 
-
     def delete_dagobah(self, dagobah_id):
         """ Deletes the Dagobah and all child Jobs from the database.
 
@@ -125,7 +127,6 @@ class SQLiteBackend(BaseBackend):
         self.session.delete(rec)
         self.session.commit()
 
-
     def commit_job(self, job_json):
 
         rec = self.session.query(DagobahJob).\
@@ -138,7 +139,6 @@ class SQLiteBackend(BaseBackend):
 
         self._update_job_rec(rec, job_json, 'job')
         self.session.commit()
-
 
     def delete_job(self, job_id):
 
@@ -158,7 +158,6 @@ class SQLiteBackend(BaseBackend):
         self.session.delete(job)
 
         self.session.commit()
-
 
     def commit_log(self, log_json):
 
@@ -197,7 +196,6 @@ class SQLiteBackend(BaseBackend):
 
         self.session.commit()
 
-
     def get_latest_run_log(self, job_id, task_name):
         log = self.session.query(DagobahLog).\
             filter_by(job_id=job_id).\
@@ -205,14 +203,11 @@ class SQLiteBackend(BaseBackend):
             first()
         return log.json
 
-
     def acquire_lock(self):
         self.lock.acquire()
 
-
     def release_lock(self):
         self.lock.release()
-
 
     def _update_job_rec(self, job_rec, in_data, data_type):
         """" Update the passed DagobahJob record and its children Tasks.
@@ -297,7 +292,6 @@ class SQLiteBackend(BaseBackend):
                     existing = DagobahDependency(from_task_id, to_task_id)
                     self.session.add(existing)
                     job_rec.dependencies.append(existing)
-
 
     def _update_task_rec(self, task_rec, job_data):
         """ Update the passed DagobahTask from a job data dict. """

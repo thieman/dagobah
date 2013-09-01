@@ -2,6 +2,7 @@
 
 import os
 import binascii
+import json
 
 class BaseBackend(object):
     """ Base class for prototypes and compound functions.
@@ -38,6 +39,59 @@ class BaseBackend(object):
 
     def get_dagobah_json(self, dagobah_id):
         return
+
+
+    def decode_import_json(self, json_doc, transformers=None):
+        """ Decode a JSON string based on a list of transformers.
+
+        Each transformer is a pair of ([conditional], transformer). If
+        all conditionals are met on each non-list, non-dict object,
+        the transformer tries to apply itself.
+
+        conditional: Callable that returns a Bool.
+        transformer: Callable transformer on non-dict, non-list objects.
+        """
+
+        def custom_decoder(dct):
+
+            def transform(o):
+
+                if not transformers:
+                    return o
+
+                for conditionals, transformer in transformers:
+
+                    conditions_met = True
+                    for conditional in conditionals:
+                        try:
+                            condition_met = conditional(o)
+                        except:
+                            condition_met = False
+                        if not condition_met:
+                            conditions_met = False
+                            break
+
+                    if not conditions_met:
+                        continue
+
+                    try:
+                        return transformer(o)
+                    except:
+                        pass
+
+                return o
+
+            for key in dct.iterkeys():
+                if isinstance(key, dict):
+                    custom_decoder(dct[key])
+                elif isinstance(key, list):
+                    [custom_decoder[elem] for elem in dct[key]]
+                else:
+                    dct[key] = transform(dct[key])
+
+            return dct
+
+        return json.loads(json_doc, object_hook=custom_decoder)
 
 
     def commit_dagobah(self, dagobah_json):

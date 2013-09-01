@@ -1,10 +1,13 @@
 """ HTTP API methods for Dagobah daemon. """
 
-from flask import request, abort
+import StringIO
+import json
+
+from flask import request, abort, send_file
 from flask_login import login_required
 
 from dagobah.daemon.daemon import app
-from dagobah.daemon.util import validate_dict, api_call
+from dagobah.daemon.util import validate_dict, api_call, allowed_file
 
 dagobah = app.config['dagobah']
 
@@ -145,15 +148,9 @@ def add_task_to_job():
                          task_name=str):
         abort(400)
 
-    if args.get('task_target', None):
-        dagobah.add_task_to_job(args['job_name'],
-                                args['task_command'],
-                                args['task_name'],
-                                task_target=args['task_target'][0])
-    else:
-        dagobah.add_task_to_job(args['job_name'],
-                                args['task_command'],
-                                args['task_name'])
+    dagobah.add_task_to_job(args['job_name'],
+                            args['task_command'],
+                            args['task_name'])
 
 
 @app.route('/api/delete_task', methods=['POST'])
@@ -384,41 +381,31 @@ def set_hard_timeout():
     task.set_hard_timeout(args['hard_timeout'])
 
 
-@app.route('/api/add_host', methods=['POST'])
+@app.route('/api/export_job', methods=['GET'])
+@login_required
+def export_job():
+    args = dict(request.args)
+    if not validate_dict(args,
+                         required=['job_name'],
+                         job_name=str):
+        abort(400)
+
+    job = dagobah.get_job(args['job_name'])
+
+    to_send = StringIO.StringIO()
+    to_send.write(json.dumps(job._serialize(strict_json=True)))
+    to_send.write('\n')
+    to_send.seek(0)
+
+    return send_file(to_send,
+                     attachment_filename='%s.json' % job.name,
+                     as_attachment=True)
+
+
+@app.route('/api/import_job', methods=['POST'])
 @login_required
 @api_call
-def add_host():
-    #TODO: Why is a list being passed?
-    import ipdb; ipdb.set_trace()
-    args = dict(request.form)
-    if not validate_dict(args,
-                         required=['host_name', 'host_username'],
-                         host_name=str,
-                         host_username=str):
-        abort(400)
-    if not args['host_key'] and args['host_password']:
-        abort(400)
-
-    dagobah.add_host(args['host_name'][0],
-                     args['host_username'][0],
-                     args['host_password'][0],
-                     args['host_key'][0])
-
-
-@app.route('/api/add_host_to_task', methods=['POST'])
-@login_required
-@api_call
-def add_host_to_task():
-    args = dict(request.form)
-    if not validate_dict(args,
-                         required=['task_name', 'host_id'],
-                         task_name=str,
-                         host_id=int):
-        abort(400)
-
-        job = dagobah.get_job(args['job_name'])
-        task = job.tasks.get(args['task_name'], None)
-        if not task:
-            abort(400)
-        task.add_host_to_task(args['host_id'][0])
-
+def import_job():
+    file = request.files['file']
+    if (file and allowed_file(file.filename, ['json'])):
+        dagobah.add_job_from_json(file.read(), destructive=True)

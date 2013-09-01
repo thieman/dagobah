@@ -1,5 +1,8 @@
 """ Tests on API methods. """
 
+import json
+import StringIO
+
 from flask import Flask, json
 import requests
 from nose.tools import nottest
@@ -151,3 +154,22 @@ class TestAPI(object):
         r = self.app.post('/api/set_hard_timeout', data=p_args)
         self.validate_api_call(r)
         assert self.dagobah.get_job('Test Job').tasks['grep'].hard_timeout == 0
+
+
+    def test_import_export(self):
+        self.reset_dagobah()
+        req = self.app.get('/api/export_job?job_name=%s' % 'Test Job')
+        j = json.loads(req.data)
+        self.dagobah.delete()
+        assert len(self.dagobah.jobs) == 0
+
+        io = StringIO.StringIO()
+        io.write(json.dumps(j))
+        io.seek(0)
+        r = self.app.post('/api/import_job', data={'file': (io, 'test_upload.json')})
+        self.validate_api_call(r)
+
+        assert len(self.dagobah.jobs) == 1
+        j = self.dagobah.jobs[0]
+        assert j.name == 'Test Job'
+        assert len(j.tasks) == 2

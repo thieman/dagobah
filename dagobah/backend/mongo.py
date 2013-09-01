@@ -1,6 +1,8 @@
 """ Mongo Backend class built on top of base Backend """
 
 from datetime import datetime
+import re
+import json
 
 import pymongo
 try:
@@ -13,6 +15,7 @@ try:
 except ImportError:
     from bson.objectid import ObjectId
 
+from dateutil import parser
 from dagobah.backend.base import BaseBackend
 
 TRUNCATE_LOG_SIZES_CHAR = {'stdout': 500000,
@@ -41,10 +44,8 @@ class MongoBackend(BaseBackend):
         self.job_coll = self.db[job_collection]
         self.log_coll = self.db[log_collection]
 
-
     def __repr__(self):
         return '<MongoBackend (host: %s, port: %s)>' % (self.host, self.port)
-
 
     def get_known_dagobah_ids(self):
         results = []
@@ -52,13 +53,11 @@ class MongoBackend(BaseBackend):
             results.append(rec['_id'])
         return results
 
-
     def get_new_dagobah_id(self):
         while True:
             candidate = ObjectId()
             if not self.dagobah_coll.find_one({'_id': candidate}):
                 return candidate
-
 
     def get_new_job_id(self):
         while True:
@@ -66,23 +65,27 @@ class MongoBackend(BaseBackend):
             if not self.job_coll.find_one({'_id': candidate}):
                 return candidate
 
-
     def get_new_log_id(self):
         while True:
             candidate = ObjectId()
             if not self.log_coll.find_one({'_id': candidate}):
                 return candidate
 
-
     def get_dagobah_json(self, dagobah_id):
         return self.dagobah_coll.find_one({'_id': dagobah_id})
 
+    def decode_import_json(self, json_doc):
+        def is_object_id(o):
+            return (re.match(re.compile('^[0-9a-fA-f]{24}$'), o) is not None)
+        transformers = [([is_object_id], ObjectId),
+                        ([], parser.parse)]
+        return super(MongoBackend, self).decode_import_json(json_doc,
+                                                            transformers)
 
     def commit_dagobah(self, dagobah_json):
         dagobah_json['_id'] = dagobah_json['dagobah_id']
         append = {'save_date': datetime.utcnow()}
         self.dagobah_coll.save(dict(dagobah_json.items() + append.items()))
-
 
     def delete_dagobah(self, dagobah_id):
         """ Deletes the Dagobah and all child Jobs from the database.
@@ -97,16 +100,13 @@ class MongoBackend(BaseBackend):
         self.log_coll.remove({'parent_id': dagobah_id})
         self.dagobah_coll.remove({'_id': dagobah_id})
 
-
     def commit_job(self, job_json):
         job_json['_id'] = job_json['job_id']
         append = {'save_date': datetime.utcnow()}
         self.job_coll.save(dict(job_json.items() + append.items()))
 
-
     def delete_job(self, job_id):
         self.job_coll.remove({'_id': job_id})
-
 
     def commit_log(self, log_json):
         """ Commits a run log to the Mongo backend.
@@ -127,7 +127,6 @@ class MongoBackend(BaseBackend):
                                                  'DAGOBAH STREAM SPLIT',
                                                  values[key][-1 * (size/2):]])
         self.log_coll.save(dict(log_json.items() + append.items()))
-
 
     def get_latest_run_log(self, job_id, task_name):
         q = {'job_id': ObjectId(job_id),

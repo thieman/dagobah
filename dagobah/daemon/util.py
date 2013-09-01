@@ -116,3 +116,9 @@ def validate_dict(in_dict, **kwargs):
                 return False
 
     return True
+
+
+def allowed_file(filename, extensions):
+    return ('.' in filename and
+            filename.rsplit('.', 1)[1].lower() in [ext.lower()
+                                                   for ext in extensions])

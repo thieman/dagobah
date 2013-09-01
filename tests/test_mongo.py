@@ -1,12 +1,20 @@
-""" Tests on the core class implementations (Dagobah, Job, Task) """
+""" Tests on the Mongo backend """
 
 import os
+import datetime
+import json
 
 import yaml
 from nose.tools import nottest
 import pymongo
 
+try:
+    from pymongo.objectid import ObjectId
+except ImportError:
+    from bson.objectid import ObjectId
+
 from dagobah.core.core import Dagobah
+from dagobah.core.components import StrictJSONEncoder
 from dagobah.backend.mongo import MongoBackend
 
 
@@ -20,9 +28,12 @@ class TestMongo(object):
         config = yaml.load(config_file.read())
         config_file.close()
 
-        # default for use with Travis
-        self.mongo_host = '127.0.0.1'
-        self.mongo_port = 27017
+        if os.getenv('TRAVIS', 'false') == 'true':
+            self.mongo_host = '127.0.0.1'
+            self.mongo_port = 27017
+        else:
+            self.mongo_host = config.get('MongoBackend', {}).get('mongo_host')
+            self.mongo_port = config.get('MongoBackend', {}).get('mongo_port')
 
         try:
             try:
@@ -174,3 +185,17 @@ class TestMongo(object):
         print test_dagobah._serialize()
 
         assert self.dagobah._serialize() == test_dagobah._serialize()
+
+
+    def test_decode_json(self):
+        self.new_dagobah()
+        now = datetime.datetime.now()
+        test_doc = {"nested": {"dt": now},
+                    "object_id": ObjectId('52220d1e6ba8e11a26c20c9a'),
+                    "array": [{"object_id": ObjectId('52220d1e6ba8e11a26c20c9b')},
+                              {"object_id": ObjectId('52220d1e6ba8e11a26c20c9c'),
+                               "string": "woot",
+                               "int": 5}]}
+        json_doc = json.dumps(test_doc, cls=StrictJSONEncoder)
+        result = self.dagobah.backend.decode_import_json(json_doc)
+        assert result == test_doc
