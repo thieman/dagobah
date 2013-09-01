@@ -14,7 +14,7 @@ from multiprocessing import Process, Manager
 from croniter import croniter
 
 from dagobah.core.dag import DAG
-from dagobah.core.components import Scheduler, JobState
+from dagobah.core.components import Scheduler, JobState, Host
 from dagobah.backend.base import BaseBackend
 
 
@@ -36,6 +36,7 @@ class Dagobah(object):
         self.event_handler = event_handler
         self.dagobah_id = self.backend.get_new_dagobah_id()
         self.jobs = []
+        self.hosts = []
         self.created_jobs = 0
         self.scheduler = Scheduler(self)
         self.scheduler.daemon = True
@@ -59,6 +60,9 @@ class Dagobah(object):
             job.backend = backend
             for task in job.tasks.values():
                 task.backend = backend
+
+        for host in self.hosts:
+            host.backend = backend
 
         self.commit(cascade=True)
 
@@ -90,14 +94,15 @@ class Dagobah(object):
                                      str(task['name']),
                                      soft_timeout=task.get('soft_timeout', 0),
                                      hard_timeout=task.get('hard_timeout', 0),
-                                     task_target=task.get('task_target', None),
-                                     task_target_key=task.get('task_target_key', None),
-                                     task_target_password=task.get('task_target_password', None))
+                                     task_target=task.get('task_target', None))
 
             dependencies = job_json.get('dependencies', {})
             for from_node, to_nodes in dependencies.iteritems():
                 for to_node in to_nodes:
                     job.add_dependency(from_node, to_node)
+
+        for host_json in rec.get('hosts', []):
+            self.add_host(str(host_json['name']), host_json['host_id'])
 
         self.commit(cascade=True)
 
@@ -115,6 +120,7 @@ class Dagobah(object):
     def delete(self):
         """ Delete this Dagobah instance from the Backend. """
         self.jobs = []
+        self.hosts = []
         self.created_jobs = 0
         self.backend.delete_dagobah(self.dagobah_id)
 
@@ -137,11 +143,34 @@ class Dagobah(object):
         job.commit()
 
 
+    def add_host(self, host_name, host_id=None):
+        """ Create a new Host. """
+        if not self._host_is_added(host_name):
+            raise DagobahError('name %s is already added' % host_name)
+
+        if not host_id:
+            host_id = self.backend.get_new_job_id()
+
+        self.hosts.append(Host(self,
+                             self.backend,
+                             host_id,
+                             host_name))
+
+        host = self.get_host(host_name)
+        host.commit()
+
     def get_job(self, job_name):
         """ Returns a Job by name, or None if none exists. """
         for job in self.jobs:
             if job.name == job_name:
                 return job
+        return None
+
+    def get_host(self, host_name):
+        """ Returns a Host by name, or None if none exists. """
+        for host in self.hosts:
+            if host.name == host_name:
+                return host
         return None
 
 
@@ -173,6 +202,26 @@ class Dagobah(object):
         job.add_task(task_command, task_name, **kwargs)
         job.commit()
 
+    def add_host(self, host_name, host_username, host_password=None, host_key=None):
+        """ Add a new host """
+        if not self._host_is_added(host_name):
+            raise DagobahError('Host %s is already added.' % host_name)
+
+        self.hosts.append(Host(self,
+                               self.backend,
+                               host_name,
+                               host_username,
+                               host_password,
+                               host_key))
+
+        host = self.get_host(host_name)
+        host.commit()
+
+    def _host_is_added(self, host_name):
+        """ Returns Boolean of whether the specified host is already added. """
+        return (False
+                if [host for host in self.hosts if host.name == host_name]
+                else True)
 
     def _name_is_available(self, job_name):
         """ Returns Boolean of whether the specified name is already in use. """
@@ -186,7 +235,8 @@ class Dagobah(object):
         return {'dagobah_id': self.dagobah_id,
                 'created_jobs': self.created_jobs,
                 'jobs': [job._serialize(include_run_logs=include_run_logs)
-                         for job in self.jobs]}
+                         for job in self.jobs],
+                'hosts': [host._serialize() for host in self.hosts]}
 
 
 class Job(DAG):
@@ -574,16 +624,13 @@ class Task(object):
     """
 
     def __init__(self, parent_job, command, name,
-                 soft_timeout=0, hard_timeout=0, task_target=None, task_target_key=None,
-                 task_target_password=None):
+                 soft_timeout=0, hard_timeout=0, task_target=None):
         self.parent_job = parent_job
         self.backend = self.parent_job.backend
         self.event_handler = self.parent_job.event_handler
         self.command = command
         self.name = name
         self.task_target = task_target
-        self.task_target_key = task_target_key
-        self.task_target_password = task_target_password
 
         self.remote_process = None
         
@@ -660,10 +707,10 @@ class Task(object):
 
     def remote_ssh(self, stdout, stderr, exit_status):
         try:
-            private_key = StringIO.StringIO(str(self.task_target_key))
+            private_key = StringIO.StringIO(str("MY_KEY"))
             key = paramiko.DSSKey.from_private_key(private_key)
         except paramiko.SSHException:
-            private_key = StringIO.StringIO(str(self.task_target_key))
+            private_key = StringIO.StringIO(str("MY_KEY"))
             key = paramiko.RSAKey.from_private_key(private_key)
 
         username_host = self.task_target.split("@")
@@ -674,7 +721,7 @@ class Task(object):
 
         if self.task_target_password:
             client.connect(username_host[1], username=username_host[
-                           0], password=self.task_target_password)
+                           0], password="MY_PASSWORD")
         else:
             client.connect(
                 username_host[1], username=username_host[0], pkey=key)
@@ -887,9 +934,7 @@ class Task(object):
                   'success': self.successful,
                   'soft_timeout': self.soft_timeout,
                   'hard_timeout': self.hard_timeout,
-                  'task_target': self.task_target,
-                  'task_target_key': self.task_target_key,
-                  'task_target_password': self.task_target_password }
+                  'task_target': self.task_target }
 
         if include_run_logs:
             last_run = self.backend.get_latest_run_log(self.parent_job.job_id,
@@ -900,3 +945,4 @@ class Task(object):
                     result['run_log'] = run_log
 
         return result
+

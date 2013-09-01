@@ -85,13 +85,13 @@ class DagobahTask(Base):
     name = Column(String(1000), nullable=False)
     command = Column(String(1000), nullable=False)
     task_target = Column(String(1000))
-    task_target_key = Column(String(1000))
-    task_target_password = Column(String(1000))
     started_at = Column(DateTime)
     completed_at = Column(DateTime)
     success = Column(String(30))
     soft_timeout = Column(Integer)
     hard_timeout = Column(Integer)
+
+    hosts = relationship('DagobahHost', backref='task')
 
     def __init__(self, name, command):
         self.name = name
@@ -112,14 +112,12 @@ class DagobahTask(Base):
                 'soft_timeout': self.soft_timeout,
                 'hard_timeout': self.hard_timeout,
                 'task_target': self.task_target,
-                'task_target_key': self.task_target_key,
-                'task_target_password': self.task_target_password}
+                'hosts': [host.json for host in self.hosts]}
 
     def update_from_dict(self, data):
         for key in ['job_id', 'name', 'command', 'started_at',
                     'completed_at', 'success', 'soft_timeout',
-                    'hard_timeout', 'task_target', 'task_target_key', 
-                    'task_target_password']:
+                    'hard_timeout', 'task_target']:
             if key in data:
                 setattr(self, key, data[key])
 
@@ -218,3 +216,34 @@ class DagobahLogTask(Base):
             if key in data:
                 setattr(self, key, data[key])
         self.save_date = datetime.utcnow()
+
+
+class DagobahHost(Base):
+    __tablename__ = 'dagobah_host'
+
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey('dagobah_task.id'), index=True)
+    name = Column(String(1000), nullable=False)
+    username = Column(String(1000), nullable=False)
+    password = Column(String(1000))
+    key = Column(String(1000))
+
+    def __init__(self, name, username):
+        self.name = name
+        self.username = username
+
+    def __repr__(self):
+        return "<SQLite:DagobahHost (%d)>" % self.id
+
+    @property
+    def json(self):
+        return {'task_id': self.task_id,
+                'name': self.name,
+                'username': self.username,
+                'password': self.password,
+                'key': self.key}
+
+    def update_from_dict(self, data):
+        for key in ['task_id', 'name', 'username', 'password', 'key']:
+            if key in data:
+                setattr(self, key, data[key])

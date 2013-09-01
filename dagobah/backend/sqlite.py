@@ -10,7 +10,7 @@ import sqlalchemy
 from dagobah.backend.base import BaseBackend
 from dagobah.backend.sqlite_models import (Base, Dagobah, DagobahJob,
                                            DagobahTask, DagobahDependency,
-                                           DagobahLog, DagobahLogTask)
+                                           DagobahLog, DagobahLogTask, DagobahHost)
 
 
 class SQLiteBackend(BaseBackend):
@@ -90,6 +90,19 @@ class SQLiteBackend(BaseBackend):
                 rec.jobs.append(new_job)
                 self._update_job_rec(new_job, dagobah_json, 'dagobah')
 
+        for host in dagobah_json.get('hosts', []):
+
+            existing = self.session.query(DagobahJob).\
+                filter_by(id=host['host_id']).\
+                first()
+
+            if existing:
+                self._update_host_rec(existing, dagobah_json, 'dagobah')
+            else:
+                new_host = DagobahHost(host['name'])
+                rec.hosts.append(new_host)
+                self._update_host_rec(new_host, dagobah_json, 'dagobah')
+
         self.session.commit()
 
 
@@ -105,6 +118,9 @@ class SQLiteBackend(BaseBackend):
 
         for job in rec.jobs:
             self.delete_job(job.id)
+
+        for host in rec.hosts:
+            self.delete_host(host.id)
 
         self.session.delete(rec)
         self.session.commit()
@@ -288,3 +304,15 @@ class SQLiteBackend(BaseBackend):
         for task in job_data.get('tasks', []):
             if task.get('name', None) == task_rec.name:
                 task_rec.update_from_dict(task)
+
+
+    def delete_host(self, host_id):
+        pass
+
+
+    def commit_host(self, host_json):
+        pass
+
+
+    def _update_host_rec(self, host_rec, in_data, data_type):
+        pass

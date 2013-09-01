@@ -11,6 +11,27 @@
 <div class='page-header'>
   <h3>Settings</h3>
 </div>
+	
+  <div id="remote_hosts">
+
+  </div>
+  <div id='new-alert' class='alert hidden'></div>
+  <form class='form'>
+	  <div id="remote_task_params">
+	    <label>Host Name</label>
+	    <input id='host-name' class='input-xxlarge' type='text' placeholder='127.0.0.1'></input>
+
+	    <label>Host Username</label>
+	    <input id='host-username' class='input-xxlarge' type='text' placeholder='stack'></input>
+	    
+	    <label>Host ssh key</label>
+	    <textarea id='host-key' rows="4" cols="50" class='input-xxlarge' form="form" placeholder='ssh key'></textarea>
+	    or
+	    <label>Host Password</label>
+	    <input id='host-password' class='input-xxlarge' type='text' placeholder='your secret password in plain text'></input>
+	  </div>
+	  <button id='add-host' class='btn btn-success' onclick='return false;'>Add Host</button>
+  </form>
 
 {% endblock content %}
 

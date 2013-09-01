@@ -115,3 +115,34 @@ class Scheduler(threading.Thread):
                         job.next_run = job.cron_iter.get_next(datetime)
             self.last_checked = now
             time.sleep(1)
+
+
+class Host(object):
+    """ 
+    Controler for remote hosts
+    """
+
+    def __init__(self, parent, backend, host_name, host_username, host_key=None,
+                 host_password=None):
+        self.parent = parent
+        self.backend = backend
+        self.host_name = host_name
+        self.host_username = host_username
+        self.host_password = host_password
+        self.host_key = host_key
+
+    def commit(self):
+        """ Store metadata on this Host to the backend. """
+        self.backend.commit_host(self._serialize())
+        self.parent.commit()
+
+
+    def _serialize(self):
+        """ Serialize a representation of this Host to a Python dict. """
+
+        result = {'host_name': self.host_name,
+                  'host_username': self.host_username,
+                  'host_password': self.host_password,
+                  'host_key': self.host_key }
+
+        return result

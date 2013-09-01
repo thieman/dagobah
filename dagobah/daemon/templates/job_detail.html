@@ -190,27 +190,24 @@
 <h3>Add New Task</h3>
 
 <form class='form'>
-
   <label>Name</label>
   <input id='new-task-name' class='input-xxlarge' type='text' placeholder='Task Name'></input>
   <label class="checkbox">
       <input type="checkbox" value="remote" id="remote_checkbox"> Remote
   </label>
-  <div id="remote_task_params" style="display: none;">
-    <label>Target user and host (optional)</label>
-    <input id='target-host' class='input-xxlarge' type='text' placeholder='stack@localhost'></input>
-    <label>Target ssh key(optional)</label>
-    <textarea id='target-host-key' rows="4" cols="50" class='input-xxlarge' form="form" placeholder='ssh key'></textarea>
-    or
-    <label>Password (optional)</label>
-    <input id='target-host-password' class='input-xxlarge' type='text' placeholder='your secret password in plain text'></input>
+
+  <div id="target_hosts" style="display: none;">
+    <label>Target Hosts:</label>
+    <select name="target_hosts">
+        <option value="volvo">Volvo</option>
+    </select>
+    Add one here: <a href="/settings">Settings</a>
   </div>
   <label>Command</label>
   <textarea id='new-task-command' rows="3" placeholder='Task Command'></textarea>
 
   <br />
   <button id='add-task' class='btn btn-success' onclick='return false;'>Add Task</button>
-
 </form>
 
 <div class='row'>

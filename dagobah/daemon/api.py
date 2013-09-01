@@ -149,9 +149,7 @@ def add_task_to_job():
         dagobah.add_task_to_job(args['job_name'],
                                 args['task_command'],
                                 args['task_name'],
-                                task_target=args['task_target'][0],
-                                task_target_key=args['task_target_key'][0],
-                                task_target_password=args['task_target_password'][0])
+                                task_target=args['task_target'][0])
     else:
         dagobah.add_task_to_job(args['job_name'],
                                 args['task_command'],
@@ -384,3 +382,43 @@ def set_hard_timeout():
         abort(400)
 
     task.set_hard_timeout(args['hard_timeout'])
+
+
+@app.route('/api/add_host', methods=['POST'])
+@login_required
+@api_call
+def add_host():
+    #TODO: Why is a list being passed?
+    import ipdb; ipdb.set_trace()
+    args = dict(request.form)
+    if not validate_dict(args,
+                         required=['host_name', 'host_username'],
+                         host_name=str,
+                         host_username=str):
+        abort(400)
+    if not args['host_key'] and args['host_password']:
+        abort(400)
+
+    dagobah.add_host(args['host_name'][0],
+                     args['host_username'][0],
+                     args['host_password'][0],
+                     args['host_key'][0])
+
+
+@app.route('/api/add_host_to_task', methods=['POST'])
+@login_required
+@api_call
+def add_host_to_task():
+    args = dict(request.form)
+    if not validate_dict(args,
+                         required=['task_name', 'host_id'],
+                         task_name=str,
+                         host_id=int):
+        abort(400)
+
+        job = dagobah.get_job(args['job_name'])
+        task = job.tasks.get(args['task_name'], None)
+        if not task:
+            abort(400)
+        task.add_host_to_task(args['host_id'][0])
+
