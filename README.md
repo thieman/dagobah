@@ -54,18 +54,6 @@ To use a backend, you need to install the drivers using the commands below and t
 
 <img src="http://i.imgur.com/yN6LUUZ.png" height="400">
 
-## Other Information
-
-#### Known Issues
-
-  * Retrying a failed job after renaming one of its tasks results in an error
-
-#### Planned Features
-
-  * Improved task detail pages
-  * Advanced task-level configuration, e.g. timeouts
-  * CLI
-
 #### Author
 
  * [Travis Thieman](https://twitter.com/thieman)
