@@ -91,7 +91,7 @@
   </script>
 
   <script id="tasks-data-remote-target-template" type="text/x-handlebars-template">
-    <td data-attr='task_target'>
+    <td data-attr='host_id'>
       {{text}}<i class='icon-pencil edit-task'></i>
     </td>
   </script>
@@ -192,15 +192,16 @@
 <form class='form'>
   <label>Name</label>
   <input id='new-task-name' class='input-xxlarge' type='text' placeholder='Task Name'></input>
+  
   <label class="checkbox">
       <input type="checkbox" value="remote" id="remote_checkbox"> Remote
   </label>
-
   <div id="target_hosts" style="display: none;">
     <label>Target Hosts:</label>
-    <select id="target_hosts_dropdown" name="target_hosts">
+        <select id="target-hosts-dropdown" name="target_hosts">
     </select>
   </div>
+
   <label>Command</label>
   <textarea id='new-task-command' rows="3" placeholder='Task Command'></textarea>
 

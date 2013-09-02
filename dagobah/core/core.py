@@ -126,7 +126,8 @@ class Dagobah(object):
                                  str(task['command']),
                                  str(task['name']),
                                  soft_timeout=task.get('soft_timeout', 0),
-                                 hard_timeout=task.get('hard_timeout', 0))
+                                 hard_timeout=task.get('hard_timeout', 0),
+                                 host_id=task.get('host_id', None))
 
         dependencies = job_json.get('dependencies', {})
         for from_node, to_nodes in dependencies.iteritems():
@@ -648,14 +649,14 @@ class Task(object):
     """
 
     def __init__(self, parent_job, command, name,
-                 soft_timeout=0, hard_timeout=0):
+                 soft_timeout=0, hard_timeout=0, host_id=None):
         self.parent_job = parent_job
         self.backend = self.parent_job.backend
         self.event_handler = self.parent_job.event_handler
         self.command = command
         self.name = name
 
-        self.host_id = None
+        self.host_id = host_id
         self.remote_process = None
         
         self.process = None
@@ -690,8 +691,6 @@ class Task(object):
         self.hard_timeout = timeout
         self.parent_job.commit()
 
-    def add_host_to_task(host_id):
-        pass
 
     def reset(self):
         """ Reset this Task to a clean state prior to execution. """
@@ -729,18 +728,19 @@ class Task(object):
 
 
     def remote_ssh(self, stdout, stderr, exit_status):
-        # Get it from self.host_id
-        host = ''
-        username = ''
-        password = ''
-        key = ''
+        host = [host for host in self.parent_job.parent.hosts if host.id==self.host_id]
+        
+        host_name = host[0].name
+        username = host[0].username
+        password = host[0].password
+        key = host[0].key
 
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-        if self.password:
-            client.connect(host, username=username, password=password)
+        if password:
+            client.connect(host_name, username=username, password=password)
         else:
             try:
                 private_key = StringIO.StringIO(str(key))
@@ -748,7 +748,7 @@ class Task(object):
             except paramiko.SSHException:
                 private_key = StringIO.StringIO(str(key))
                 key = paramiko.RSAKey.from_private_key(private_key)
-            client.connect(host, username=username, pkey=key)
+            client.connect(host_name, username=username, pkey=key)
 
         stdin_remote, stdout_remote, stderr_remote = client.exec_command(
             self.command)
@@ -957,7 +957,8 @@ class Task(object):
                   'completed_at': self.completed_at,
                   'success': self.successful,
                   'soft_timeout': self.soft_timeout,
-                  'hard_timeout': self.hard_timeout}
+                  'hard_timeout': self.hard_timeout,
+                  'host_id': self.host_id}
 
         if include_run_logs:
             last_run = self.backend.get_latest_run_log(self.parent_job.job_id,

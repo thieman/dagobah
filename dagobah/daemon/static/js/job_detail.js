@@ -22,7 +22,7 @@ var fieldMap = {
 	"Command": 'command',
 	"Soft Timeout": 'soft_timeout',
 	"Hard Timeout": 'hard_timeout',
-	"Remote Target": 'task_target',
+	"Remote Target": 'host_id',
 };
 
 var fieldTemplateMap = {
@@ -42,7 +42,7 @@ function runWhenJobLoaded() {
 		//Get hosts
 		$.getJSON($SCRIPT_ROOT + '/api/hosts', {},
 			function(result) {
-				var options = $("#target_hosts_dropdown");
+				var options = $("#target-hosts-dropdown");
 				$.each(result['result'], function() {
 					options.append($("<option />").val(this.host_id).text(this.host_name));
 				});
@@ -244,7 +244,7 @@ $('#add-task').click(function() {
 
 	var newName = $('#new-task-name').val();
 	var newCommand = $('#new-task-command').val();
-	var newTargetHost = $('#target-host').val();
+	var newTargetHostId = $('#target-hosts-dropdown').val();
 
 	if (newName === null || newName === '') {
 		showAlert('new-alert', 'error', 'Please enter a name for the new task.');
@@ -255,17 +255,17 @@ $('#add-task').click(function() {
 		return;
 	}
 
-	addNewTask(newName, newCommand, newTargetHost);
+	addNewTask(newName, newCommand, newTargetHostId);
 
 });
 
-function addNewTask(newName, newCommand, newTargetHost) {
+function addNewTask(newName, newCommand, newTargetHostId) {
 
 	if (!job.loaded) {
 		return;
 	}
 
-	if(newTargetHost){
+	if(newTargetHostId){
 		$.ajax({
 			type: 'POST',
 			url: $SCRIPT_ROOT + '/api/add_task_to_job',
@@ -273,7 +273,7 @@ function addNewTask(newName, newCommand, newTargetHost) {
 				job_name: job.name,
 				task_name: newName,
 				task_command: newCommand,
-				task_target: newTargetHost
+				task_target: newTargetHostId
 			},
 			dataType: 'json',
 			success: function() {
@@ -284,7 +284,7 @@ function addNewTask(newName, newCommand, newTargetHost) {
 				});
 				$('#new-task-name').val('');
 				$('#new-task-command').val('');
-				$('#target-host').val('');
+				$('#target-hosts-dropdown').val('');
 			},
 			error: function() {
 				showAlert('new-alert', 'error', 'There was an error adding the task to this job.');

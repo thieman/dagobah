@@ -1,3 +1,35 @@
+var hostsTableTemplate = Handlebars.compile($('#hosts-table-template').html());
+
+function getHostsData() {
+	$.getJSON($SCRIPT_ROOT + '/api/hosts', {},
+		function(data) {
+			renderHostsTable(data['result']);
+		}
+	);
+}
+
+function renderHostsTable(hostsData){
+	if (hostsData.length === 0) {
+		setTimeout(renderHostsTable, 100);
+		return;
+	}
+
+	$('#hosts-body').empty();
+
+	for (var i = 0; i < hostsData.length; i++) {
+		var thisHost = hostsData[i];
+		$('#hosts-body').append(
+			hostsTableTemplate({
+				hostId: thisHost.host_id,
+				hostName: thisHost.host_name,
+				hostUsername: thisHost.host_username
+			})
+		);
+	}
+}
+
+getHostsData();
+
 $('#add-host').click(function() {
 
 	var newHostName = $('#host-name').val();
