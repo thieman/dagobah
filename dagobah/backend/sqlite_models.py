@@ -239,13 +239,14 @@ class DagobahHost(Base):
 
     @property
     def json(self):
-        return {'task_id': self.task_id,
-                'name': self.name,
-                'username': self.username,
-                'password': self.password,
-                'key': self.key}
+        return {'host_id': self.id,
+                'host_name': self.name,
+                'parent_id': self.parent_id,
+                'host_username': self.username,
+                'host_password': self.password,
+                'host_key': self.key}
 
     def update_from_dict(self, data):
-        for key in ['task_id', 'name', 'username', 'password', 'key']:
+        for key in ['parent_id', 'host_name', 'host_username', 'host_password', 'host_key']:
             if key in data:
                 setattr(self, key, data[key])

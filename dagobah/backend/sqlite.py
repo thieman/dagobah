@@ -132,7 +132,6 @@ class SQLiteBackend(BaseBackend):
         self.session.commit()
 
     def commit_job(self, job_json):
-
         rec = self.session.query(DagobahJob).\
             filter_by(id=job_json['job_id']).\
             first()

@@ -90,7 +90,10 @@ class Dagobah(object):
             self._add_job_from_spec(job_json)
 
         for host_json in rec.get('hosts', []):
-            self.add_host(str(host_json['name']), host_json['host_id'])
+            self.add_host(host_name=host_json['host_name'], 
+                            host_username=host_json['host_username'], 
+                            host_password=host_json['host_password'], 
+                            host_key=host_json['host_key'], host_id=host_json['host_id'])
 
         self.commit(cascade=True)
 

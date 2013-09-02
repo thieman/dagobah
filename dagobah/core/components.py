@@ -144,6 +144,7 @@ class Host(object):
         """ Serialize a representation of this Host to a Python dict. """
 
         result = {'host_id': self.id,
+                  'parent_id': self.parent.dagobah_id,
                   'host_name': self.name,
                   'host_username': self.username,
                   'host_password': self.password,
