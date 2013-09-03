@@ -7,7 +7,7 @@
 
 {% raw %}
 <script id="hosts-table-template" type="text/x-handlebars-template">
-	<tr data-job='{{ hostName }}'>
+	<tr data-host='{{ hostId }}'>
 	  <td><span data-attr='ID' data-transform='class title'
 	            class={{ hostId }}>{{ hostId }}</span>
 	  </td>
@@ -17,6 +17,9 @@
 	  <td><span data-attr='Username' data-transform='class title'
 	            class={{ hostUsername }}>{{ hostUsername }}</span>
 	  </td>
+    <td>
+    <button class='btn btn-danger host-delete' onclick="return false;"><i class='icon-trash'></i></button>
+    </td>
 	</tr>
 </script>
 {% endraw %}
@@ -30,6 +33,7 @@
 </div>
 
 <div id="remote_hosts">
+  <div id='table-alert' class='alert hidden'></div>
   <table class='table table-striped'>
     <thead>
       <th>ID</th>

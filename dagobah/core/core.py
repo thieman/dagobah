@@ -179,10 +179,10 @@ class Dagobah(object):
                 return job
         return None
 
-    def get_host(self, host_name):
+    def get_host(self, host_id):
         """ Returns a Host by name, or None if none exists. """
         for host in self.hosts:
-            if host.name == host_name:
+            if host.id == host_id:
                 return host
         return None
 
@@ -218,7 +218,7 @@ class Dagobah(object):
     def add_host(self, host_name, host_username, host_password=None, 
                     host_key=None, host_id=None):
         """ Add a new host """
-        if not self._host_is_added(host_name):
+        if not self._host_is_added(host_name=host_name):
             raise DagobahError('Host %s is already added.' % host_name)
 
         if not host_id:
@@ -232,11 +232,21 @@ class Dagobah(object):
                                host_password=host_password,
                                host_key=host_key))
 
-        host = self.get_host(host_name)
+        host = self.get_host(host_id)
         host.commit()
 
+    def delete_host(self, host_id):
+        """ Delete a host """
+        for idx, host in enumerate(self.hosts):
+            if host.id == host_id:
+                self.backend.delete_host(host.id)
+                del self.hosts[idx]
+                self.commit()
+                return
+        raise DagobahError('no host with ID %s exists' % host_id)
 
-    def _host_is_added(self, host_name):
+
+    def _host_is_added(self, host_name=None):
         """ Returns Boolean of whether the specified host is already added. """
         return (False
                 if [host for host in self.hosts if host.name == host_name]

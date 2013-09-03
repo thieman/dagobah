@@ -1,4 +1,5 @@
 var hostsTableTemplate = Handlebars.compile($('#hosts-table-template').html());
+getHostsData();
 
 function getHostsData() {
 	$.getJSON($SCRIPT_ROOT + '/api/hosts', {},
@@ -28,7 +29,36 @@ function renderHostsTable(hostsData){
 	}
 }
 
-getHostsData();
+function deleteHost(hostId, alertId) {
+
+	if (typeof alertId === 'undefined') {
+		alertId = 'table-alert';
+	}
+
+	$.ajax({
+		type: 'POST',
+		url: $SCRIPT_ROOT + '/api/delete_host',
+		data: {
+			host_id: hostId
+		},
+		dataType: 'json',
+		async: true,
+		success: function() {
+			showAlert(alertId, 'success', 'Host ' + hostId + ' deleted.');
+		},
+		error: function(e) {
+			console.log(e);
+			showAlert(alertId, 'error', 'There was an error deleting the task.');
+		},
+	});
+}
+
+
+$('#hosts-body').on("click", ".host-delete", function() {
+	$(this).parents('[data-host]').each(function() {
+		deleteHost($(this).attr('data-host'));
+	});
+});
 
 $('#add-host').click(function() {
 

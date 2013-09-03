@@ -107,10 +107,16 @@ class BaseBackend(object):
     def commit_job(self, job_json):
         pass
 
+
     def commit_host(self, host_json):
         pass
 
+
     def delete_job(self, job_name):
+        pass
+
+
+    def delete_host(self, host_id):
         pass
 
 

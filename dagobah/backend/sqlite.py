@@ -1,7 +1,6 @@
 """ SQLite Backend class built on top of base Backend """
 
 import os
-from datetime import datetime
 from copy import deepcopy
 import threading
 

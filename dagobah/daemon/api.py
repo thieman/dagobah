@@ -145,13 +145,15 @@ def add_task_to_job():
                          required=['job_name', 'task_command', 'task_name'],
                          job_name=str,
                          task_command=str,
-                         task_name=str):
+                         task_name=str,
+                         task_target=str):
         abort(400)
 
+    import ipdb; ipdb.set_trace()
     dagobah.add_task_to_job(args['job_name'],
                             args['task_command'],
                             args['task_name'],
-                            host_id=args['task_target'][0])
+                            host_id=args.get("task_target", None))
 
 
 @app.route('/api/delete_task', methods=['POST'])
@@ -427,7 +429,9 @@ def add_host():
     if not validate_dict(args,
                          required=['host_name', 'host_username'],
                          host_name=str,
-                         host_username=str):
+                         host_username=str,
+                         host_password=str,
+                         host_key=str):
         abort(400)
     if args.get('host_key', None) is None and args.get('host_password', None) is None:
         abort(400)
@@ -435,8 +439,22 @@ def add_host():
     if args.get('host_password', None): 
         dagobah.add_host(args['host_name'],
                          args['host_username'],
-                         host_password=args['host_password'][0])
+                         host_password=args['host_password'])
     else:
         dagobah.add_host(args['host_name'],
                  args['host_username'],
-                 host_key=args['host_key'][0])
+                 host_key=args['host_key'])
+
+
+@app.route('/api/delete_host', methods=['POST'])
+@login_required
+@api_call
+def delete_host():
+    import ipdb; ipdb.set_trace()
+    args = dict(request.form)
+    if not validate_dict(args,
+                         required=['host_id'],
+                         host_id=int):
+        abort(400)
+
+    dagobah.delete_host(args['host_id'])
