@@ -235,15 +235,15 @@ class Dagobah(object):
         host = self.get_host(host_id)
         host.commit()
 
-    def delete_host(self, host_id):
+    def delete_host(self, host_name):
         """ Delete a host """
         for idx, host in enumerate(self.hosts):
-            if host.id == host_id:
+            if host.name == host_name:
                 self.backend.delete_host(host.id)
                 del self.hosts[idx]
                 self.commit()
                 return
-        raise DagobahError('no host with ID %s exists' % host_id)
+        raise DagobahError('no host with name %s exists' % host_name)
 
 
     def _host_is_added(self, host_name=None):
@@ -738,35 +738,44 @@ class Task(object):
 
 
     def remote_ssh(self, stdout, stderr, exit_status):
-        host = [host for host in self.parent_job.parent.hosts if host.id==self.host_id]
-        
-        host_name = host[0].name
-        username = host[0].username
-        password = host[0].password
-        key = host[0].key
+        try:
+            host = [host for host in self.parent_job.parent.hosts if host.id==self.host_id]
+            
+            if host:
+                host_name = host[0].name
+                username = host[0].username
+                password = host[0].password
+                key = host[0].key
+            else:
+                stderr.value = "Target host has been deleted!"
+                exit_status.value = 1
+                return
 
-        client = paramiko.SSHClient()
-        client.load_system_host_keys()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            client = paramiko.SSHClient()
+            client.load_system_host_keys()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-        if password:
-            client.connect(host_name, username=username, password=password)
-        else:
-            try:
-                private_key = StringIO.StringIO(str(key))
-                key = paramiko.DSSKey.from_private_key(private_key)
-            except paramiko.SSHException:
-                private_key = StringIO.StringIO(str(key))
-                key = paramiko.RSAKey.from_private_key(private_key)
-            client.connect(host_name, username=username, pkey=key)
+            if password:
+                client.connect(host_name, username=username, password=password)
+            else:
+                try:
+                    private_key = StringIO.StringIO(str(key))
+                    key = paramiko.DSSKey.from_private_key(private_key)
+                except paramiko.SSHException:
+                    private_key = StringIO.StringIO(str(key))
+                    key = paramiko.RSAKey.from_private_key(private_key)
+                client.connect(host_name, username=username, pkey=key)
 
-        stdin_remote, stdout_remote, stderr_remote = client.exec_command(
+            stdin_remote, stdout_remote, stderr_remote = client.exec_command(
             self.command)
 
-        stdout.value = "".join(stdout_remote.readlines())
-        if stderr_remote:
-            stderr.value = "".join(stderr_remote.readlines())
-        exit_status.value = stdout_remote.channel.recv_exit_status()
+            stdout.value = "".join(stdout_remote.readlines())
+            if stderr_remote:
+                stderr.value = "".join(stderr_remote.readlines())
+            exit_status.value = stdout_remote.channel.recv_exit_status()
+        except Exception as e:
+            stderr.value = str(e)
+            exit_status.value = 1
 
 
     def check_complete(self):

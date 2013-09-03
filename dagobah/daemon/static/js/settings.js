@@ -29,7 +29,7 @@ function renderHostsTable(hostsData){
 	}
 }
 
-function deleteHost(hostId, alertId) {
+function deleteHost(hostName, alertId) {
 
 	if (typeof alertId === 'undefined') {
 		alertId = 'table-alert';
@@ -39,12 +39,12 @@ function deleteHost(hostId, alertId) {
 		type: 'POST',
 		url: $SCRIPT_ROOT + '/api/delete_host',
 		data: {
-			host_id: hostId
+			host_name: hostName
 		},
 		dataType: 'json',
 		async: true,
 		success: function() {
-			showAlert(alertId, 'success', 'Host ' + hostId + ' deleted.');
+			showAlert(alertId, 'success', 'Host ' + hostName + ' deleted.');
 		},
 		error: function(e) {
 			console.log(e);

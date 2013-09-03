@@ -149,7 +149,6 @@ def add_task_to_job():
                          task_target=str):
         abort(400)
 
-    import ipdb; ipdb.set_trace()
     dagobah.add_task_to_job(args['job_name'],
                             args['task_command'],
                             args['task_name'],
@@ -450,11 +449,10 @@ def add_host():
 @login_required
 @api_call
 def delete_host():
-    import ipdb; ipdb.set_trace()
     args = dict(request.form)
     if not validate_dict(args,
-                         required=['host_id'],
-                         host_id=int):
+                         required=['host_name'],
+                         host_name=str):
         abort(400)
 
-    dagobah.delete_host(args['host_id'])
+    dagobah.delete_host(args['host_name'])
