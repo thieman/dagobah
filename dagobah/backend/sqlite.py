@@ -6,6 +6,10 @@ from copy import deepcopy
 import threading
 
 import sqlalchemy
+import alembic
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+from alembic.environment import EnvironmentContext
 from dateutil import parser
 
 from dagobah.backend.base import BaseBackend
@@ -36,9 +40,10 @@ class SQLiteBackend(BaseBackend):
         self.Session = sqlalchemy.orm.sessionmaker(bind=self.engine)
         self.session = self.Session()
 
-        Base.metadata.create_all(self.engine)
-
         self.lock = threading.Lock()
+
+        Base.metadata.create_all(self.engine)
+        self.run_alembic_migration()
 
     def __repr__(self):
         return '<SQLiteBackend (path: %s)>' % (self.filepath)
@@ -284,3 +289,31 @@ class SQLiteBackend(BaseBackend):
         for task in job_data.get('tasks', []):
             if task.get('name', None) == task_rec.name:
                 task_rec.update_from_dict(task)
+
+    def run_alembic_migration(self):
+        """ Migrate to latest Alembic revision if not up-to-date. """
+
+        def migrate_if_required(rev, context):
+            rev = script.get_revision(rev)
+            if not (rev and rev.is_head):
+                migration_required = True
+
+            return []
+
+        migration_required = False
+        config = Config('dagobah/backend/alembic.ini')
+        script = ScriptDirectory.from_config(config)
+
+        with EnvironmentContext(config, script, fn=migrate_if_required):
+            script.run_env()
+
+        if migration_required:
+            print 'Migrating SQLite database to latest revision'
+            self.backup_database()
+            alembic.command.upgrade(config, 'head')
+        else:
+            print 'SQLite database is on the latest revision'
+
+    def save_backup_database(self):
+        """ Save a backup copy of the database. """
+        pass
