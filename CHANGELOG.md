@@ -1,6 +1,7 @@
-### v0.1.3 ()
+### v0.2.0 ()
 
   * Added soft (SIGTERM) and hard (SIGKILL) timeouts to Tasks
+  * SQLite database migrations are now automatically handled by Alembic
   * Added job-level JSON import and export
   * Added Dagobahd.auth_disabled config key
   * Single-user auth can now be disabled through the app config
