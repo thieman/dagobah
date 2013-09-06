@@ -1,6 +1,7 @@
 """ SQLite Backend class built on top of base Backend """
 
 import os
+import logging
 from datetime import datetime
 from copy import deepcopy
 import threading
@@ -302,18 +303,15 @@ class SQLiteBackend(BaseBackend):
 
         migration_required = False
         config = Config('dagobah/backend/alembic.ini')
+        config.set_main_option('sqlalchemy.url',
+                               'sqlite:///' + self.filepath)
         script = ScriptDirectory.from_config(config)
 
         with EnvironmentContext(config, script, fn=migrate_if_required):
             script.run_env()
 
         if migration_required:
-            print 'Migrating SQLite database to latest revision'
-            self.backup_database()
+            logging.info('Migrating SQLite database to latest revision')
             alembic.command.upgrade(config, 'head')
         else:
-            print 'SQLite database is on the latest revision'
-
-    def save_backup_database(self):
-        """ Save a backup copy of the database. """
-        pass
+            logging.info('SQLite database is on the latest revision')
