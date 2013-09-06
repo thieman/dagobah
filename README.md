@@ -26,7 +26,7 @@ To use a backend, you need to install the drivers using the commands below and t
 
 #### SQLite
 
-     pip install pysqlite sqlalchemy
+     pip install pysqlite sqlalchemy alembic
 
 #### MongoDB
 
