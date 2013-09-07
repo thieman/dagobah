@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='dagobah',
-      version='0.1.2',
+      version='0.2.0',
       description='Simple DAG-based job scheduler',
       url='http://github.com/tthieman/dagobah',
       author='Travis Thieman',
@@ -40,7 +40,7 @@ setup(name='dagobah',
       install_requires=['croniter==0.3.3',
                         'pyyaml==3.10',
                         'flask==0.9',
-                        'premailer=1.13',
+                        'premailer==1.13',
                         'flask-login==0.2.6'],
       test_suite='nose.collector',
       tests_require=['nose', 'pymongo'],

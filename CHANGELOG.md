@@ -1,4 +1,4 @@
-### v0.2.0 ()
+### v0.2.0 (September 6, 2013)
 
   * Added soft (SIGTERM) and hard (SIGKILL) timeouts to Tasks
   * SQLite database migrations are now automatically handled by Alembic
