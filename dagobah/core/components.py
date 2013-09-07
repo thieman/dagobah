@@ -7,7 +7,6 @@ from collections import defaultdict
 import time
 import threading
 import json
-from bson import ObjectId
 
 
 class EventHandler(object):
@@ -155,8 +154,12 @@ class Host(object):
 
 class StrictJSONEncoder(json.JSONEncoder):
     def default(self, o):
-        if isinstance(o, ObjectId):
-            return str(o)
-        elif isinstance(o, datetime):
+        try:
+            from bson import ObjectId
+            if isinstance(o, ObjectId):
+                return str(o)
+        except ImportError:
+            pass
+        if isinstance(o, datetime):
             return o.isoformat()
         return json.JSONEncoder.default(self, o)

@@ -1,10 +1,15 @@
 """ SQLite Backend class built on top of base Backend """
 
 import os
+import logging
 from copy import deepcopy
 import threading
 
 import sqlalchemy
+import alembic
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+from alembic.environment import EnvironmentContext
 from dateutil import parser
 
 from dagobah.backend.base import BaseBackend
@@ -35,9 +40,10 @@ class SQLiteBackend(BaseBackend):
         self.Session = sqlalchemy.orm.sessionmaker(bind=self.engine)
         self.session = self.Session()
 
-        Base.metadata.create_all(self.engine)
-
         self.lock = threading.Lock()
+
+        Base.metadata.create_all(self.engine)
+        self.run_alembic_migration()
 
     def __repr__(self):
         return '<SQLiteBackend (path: %s)>' % (self.filepath)
@@ -329,4 +335,30 @@ class SQLiteBackend(BaseBackend):
         for host in job_data.get('hosts', []):
             if host.get('host_name', None) == host_rec.name:
                 host_rec.update_from_dict(host)
+
+
+    def run_alembic_migration(self):
+        """ Migrate to latest Alembic revision if not up-to-date. """
+
+        def migrate_if_required(rev, context):
+            rev = script.get_revision(rev)
+            if not (rev and rev.is_head):
+                migration_required = True
+
+            return []
+
+        migration_required = False
+        config = Config('dagobah/backend/alembic.ini')
+        config.set_main_option('sqlalchemy.url',
+                               'sqlite:///' + self.filepath)
+        script = ScriptDirectory.from_config(config)
+
+        with EnvironmentContext(config, script, fn=migrate_if_required):
+            script.run_env()
+
+        if migration_required:
+            logging.info('Migrating SQLite database to latest revision')
+            alembic.command.upgrade(config, 'head')
+        else:
+            logging.info('SQLite database is on the latest revision')
 
