@@ -9,7 +9,7 @@ Dagobah is a simple dependency-based job scheduler written in Python. Dagobah al
 
 Dagobah lets you retry individual tasks from failure, sends you helpful email reports on job completion and failure, keeps track of your tasks's stdout and stderr, and persists its information in various backends so you don't have to worry about losing your data.
 
-You can also [use Dagobah directly in Python.](docs/python_example.md)
+You can also [use Dagobah directly in Python.](../../wiki/Using Dagobah Directly in Python)
 
 ## Installation
 
