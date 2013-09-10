@@ -725,7 +725,9 @@ class Task(object):
             self.remote_exit_status = Manager().Value('i', -1)
 
             self.remote_process = Process(target=self.remote_ssh, args=[
-                                          self.stdout, self.stderr, self.remote_exit_status])
+                                          self.stdout, self.stderr, self.remote_exit_status,
+                                          self.parent_job,
+                                          self.host_id])
             self.remote_process.start()
         else:
             self.process = subprocess.Popen(self.command,
@@ -737,9 +739,9 @@ class Task(object):
         self._start_check_timer()
 
 
-    def remote_ssh(self, stdout, stderr, exit_status):
+    def remote_ssh(self, stdout, stderr, exit_status, parent_job, host_id):
         try:
-            host = [host for host in self.parent_job.parent.hosts if host.id==self.host_id]
+            host = [host for host in parent_job.parent.hosts if host.id==host_id]
             
             if host:
                 host_name = host[0].name
