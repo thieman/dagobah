@@ -87,8 +87,8 @@ class Dagobah(object):
         rec = self.backend.decode_import_json(job_json)
         if destructive:
             try:
-                dagobah.delete_job(rec['name'])
-            except:
+                self.delete_job(rec['name'])
+            except DagobahError:  # expected if no job with this name
                 pass
         self._add_job_from_spec(rec, use_job_id=False)
 
