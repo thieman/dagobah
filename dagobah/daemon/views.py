@@ -1,6 +1,6 @@
 """ Views for Dagobah daemon. """
 
-from flask import render_template, redirect, url_for
+from flask import render_template, redirect, url_for, abort
 from flask_login import login_required
 
 from dagobah.daemon.daemon import app
@@ -28,14 +28,14 @@ def jobs_import_view():
     import_job()
     return redirect(url_for('jobs'))
 
-
 @app.route('/job/<job_id>', methods=['GET'])
 @login_required
 def job_detail(job_id=None):
     """ Show a detailed description of a Job's status. """
-    jobs = get_jobs()
-    job = [job for job in jobs if str(job['job_id']) == job_id][0]
-    return render_template('job_detail.html', job=job)
+    jobs = [job for job in get_jobs() if str(job['job_id']) == job_id]
+    if not jobs:
+        abort(404)
+    return render_template('job_detail.html', job=jobs[0])
 
 @app.route('/job/<job_id>/<task_name>', methods=['GET'])
 @login_required
@@ -48,7 +48,6 @@ def task_detail(job_id=None, task_name=None):
                            task_name=task_name,
                            task=[task for task in job['tasks']
                                  if task['name'] == task_name][0])
-
 
 @app.route('/settings', methods=['GET'])
 @login_required

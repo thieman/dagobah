@@ -29,6 +29,9 @@ def get_job():
         abort(400)
 
     job = dagobah.get_job(args['job_name'])
+    if not job:
+        abort(400)
+
     return job._serialize()
 
 

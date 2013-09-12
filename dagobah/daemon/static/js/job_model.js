@@ -15,7 +15,7 @@ Job.prototype.readFromJSON = function(data) {
 	this.cron_schedule = data['cron_schedule'] || null;
 	this.next_run = data['next_run'] || null;
 
-}
+};
 
 Job.prototype.load = function(loadJobName, callback) {
 
@@ -35,7 +35,7 @@ Job.prototype.load = function(loadJobName, callback) {
 
 	);
 
-}
+};
 
 Job.prototype.update = function(callback) {
 
@@ -44,19 +44,25 @@ Job.prototype.update = function(callback) {
 	}
 
 	var parent = this;
-	$.getJSON($SCRIPT_ROOT + '/api/job',
-			  {'job_name': parent.name},
-			  function(data) {
+	$.ajax({
+		type: 'GET',
+		url: $SCRIPT_ROOT + '/api/job',
+		data: {job_name: parent.name},
+		dataType: 'json',
+		success: function(data) {
+			parent.readFromJSON(data['result']);
+			parent.loaded = true;
+			callback = callback || function() {};
+			callback();
+		},
+		error: function(data) {
+			// fallback to jobs detail if something goes wrong
+			// like this job was deleted or server dies
+			window.location.href = location.origin;
+		}
+	});
 
-				  parent.readFromJSON(data['result']);
-				  parent.loaded = true;
-				  callback = callback || function() {};
-				  callback();
-
-			  }
-	);
-
-}
+};
 
 Job.prototype.forceNode = function(taskName) {
 	// map a task name to a force node object
@@ -85,7 +91,7 @@ Job.prototype.forceNode = function(taskName) {
 	}
 
 	return {id: taskName, status: taskStatus};
-}
+};
 
 Job.prototype.getTaskIndex = function(taskName) {
 	// map a task name to its index in Job.tasks
@@ -95,7 +101,7 @@ Job.prototype.getTaskIndex = function(taskName) {
 		}
 	}
 	return -1;
-}
+};
 
 Job.prototype.getForceNodes = function() {
 
@@ -110,7 +116,7 @@ Job.prototype.getForceNodes = function() {
 
 	return result;
 
-}
+};
 
 Job.prototype.getForceLinks = function() {
 
@@ -130,7 +136,7 @@ Job.prototype.getForceLinks = function() {
 
 	return result;
 
-}
+};
 
 Job.prototype.addDependency = function(link) {
 	/// add a new dependency using a link from the graph
@@ -160,7 +166,7 @@ Job.prototype.addDependency = function(link) {
 		}
 	});
 
-}
+};
 
 Job.prototype.addTaskToGraph = function(taskName) {
 	// add a new node to the graph and refresh it
@@ -172,7 +178,7 @@ Job.prototype.addTaskToGraph = function(taskName) {
 	nodes.push(this.forceNode(taskName));
 	restartGraph();
 
-}
+};
 
 Job.prototype.removeTaskFromGraph = function(taskName) {
 	// remove a node from the graph and refresh it
@@ -187,7 +193,7 @@ Job.prototype.removeTaskFromGraph = function(taskName) {
 	});
 	restartGraph();
 
-}
+};
 
 Job.prototype.renameTask = function(oldTaskName, newTaskName) {
 	// rename a node in the graph and refresh it
@@ -204,7 +210,7 @@ Job.prototype.renameTask = function(oldTaskName, newTaskName) {
 
 	restartGraph();
 
-}
+};
 
 Job.prototype.removeDependencyFromGraph = function(fromTaskName, toTaskName) {
 
@@ -217,4 +223,4 @@ Job.prototype.removeDependencyFromGraph = function(fromTaskName, toTaskName) {
 	});
 	restartGraph();
 
-}
+};
