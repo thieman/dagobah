@@ -102,6 +102,19 @@
   <h3 id='job-status' class='right'></h3>
 </div>
 
+<div id='fallback-modal' class='modal hide'>
+  <div class='modal-header'>
+    <h3>Something's Wrong!</h3>
+  </div>
+  <div class='modal-body'>
+    <p>It looks like you've either lost your connection to the server or something has produced an error. If you're still connected to the server, you might want to check your Dagobahd logs to see if you can identify the problem.</p>
+  </div>
+  <div class='modal-footer'>
+    <button class='btn btn-primary' onclick='window.location.href = location.origin;'>Back to Jobs Overview</button>
+    <button class='btn btn-success' data-dismiss='modal'>Try to Reconnect</button>
+  </div>
+</div>
+
 <div id='graph-alert' class='alert hidden'>
 </div>
 

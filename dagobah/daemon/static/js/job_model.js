@@ -43,6 +43,11 @@ Job.prototype.update = function(callback) {
 		throw "job has not been loaded";
 	}
 
+	// if fallback modal is on screen, don't update
+	if ($('#fallback-modal').hasClass('in')) {
+		return;
+	}
+
 	var parent = this;
 	$.ajax({
 		type: 'GET',
@@ -56,9 +61,11 @@ Job.prototype.update = function(callback) {
 			callback();
 		},
 		error: function(data) {
-			// fallback to jobs detail if something goes wrong
-			// like this job was deleted or server dies
-			window.location.href = location.origin;
+			if ($('#fallback-modal').length === 0) {
+				window.location.href = location.origin;
+			} else {
+				$('#fallback-modal').modal();
+			}
 		}
 	});
 
