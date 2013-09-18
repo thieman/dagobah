@@ -224,15 +224,11 @@ class DagobahHost(Base):
     id = Column(Integer, primary_key=True)
     parent_id = Column(Integer, ForeignKey('dagobah.id'), index=True)
     name = Column(String(1000), nullable=False)
-    username = Column(String(1000), nullable=False)
-    password = Column(String(1000))
-    key = Column(String(1000))
 
     tasks = relationship('DagobahTask', backref='host')
 
-    def __init__(self, name, username):
+    def __init__(self, name):
         self.name = name
-        self.username = username
 
     def __repr__(self):
         return "<SQLite:DagobahHost (%d)>" % self.id
@@ -241,12 +237,9 @@ class DagobahHost(Base):
     def json(self):
         return {'host_id': self.id,
                 'host_name': self.name,
-                'parent_id': self.parent_id,
-                'host_username': self.username,
-                'host_password': self.password,
-                'host_key': self.key}
+                'parent_id': self.parent_id}
 
     def update_from_dict(self, data):
-        for key in ['parent_id', 'host_name', 'host_username', 'host_password', 'host_key']:
+        for key in ['parent_id', 'host_name']:
             if key in data:
                 setattr(self, key, data[key])

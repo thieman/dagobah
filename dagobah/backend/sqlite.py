@@ -320,11 +320,7 @@ class SQLiteBackend(BaseBackend):
             first()
 
         if not rec:
-            rec = DagobahHost(host_json['host_name'], host_json['host_username'])
-            if host_json['host_password']:
-                rec.password = host_json['host_password']
-            else:
-                rec.key = host_json['host_key']
+            rec = DagobahHost(host_json['host_name'])
             self.session.add(rec)
 
         self._update_host_rec(rec, host_json)

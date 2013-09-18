@@ -123,15 +123,11 @@ class Host(object):
     Controler for remote hosts
     """
 
-    def __init__(self, parent, backend, host_id, host_name, host_username, host_key=None,
-                 host_password=None):
+    def __init__(self, parent, backend, host_id, host_name):
         self.parent = parent
         self.backend = backend
         self.id = host_id
         self.name = host_name
-        self.username = host_username
-        self.password = host_password
-        self.key = host_key
 
     def commit(self):
         """ Store metadata on this Host to the backend. """
@@ -144,10 +140,7 @@ class Host(object):
 
         result = {'host_id': self.id,
                   'parent_id': self.parent.dagobah_id,
-                  'host_name': self.name,
-                  'host_username': self.username,
-                  'host_password': self.password,
-                  'host_key': self.key }
+                  'host_name': self.name }
 
         return result
 

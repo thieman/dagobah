@@ -90,10 +90,7 @@ class Dagobah(object):
             self._add_job_from_spec(job_json)
 
         for host_json in rec.get('hosts', []):
-            self.add_host(host_name=host_json['host_name'], 
-                            host_username=host_json['host_username'], 
-                            host_password=host_json['host_password'], 
-                            host_key=host_json['host_key'], host_id=host_json['host_id'])
+            self.add_host(host_name=host_json['host_name'], host_id=host_json['host_id'])
 
         self.commit(cascade=True)
 
@@ -215,8 +212,7 @@ class Dagobah(object):
         job.add_task(task_command, task_name, **kwargs)
         job.commit()
 
-    def add_host(self, host_name, host_username, host_password=None, 
-                    host_key=None, host_id=None):
+    def add_host(self, host_name, host_id=None):
         """ Add a new host """
         if not self._host_is_added(host_name=host_name):
             raise DagobahError('Host %s is already added.' % host_name)
@@ -227,10 +223,7 @@ class Dagobah(object):
         self.hosts.append(Host(self,
                                self.backend,
                                host_id,
-                               host_name,
-                               host_username,
-                               host_password=host_password,
-                               host_key=host_key))
+                               host_name))
 
         host = self.get_host(host_id)
         host.commit()
@@ -666,7 +659,7 @@ class Task(object):
         self.command = command
         self.name = name
 
-        self.host_id = host_id
+        self.host_id = int(host_id)
         self.remote_process = None
         
         self.process = None
@@ -701,6 +694,11 @@ class Task(object):
         self.hard_timeout = timeout
         self.parent_job.commit()
 
+    def set_host_id(self, host_id):
+        if not isinstance(host_id, (int, float)) or host_id < 0:
+            raise ValueError('host_id must be a non-negative number')
+        self.host_id = host_id
+        self.parent_job.commit()
 
     def reset(self):
         """ Reset this Task to a clean state prior to execution. """
@@ -720,14 +718,15 @@ class Task(object):
         """ Begin execution of this task. """
         self.reset()
         if self.host_id:
+            host = [host for host in self.parent_job.parent.hosts if host.id==self.host_id]
             self.stdout = Manager().Value(unicode, '')
             self.stderr = Manager().Value(unicode, '')
             self.remote_exit_status = Manager().Value('i', -1)
 
             self.remote_process = Process(target=self.remote_ssh, args=[
-                                          self.stdout, self.stderr, self.remote_exit_status,
-                                          self.parent_job,
-                                          self.host_id])
+                                          self.stdout, self.stderr, 
+                                          self.remote_exit_status,
+                                          host[0].name])
             self.remote_process.start()
         else:
             self.process = subprocess.Popen(self.command,
@@ -739,34 +738,12 @@ class Task(object):
         self._start_check_timer()
 
 
-    def remote_ssh(self, stdout, stderr, exit_status, parent_job, host_id):
+    def remote_ssh(self, stdout, stderr, exit_status, host):
         try:
-            host = [host for host in parent_job.parent.hosts if host.id==host_id]
-            
-            if host:
-                host_name = host[0].name
-                username = host[0].username
-                password = host[0].password
-                key = host[0].key
-            else:
-                stderr.value = "Target host has been deleted!"
-                exit_status.value = 1
-                return
-
             client = paramiko.SSHClient()
             client.load_system_host_keys()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-            if password:
-                client.connect(host_name, username=username, password=password)
-            else:
-                try:
-                    private_key = StringIO.StringIO(str(key))
-                    key = paramiko.DSSKey.from_private_key(private_key)
-                except paramiko.SSHException:
-                    private_key = StringIO.StringIO(str(key))
-                    key = paramiko.RSAKey.from_private_key(private_key)
-                client.connect(host_name, username=username, pkey=key)
+            client.connect(host)
 
             stdin_remote, stdout_remote, stderr_remote = client.exec_command(
             self.command)

@@ -426,23 +426,11 @@ def get_hosts():
 def add_host():
     args = dict(request.form)
     if not validate_dict(args,
-                         required=['host_name', 'host_username'],
-                         host_name=str,
-                         host_username=str,
-                         host_password=str,
-                         host_key=str):
-        abort(400)
-    if args.get('host_key', None) is None and args.get('host_password', None) is None:
+                         required=['host_name'],
+                         host_name=str):
         abort(400)
 
-    if args.get('host_password', None): 
-        dagobah.add_host(args['host_name'],
-                         args['host_username'],
-                         host_password=args['host_password'])
-    else:
-        dagobah.add_host(args['host_name'],
-                 args['host_username'],
-                 host_key=args['host_key'])
+    dagobah.add_host(args['host_name'])
 
 
 @app.route('/api/delete_host', methods=['POST'])
