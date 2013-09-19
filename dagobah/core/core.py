@@ -11,6 +11,7 @@ import base64
 import StringIO
 import select
 from multiprocessing import Process, Manager
+from os.path import expanduser
 
 from croniter import croniter
 
@@ -740,10 +741,14 @@ class Task(object):
 
     def remote_ssh(self, stdout, stderr, exit_status, host):
         try:
+            config = paramiko.SSHConfig()
+            config.parse(open(expanduser("~")+'/.ssh/config'))
+            o = config.lookup(host)
+
             client = paramiko.SSHClient()
             client.load_system_host_keys()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect(host)
+            client.connect(o['hostname'], username=o['user'], key_filename=o['identityfile'][0])
 
             stdin_remote, stdout_remote, stderr_remote = client.exec_command(
             self.command)
