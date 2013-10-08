@@ -32,6 +32,8 @@ class BaseBackend(object):
     def get_new_job_id(self):
         return binascii.hexlify(os.urandom(16))
 
+    def get_new_host_id(self):
+        return binascii.hexlify(os.urandom(16))
 
     def get_new_log_id(self):
         return binascii.hexlify(os.urandom(16))
@@ -106,7 +108,15 @@ class BaseBackend(object):
         pass
 
 
+    def commit_host(self, host_json):
+        pass
+
+
     def delete_job(self, job_name):
+        pass
+
+
+    def delete_host(self, host_id):
         pass
 
 

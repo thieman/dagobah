@@ -40,10 +40,7 @@
 	    <ul id='navbar-right' class='nav pull-right'>
           {% block navbar_current %}{% endblock navbar_current %}
           {% if current_user.is_authenticated() %}
-            {# whoops, this isn't ready yet #}
-            {% if False %}
-              <li id='settings'><a href={{ url_for('settings_view') }}>Settings</a></li>
-            {% endif %}
+            <li id='settings'><a href={{ url_for('settings_view') }}>Settings</a></li>
             <li id='logout'><a href={{ url_for('do_logout') }}>Log Out</a></li>
           {% endif %}
 	    </ul>

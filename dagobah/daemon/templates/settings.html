@@ -4,6 +4,23 @@
 {{ super() }}
 
 <link rel="stylesheet" href="/static/css/settings.css"></link>
+
+{% raw %}
+<script id="hosts-table-template" type="text/x-handlebars-template">
+	<tr data-host='{{ hostName }}'>
+	  <td><span data-attr='ID' data-transform='class title'
+	            class={{ hostId }}>{{ hostId }}</span>
+	  </td>
+	  <td><span data-attr='Name' data-transform='class title'
+	            class={{ hostName }}>{{ hostName }}</span>
+	  </td>
+    <td>
+      <button class='btn btn-danger host-delete' onclick="return false;"><i class='icon-trash'></i></button>
+    </td>
+	</tr>
+</script>
+{% endraw %}
+
 {% endblock head %}
 
 {% block content %}
@@ -11,6 +28,27 @@
 <div class='page-header'>
   <h3>Settings</h3>
 </div>
+
+<div id="remote_hosts">
+  <div id='table-alert' class='alert hidden'></div>
+  <table class='table table-striped'>
+    <thead>
+      <th>ID</th>
+      <th>Name</th>
+    </thead>
+    <tbody id='hosts-body'>
+    </tbody>
+  </table>
+</div>
+
+<div id='new-alert' class='alert hidden'></div>
+<form class='form'>
+  <div id="remote_task_params">
+    <label>Host Name</label>
+    <input id='host-name' class='input-xxlarge' type='text' placeholder='127.0.0.1'></input>
+  </div>
+  <button id='add-host' class='btn btn-success' onclick='return false;'>Add Host</button>
+</form>
 
 {% endblock content %}
 

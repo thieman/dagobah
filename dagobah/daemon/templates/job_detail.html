@@ -53,6 +53,17 @@
     </tr>
   </script>
 
+  <script id="tasks-table-remote-template" type="text/x-handlebars-template">
+    <tr data-task='{{ taskName }}'>
+      {{> tasksName }}
+      {{> tasksRemoteTarget }}
+      <td>
+        <button class='btn btn-primary' onclick="window.location.href = '{{ taskURL }}';">View Task</button>
+        <button class='btn btn-danger task-delete' onclick="return false;"><i class='icon-trash'></i>
+      </td>
+    </tr>
+  </script>
+
   <script id="tasks-data-name-template" type="text/x-handlebars-template">
     <td data-attr='name'>
       {{#if text}}{{text}}{{/if}}
@@ -75,6 +86,12 @@
 
   <script id="tasks-data-hard-timeout-template" type="text/x-handlebars-template">
     <td data-attr='hard_timeout'>
+      {{text}}<i class='icon-pencil edit-task'></i>
+    </td>
+  </script>
+
+  <script id="tasks-data-remote-target-template" type="text/x-handlebars-template">
+    <td data-attr='host_id'>
       {{text}}<i class='icon-pencil edit-task'></i>
     </td>
   </script>
@@ -173,16 +190,23 @@
 <h3>Add New Task</h3>
 
 <form class='form'>
-
   <label>Name</label>
   <input id='new-task-name' class='input-xxlarge' type='text' placeholder='Task Name'></input>
+  
+  <label class="checkbox">
+      <input type="checkbox" value="remote" id="remote_checkbox"> Remote
+  </label>
+  <div id="target_hosts" style="display: none;">
+    <label>Target Hosts:</label>
+        <select id="target-hosts-dropdown" name="target_hosts">
+    </select>
+  </div>
 
   <label>Command</label>
   <textarea id='new-task-command' rows="3" placeholder='Task Command'></textarea>
 
   <br />
   <button id='add-task' class='btn btn-success' onclick='return false;'>Add Task</button>
-
 </form>
 
 <div class='row'>
@@ -193,6 +217,7 @@
       <button class='btn active' value='results'>Results</button>
       <button class='btn' value='commands'>Commands</button>
       <button class='btn' value='timeouts'>Timeouts</button>
+      <button class='btn' value='remote'>Remote</button>
     </div>
 
     <div id='table-alert' class='alert hidden'>

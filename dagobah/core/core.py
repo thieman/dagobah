@@ -6,11 +6,17 @@ import time
 import threading
 import subprocess
 import json
-
+import paramiko
+import base64
+import StringIO
+import select
+from multiprocessing import Process, Manager
+from os.path import expanduser
 from croniter import croniter
 
 from dagobah.core.dag import DAG
 from dagobah.core.components import Scheduler, JobState, StrictJSONEncoder
+from dagobah.core.components import Scheduler, JobState, Host
 from dagobah.backend.base import BaseBackend
 
 
@@ -32,6 +38,7 @@ class Dagobah(object):
         self.event_handler = event_handler
         self.dagobah_id = self.backend.get_new_dagobah_id()
         self.jobs = []
+        self.hosts = []
         self.created_jobs = 0
         self.scheduler = Scheduler(self)
         self.scheduler.daemon = True
@@ -56,6 +63,9 @@ class Dagobah(object):
             for task in job.tasks.values():
                 task.backend = backend
 
+        for host in self.hosts:
+            host.backend = backend
+
         self.commit(cascade=True)
 
 
@@ -79,6 +89,9 @@ class Dagobah(object):
         for job_json in rec.get('jobs', []):
             self._add_job_from_spec(job_json)
 
+        for host_json in rec.get('hosts', []):
+            self.add_host(host_name=host_json['host_name'], host_id=host_json['host_id'])
+
         self.commit(cascade=True)
 
 
@@ -92,6 +105,7 @@ class Dagobah(object):
                 pass
         self._add_job_from_spec(rec, use_job_id=False)
 
+        self.commit(cascade=True)
 
     def _add_job_from_spec(self, job_json, use_job_id=True):
         """ Add a single job to the Dagobah from a spec. """
@@ -109,7 +123,8 @@ class Dagobah(object):
                                  str(task['command']),
                                  str(task['name']),
                                  soft_timeout=task.get('soft_timeout', 0),
-                                 hard_timeout=task.get('hard_timeout', 0))
+                                 hard_timeout=task.get('hard_timeout', 0),
+                                 host_id=task.get('host_id', None))
 
         dependencies = job_json.get('dependencies', {})
         for from_node, to_nodes in dependencies.iteritems():
@@ -123,7 +138,6 @@ class Dagobah(object):
 
         If cascade is True, all child Jobs are commited as well.
         """
-
         self.backend.commit_dagobah(self._serialize())
         if cascade:
             [job.commit() for job in self.jobs]
@@ -132,6 +146,7 @@ class Dagobah(object):
     def delete(self):
         """ Delete this Dagobah instance from the Backend. """
         self.jobs = []
+        self.hosts = []
         self.created_jobs = 0
         self.backend.delete_dagobah(self.dagobah_id)
 
@@ -161,6 +176,12 @@ class Dagobah(object):
                 return job
         return None
 
+    def get_host(self, host_id):
+        """ Returns a Host by name, or None if none exists. """
+        for host in self.hosts:
+            if host.id == host_id:
+                return host
+        return None
 
     def delete_job(self, job_name):
         """ Delete a job by name, or error out if no such job exists. """
@@ -176,7 +197,6 @@ class Dagobah(object):
     def add_task_to_job(self, job_or_job_name, task_command, task_name=None,
                         **kwargs):
         """ Add a task to a job owned by the Dagobah instance. """
-
         if isinstance(job_or_job_name, Job):
             job = job_or_job_name
         else:
@@ -192,6 +212,38 @@ class Dagobah(object):
         job.add_task(task_command, task_name, **kwargs)
         job.commit()
 
+    def add_host(self, host_name, host_id=None):
+        """ Add a new host """
+        if not self._host_is_added(host_name=host_name):
+            raise DagobahError('Host %s is already added.' % host_name)
+
+        if not host_id:
+            host_id = self.backend.get_new_host_id()
+
+        self.hosts.append(Host(self,
+                               self.backend,
+                               host_id,
+                               host_name))
+
+        host = self.get_host(host_id)
+        host.commit()
+
+    def delete_host(self, host_name):
+        """ Delete a host """
+        for idx, host in enumerate(self.hosts):
+            if host.name == host_name:
+                self.backend.delete_host(host.id)
+                del self.hosts[idx]
+                self.commit()
+                return
+        raise DagobahError('no host with name %s exists' % host_name)
+
+
+    def _host_is_added(self, host_name=None):
+        """ Returns Boolean of whether the specified host is already added. """
+        return (False
+                if [host for host in self.hosts if host.name == host_name]
+                else True)
 
     def _name_is_available(self, job_name):
         """ Returns Boolean of whether the specified name is already in use. """
@@ -206,7 +258,8 @@ class Dagobah(object):
                   'created_jobs': self.created_jobs,
                   'jobs': [job._serialize(include_run_logs=include_run_logs,
                                           strict_json=strict_json)
-                           for job in self.jobs]}
+                           for job in self.jobs],
+                   'hosts': [host._serialize() for host in self.hosts]}
         if strict_json:
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
@@ -255,7 +308,6 @@ class Job(DAG):
 
     def add_task(self, command, name=None, **kwargs):
         """ Adds a new Task to the graph with no edges. """
-
         if not self.state.allow_change_graph:
             raise DagobahError("job's graph is immutable in its current state: %s"
                                % self.state.status)
@@ -591,7 +643,6 @@ class Job(DAG):
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
 
-
 class Task(object):
     """ Handles execution and reporting for an individual process.
 
@@ -601,13 +652,16 @@ class Task(object):
     """
 
     def __init__(self, parent_job, command, name,
-                 soft_timeout=0, hard_timeout=0):
+                 soft_timeout=0, hard_timeout=0, host_id=None):
         self.parent_job = parent_job
         self.backend = self.parent_job.backend
         self.event_handler = self.parent_job.event_handler
         self.command = command
         self.name = name
 
+        self.host_id = host_id
+        self.remote_process = None
+        
         self.process = None
         self.stdout = None
         self.stderr = None
@@ -640,6 +694,10 @@ class Task(object):
         self.hard_timeout = timeout
         self.parent_job.commit()
 
+    def set_host_id(self, host_id):
+        self.host_id = host_id
+        self.parent_job.commit()
+
     def reset(self):
         """ Reset this Task to a clean state prior to execution. """
 
@@ -657,37 +715,74 @@ class Task(object):
     def start(self):
         """ Begin execution of this task. """
         self.reset()
-        self.process = subprocess.Popen(self.command,
-                                        shell=True,
-                                        stdout=self.stdout_file,
-                                        stderr=self.stderr_file)
+        if self.host_id:
+            host = [host for host in self.parent_job.parent.hosts if str(host.id)==str(self.host_id)]
+            self.stdout = Manager().Value(unicode, '')
+            self.stderr = Manager().Value(unicode, '')
+            self.remote_exit_status = Manager().Value('i', -1)
+
+            self.remote_process = Process(target=self.remote_ssh, args=[
+                                          self.stdout, self.stderr, 
+                                          self.remote_exit_status,
+                                          host[0].name])
+            self.remote_process.start()
+        else:
+            self.process = subprocess.Popen(self.command,
+                                            shell=True,
+                                            stdout=self.stdout_file,
+                                            stderr=self.stderr_file)
+
         self.started_at = datetime.utcnow()
         self._start_check_timer()
 
 
+    def remote_ssh(self, stdout, stderr, exit_status, host):
+        try:
+            config = paramiko.SSHConfig()
+            config.parse(open(expanduser("~") + '/.ssh/config'))
+            o = config.lookup(host)
+
+            client = paramiko.SSHClient()
+            client.load_system_host_keys()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            client.connect(o['hostname'], username=o[
+                           'user'], key_filename=o['identityfile'][0], timeout=82800)
+
+            stdin_remote, stdout_remote, stderr_remote = client.exec_command(
+                self.command)
+
+            stdout.value = "".join(stdout_remote.readlines())
+            if stderr_remote:
+                stderr.value = "".join(stderr_remote.readlines())
+            exit_status.value = stdout_remote.channel.recv_exit_status()
+        except Exception as e:
+            stderr.value = str(e)
+            exit_status.value = 1
+
+
+
     def check_complete(self):
         """ Runs completion flow for this task if it's finished. """
-
-        if self.process.poll() is None:
-
-            # timeout check
-            if (self.soft_timeout != 0 and
-                (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout and
-                not self.terminate_sent):
-                self.terminate()
-
-            if (self.hard_timeout != 0 and
-                (datetime.utcnow() - self.started_at).seconds >= self.hard_timeout and
-                not self.kill_sent):
-                self.kill()
-
+        if self.remote_process and self.remote_process.is_alive():
+            self._timeout_check()
             self._start_check_timer()
             return
 
-        self.stdout, self.stderr = (self._read_temp_file(self.stdout_file),
-                                    self._read_temp_file(self.stderr_file))
-        for temp_file in [self.stdout_file, self.stderr_file]:
-            temp_file.close()
+        if self.process and self.process.poll() is None:
+            self._timeout_check()
+            self._start_check_timer()
+            return
+
+        if self.remote_process:
+            return_code = self.remote_exit_status.value
+            self.stdout = self.stdout.value
+            self.stderr = self.stderr.value
+        else:
+            return_code = self.process.returncode
+            self.stdout, self.stderr = (self._read_temp_file(self.stdout_file),
+                                        self._read_temp_file(self.stderr_file))
+            for temp_file in [self.stdout_file, self.stderr_file]:
+                temp_file.close()
 
         if self.terminate_sent:
             self.stderr += '\nDAGOBAH SENT SIGTERM TO THIS PROCESS\n'
@@ -697,8 +792,8 @@ class Task(object):
         self.stdout_file = None
         self.stderr_file = None
 
-        self._task_complete(success=True if self.process.returncode == 0 else False,
-                            return_code=self.process.returncode,
+        self._task_complete(success=True if return_code == 0 else False,
+                            return_code=return_code,
                             stdout = self.stdout,
                             stderr = self.stderr,
                             complete_time = datetime.utcnow())
@@ -706,6 +801,10 @@ class Task(object):
 
     def terminate(self):
         """ Send SIGTERM to the task's process. """
+        if self.remote_process:
+            self.terminate_sent = True
+            self.remote_process.terminate()
+            return
         if not self.process:
             raise DagobahError('task does not have a running process')
         self.terminate_sent = True
@@ -714,6 +813,11 @@ class Task(object):
 
     def kill(self):
         """ Send SIGKILL to the task's process. """
+        if self.remote_process:
+            self.kill_sent = True
+            self.remote_process.terminate()
+            return
+
         if not self.process:
             raise DagobahError('task does not have a running process')
         self.kill_sent = True
@@ -757,6 +861,18 @@ class Task(object):
         """ Returns the entire stderr output of this process. """
         return self._read_temp_file(self.stderr_file)
 
+
+    def _timeout_check(self):
+        # timeout check
+        if (self.soft_timeout != 0 and
+            (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout and
+            not self.terminate_sent):
+            self.terminate()
+
+        if (self.hard_timeout != 0 and
+            (datetime.utcnow() - self.started_at).seconds >= self.hard_timeout and
+            not self.kill_sent):
+            self.kill()
 
     def _map_string_to_file(self, stream):
         if stream not in ['stdout', 'stderr']:
@@ -848,7 +964,8 @@ class Task(object):
                   'completed_at': self.completed_at,
                   'success': self.successful,
                   'soft_timeout': self.soft_timeout,
-                  'hard_timeout': self.hard_timeout}
+                  'hard_timeout': self.hard_timeout,
+                  'host_id': self.host_id}
 
         if include_run_logs:
             last_run = self.backend.get_latest_run_log(self.parent_job.job_id,
@@ -861,3 +978,4 @@ class Task(object):
         if strict_json:
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
+
