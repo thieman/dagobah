@@ -10,7 +10,7 @@ import paramiko
 import base64
 import StringIO
 import select
-from multiprocessing import Process, Manager
+from multiprocessing import Process, Manager, Pool
 
 from croniter import croniter
 
@@ -659,7 +659,7 @@ class Task(object):
         self.command = command
         self.name = name
 
-        self.host_id = int(host_id)
+        self.host_id = host_id
         self.remote_process = None
         
         self.process = None
@@ -695,8 +695,6 @@ class Task(object):
         self.parent_job.commit()
 
     def set_host_id(self, host_id):
-        if not isinstance(host_id, (int, float)) or host_id < 0:
-            raise ValueError('host_id must be a non-negative number')
         self.host_id = host_id
         self.parent_job.commit()
 
@@ -718,7 +716,8 @@ class Task(object):
         """ Begin execution of this task. """
         self.reset()
         if self.host_id:
-            host = [host for host in self.parent_job.parent.hosts if host.id==self.host_id]
+            import ipdb; ipdb.set_trace()
+            host = [host for host in self.parent_job.parent.hosts if str(host.id)==str(self.host_id)]
             self.stdout = Manager().Value(unicode, '')
             self.stderr = Manager().Value(unicode, '')
             self.remote_exit_status = Manager().Value('i', -1)
@@ -743,7 +742,7 @@ class Task(object):
             client = paramiko.SSHClient()
             client.load_system_host_keys()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect(host)
+            client.connect(host, timeout=82800)
 
             stdin_remote, stdout_remote, stderr_remote = client.exec_command(
             self.command)
@@ -760,21 +759,12 @@ class Task(object):
     def check_complete(self):
         """ Runs completion flow for this task if it's finished. """
         if self.remote_process and self.remote_process.is_alive():
+            self._timeout_check()
             self._start_check_timer()
             return
 
         if self.process and self.process.poll() is None:
-            # timeout check
-            if (self.soft_timeout != 0 and
-                (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout and
-                not self.terminate_sent):
-                self.terminate()
-
-            if (self.hard_timeout != 0 and
-                (datetime.utcnow() - self.started_at).seconds >= self.hard_timeout and
-                not self.kill_sent):
-                self.kill()
-
+            self._timeout_check()
             self._start_check_timer()
             return
 
@@ -807,6 +797,7 @@ class Task(object):
     def terminate(self):
         """ Send SIGTERM to the task's process. """
         if self.remote_process:
+            self.terminate_sent = True
             self.remote_process.terminate()
             return
         if not self.process:
@@ -818,6 +809,7 @@ class Task(object):
     def kill(self):
         """ Send SIGKILL to the task's process. """
         if self.remote_process:
+            self.kill_sent = True
             self.remote_process.terminate()
             return
 
@@ -864,6 +856,18 @@ class Task(object):
         """ Returns the entire stderr output of this process. """
         return self._read_temp_file(self.stderr_file)
 
+
+    def _timeout_check(self):
+        # timeout check
+        if (self.soft_timeout != 0 and
+            (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout and
+            not self.terminate_sent):
+            self.terminate()
+
+        if (self.hard_timeout != 0 and
+            (datetime.utcnow() - self.started_at).seconds >= self.hard_timeout and
+            not self.kill_sent):
+            self.kill()
 
     def _map_string_to_file(self, stream):
         if stream not in ['stdout', 'stderr']:
