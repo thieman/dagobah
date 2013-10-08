@@ -10,8 +10,8 @@ import paramiko
 import base64
 import StringIO
 import select
-from multiprocessing import Process, Manager, Pool
-
+from multiprocessing import Process, Manager
+from os.path import expanduser
 from croniter import croniter
 
 from dagobah.core.dag import DAG
@@ -739,13 +739,18 @@ class Task(object):
 
     def remote_ssh(self, stdout, stderr, exit_status, host):
         try:
+            config = paramiko.SSHConfig()
+            config.parse(open(expanduser("~") + '/.ssh/config'))
+            o = config.lookup(host)
+
             client = paramiko.SSHClient()
             client.load_system_host_keys()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect(host, timeout=82800)
+            client.connect(o['hostname'], username=o[
+                           'user'], key_filename=o['identityfile'][0], timeout=82800)
 
             stdin_remote, stdout_remote, stderr_remote = client.exec_command(
-            self.command)
+                self.command)
 
             stdout.value = "".join(stdout_remote.readlines())
             if stderr_remote:
@@ -754,6 +759,7 @@ class Task(object):
         except Exception as e:
             stderr.value = str(e)
             exit_status.value = 1
+
 
 
     def check_complete(self):
