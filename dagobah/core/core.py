@@ -716,7 +716,6 @@ class Task(object):
         """ Begin execution of this task. """
         self.reset()
         if self.host_id:
-            import ipdb; ipdb.set_trace()
             host = [host for host in self.parent_job.parent.hosts if str(host.id)==str(self.host_id)]
             self.stdout = Manager().Value(unicode, '')
             self.stderr = Manager().Value(unicode, '')
