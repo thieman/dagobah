@@ -1,3 +1,7 @@
+### v0.2.1 (January 2, 2014)
+
+  * Added compatibility with Python 2.6
+
 ### v0.2.0 (September 6, 2013)
 
   * Added soft (SIGTERM) and hard (SIGKILL) timeouts to Tasks
