@@ -160,13 +160,17 @@ class DagobahLog(Base):
 
     @property
     def json(self):
+
+        tasks_dict = {}
+        for task in self.tasks:
+            tasks_dict[task.name] = task.json
+
         return {'log_id': self.id,
                 'job_id': self.job_id,
                 'start_time': self.start_time,
                 'name': self.job.name,
                 'parent_id': self.job.parent_id,
-                'tasks': {task.name: task.json
-                          for task in self.tasks}}
+                'tasks': tasks_dict}
 
     def update_from_dict(self, data):
         for key in ['job_id', 'start_time', 'last_retry_time']:
