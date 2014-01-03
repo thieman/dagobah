@@ -576,13 +576,15 @@ class Job(DAG):
                                  strict_json=strict_json)
                  for task in self.tasks.itervalues()]
 
+        dependencies = {}
+        for k, v in self.graph.iteritems():
+            dependencies[k] = list(v)
+
         result = {'job_id': self.job_id,
                   'name': self.name,
                   'parent_id': self.parent.dagobah_id,
                   'tasks': t,
-                  'dependencies': {k: list(v)
-                                   for k, v
-                                   in self.graph.iteritems()},
+                  'dependencies': dependencies,
                   'status': self.state.status,
                   'cron_schedule': self.cron_schedule,
                   'next_run': self.next_run}
