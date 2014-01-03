@@ -13,6 +13,8 @@ You can also [use Dagobah directly in Python.](../../wiki/Using Dagobah Directly
 
 ## Installation
 
+Dagobah works with Python 2.6 or 2.7.
+
     pip install dagobah
     dagobahd  # start the web interface on localhost:9000
 
