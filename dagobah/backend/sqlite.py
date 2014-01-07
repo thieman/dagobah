@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 from copy import deepcopy
 import threading
+import inspect
 
 import sqlalchemy
 import alembic
@@ -27,9 +28,20 @@ class SQLiteBackend(BaseBackend):
 
         self.filepath = filepath
         if self.filepath == 'default':
-            location = os.path.realpath(os.path.join(os.getcwd(),
+            self.location = os.path.realpath(os.path.join(os.getcwd(),
                                                      os.path.dirname(__file__)))
-            self.filepath = os.path.join(location, 'dagobah.db')
+            self.filepath = os.path.join(self.location, 'dagobah.db')
+            # check if we have initialize alembic environment, if not do so
+            try:
+               with open(os.path.join(self.location, 'migrations/env.py')):
+                   pass
+            except IOError:
+               from subprocess import call
+               os.chdir(self.location)
+               alembic_init_env = "alembic init migrations"
+               call(alembic_init_env, shell=True)
+        else: 
+            self.location = os.path.dirname(self.filepath) # assumes user has created an Alembic environment within the SQLite db folder
 
         connect_args = {'check_same_thread': False}
         self.connect_string = ('sqlite:///' + self.filepath
@@ -302,10 +314,10 @@ class SQLiteBackend(BaseBackend):
             return []
 
         migration_required = False
-        config = Config('dagobah/backend/alembic.ini')
+        config = Config(self.location + '/alembic.ini')
         config.set_main_option('sqlalchemy.url',
                                'sqlite:///' + self.filepath)
-        script = ScriptDirectory.from_config(config)
+        script = ScriptDirectory(self.location + '/migrations')
 
         with EnvironmentContext(config, script, fn=migrate_if_required):
             script.run_env()
