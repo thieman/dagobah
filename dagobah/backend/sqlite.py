@@ -5,7 +5,6 @@ import logging
 from datetime import datetime
 from copy import deepcopy
 import threading
-import inspect
 
 import sqlalchemy
 import alembic
@@ -27,22 +26,12 @@ class SQLiteBackend(BaseBackend):
         super(SQLiteBackend, self).__init__()
 
         self.filepath = filepath
+        self.location = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        self.check_if_alembic_exists_or_init()
+
         if self.filepath == 'default':
-            self.location = os.path.realpath(os.path.join(os.getcwd(),
-                                                     os.path.dirname(__file__)))
             self.filepath = os.path.join(self.location, 'dagobah.db')
             # check if we have initialize alembic environment, if not do so
-            try:
-               with open(os.path.join(self.location, 'migrations/env.py')):
-                   pass
-            except IOError:
-               from subprocess import call
-               os.chdir(self.location)
-               alembic_init_env = "alembic init migrations"
-               call(alembic_init_env, shell=True)
-        else: 
-            self.location = os.path.dirname(self.filepath) # assumes user has created an Alembic environment within the SQLite db folder
-
         connect_args = {'check_same_thread': False}
         self.connect_string = ('sqlite:///' + self.filepath
                                if self.filepath != 'memory'
@@ -60,6 +49,23 @@ class SQLiteBackend(BaseBackend):
 
     def __repr__(self):
         return '<SQLiteBackend (path: %s)>' % (self.filepath)
+
+    def check_if_alembic_exists_or_init(self):
+        exists = False
+        try:
+            with open(os.path.join(self.location, 'alembic.ini')):
+                if os.path.isdir(self.location + "migrations"):
+                    exists = True
+                else:
+                    exists = False
+        except IOError:
+            exists = False
+
+        if not exists:
+            from subprocess import call
+            os.chdir(self.location)
+            alembic_init_env = "alembic init migrations"
+            call(alembic_init_env, shell=True)
 
     def get_known_dagobah_ids(self):
         results = []
