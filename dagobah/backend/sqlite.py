@@ -26,11 +26,12 @@ class SQLiteBackend(BaseBackend):
         super(SQLiteBackend, self).__init__()
 
         self.filepath = filepath
-        if self.filepath == 'default':
-            location = os.path.realpath(os.path.join(os.getcwd(),
-                                                     os.path.dirname(__file__)))
-            self.filepath = os.path.join(location, 'dagobah.db')
+        self.location = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        self.check_if_alembic_exists_or_init()
 
+        if self.filepath == 'default':
+            self.filepath = os.path.join(self.location, 'dagobah.db')
+            # check if we have initialize alembic environment, if not do so
         connect_args = {'check_same_thread': False}
         self.connect_string = ('sqlite:///' + self.filepath
                                if self.filepath != 'memory'
@@ -48,6 +49,23 @@ class SQLiteBackend(BaseBackend):
 
     def __repr__(self):
         return '<SQLiteBackend (path: %s)>' % (self.filepath)
+
+    def check_if_alembic_exists_or_init(self):
+        exists = False
+        try:
+            with open(os.path.join(self.location, 'alembic.ini')):
+                if os.path.isdir(self.location + "migrations"):
+                    exists = True
+                else:
+                    exists = False
+        except IOError:
+            exists = False
+
+        if not exists:
+            from subprocess import call
+            os.chdir(self.location)
+            alembic_init_env = "alembic init migrations"
+            call(alembic_init_env, shell=True)
 
     def get_known_dagobah_ids(self):
         results = []
@@ -302,10 +320,10 @@ class SQLiteBackend(BaseBackend):
             return []
 
         migration_required = False
-        config = Config('dagobah/backend/alembic.ini')
+        config = Config(self.location + '/alembic.ini')
         config.set_main_option('sqlalchemy.url',
                                'sqlite:///' + self.filepath)
-        script = ScriptDirectory.from_config(config)
+        script = ScriptDirectory(self.location + '/migrations')
 
         with EnvironmentContext(config, script, fn=migrate_if_required):
             script.run_env()

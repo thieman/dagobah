@@ -30,6 +30,12 @@ To use a backend, you need to install the drivers using the commands below and t
 
      pip install pysqlite sqlalchemy alembic
 
+If you decide to specify your own location, you will need to run 
+
+	 alembic init migrations
+
+with that folder before switching to SQLite backend.
+
 #### MongoDB
 
     pip install pymongo
