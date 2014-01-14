@@ -1,3 +1,7 @@
+### v0.2.2 (January 7, 2014)
+
+  * Bug fix
+
 ### v0.2.1 (January 2, 2014)
 
   * Added compatibility with Python 2.6
