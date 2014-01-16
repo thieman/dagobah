@@ -3,3 +3,4 @@ include dagobah/backend/alembic.ini
 recursive-include dagobah/email/templates *
 recursive-include dagobah/daemon/static *
 recursive-include dagobah/daemon/templates *
+recursive-include dagobah/backend/migrations *
