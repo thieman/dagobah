@@ -302,7 +302,9 @@ class SQLiteBackend(BaseBackend):
             return []
 
         migration_required = False
-        config = Config('dagobah/backend/alembic.ini')
+        config = Config(os.path.join(os.path.dirname(__file__), 'alembic.ini'))
+        config.set_section_option('alembic', 'script_location',
+                                  os.path.join(os.path.dirname(__file__), 'migrations'))
         config.set_main_option('sqlalchemy.url',
                                'sqlite:///' + self.filepath)
         script = ScriptDirectory.from_config(config)
