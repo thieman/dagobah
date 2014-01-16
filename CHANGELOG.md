@@ -1,3 +1,7 @@
+### v0.2.3 (January 16, 2014)
+
+  * Bug fix
+
 ### v0.2.2 (January 7, 2014)
 
   * Bug fix
