@@ -117,7 +117,6 @@ class Dagobah(object):
                 job.add_dependency(from_node, to_node)
 
 
-
     def commit(self, cascade=False):
         """ Commit this Dagobah instance to the backend.
 
@@ -319,7 +318,7 @@ class Job(DAG):
 
         else:
             if base_datetime is None:
-                base_datetime = datetime.utcnow()
+                base_datetime = datetime.now()
             self.cron_schedule = cron_schedule
             self.cron_iter = croniter(cron_schedule, base_datetime)
             self.next_run = self.cron_iter.get_next(datetime)
