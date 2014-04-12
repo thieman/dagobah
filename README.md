@@ -36,7 +36,7 @@ To use a backend, you need to install the drivers using the commands below and t
 
 ## Features
 
-#### Single-user auth (new in 0.1.2)
+#### Single-user auth
 
 <img src="http://i.imgur.com/f843YXK.png" height="200">
 
