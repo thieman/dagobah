@@ -12,7 +12,7 @@ def get_email_handler(handler_name, email_options):
     user = email_options.get('user', None)
     user = user.lower() if isinstance(user, str) else user
 
-    if (handler_name is None)
+    if (handler_name is None):
         return None
         
     elif auth_required and (user is None or user == 'none')):
