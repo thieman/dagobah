@@ -47,8 +47,9 @@ class EmailTemplate(object):
 
 
     def _address_message(self):
-        self.message['From'] = email.utils.formataddr((self.from_address,
-                                                       self.user))
+        email_addr = self.from_address if (self.user is None or self.user.lower() == 'none') else self.user
+        
+        self.message['From'] = email.utils.formataddr((self.from_address, email_addr))
         self.message['To'] = ','.join(self.recipients)
 
 
@@ -62,7 +63,10 @@ class EmailTemplate(object):
             s.ehlo()
             s.starttls()
             s.ehlo
-        s.login(self.user, self.password)
+
+        if getattr(self, 'auth_required', True):  #Preserve backward compatibility
+            s.login(self.user, self.password)
+            
         s.sendmail(self.message['From'],
                    self.message['To'],
                    self.message.as_string())
