@@ -56,12 +56,9 @@ To use a backend, you need to install the drivers using the commands below and t
 
 <img src="http://i.imgur.com/yN6LUUZ.png" height="400">
 
-#### Author
-
- * [Travis Thieman](https://twitter.com/thieman)
-
 #### Contributors
 
+ * [Travis Thieman](https://twitter.com/thieman)
  * [Shon T. Urbas](https://github.com/surbas)
 
 #### Get Started Contributing
