@@ -62,5 +62,9 @@ To use a backend, you need to install the drivers using the commands below and t
 
 #### Contributors
 
+ * [Shon T. Urbas](https://github.com/surbas)
+
+#### Get Started Contributing
+
  * See the fledgling [wiki](../../wiki) or [create a new issue](../../issues) to get started
  * This could be you! If you have any questions, go ahead and [email](mailto:travis.thieman@gmail.com) or [tweet at](https://twitter.com/thieman) me, or go ahead and create a new issue in this repository.
