@@ -12,10 +12,13 @@ def get_email_handler(handler_name, email_options):
     user = email_options.get('user', None)
     user = user.lower() if isinstance(user, str) else user
 
-    if (handler_name is None or (auth_required and (user is None or user == 'none'))):
-        print 'Email.auth_required is True but user is None. Email support will be disabled.'
+    if (handler_name is None)
         return None
-
+        
+    elif auth_required and (user is None or user == 'none')):
+        print 'Email.auth_required is True but Email.user is None. Emailing of reports will be disabled.'
+        return None
+        
     elif handler_name == 'text':
         return TextEmail(**email_options)
 
