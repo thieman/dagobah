@@ -201,9 +201,9 @@ def init_logger(location, config):
 def get_backend(config):
     """ Returns a backend instance based on the Daemon config file. """
 
-    backend_string = get_conf(config, 'Dagobahd.backend', 'none')
+    backend_string = get_conf(config, 'Dagobahd.backend', None)
 
-    if backend_string.lower() == 'none':
+    if backend_string is None:
         from dagobah.backend.base import BaseBackend
         return BaseBackend()
 
