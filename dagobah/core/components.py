@@ -84,7 +84,7 @@ class Scheduler(threading.Thread):
         self.parent = parent_dagobah
         self.stopped = False
 
-        self.last_check = datetime.utcnow()
+        self.last_check = datetime.now()
 
 
     def __repr__(self):
@@ -98,14 +98,14 @@ class Scheduler(threading.Thread):
 
     def restart(self):
         """ Restart the monitoring loop. """
-        self.last_check = datetime.utcnow()
+        self.last_check = datetime.now()
         self.stopped = False
 
 
     def run(self):
         """ Continually monitors Jobs of the parent Dagobah. """
         while not self.stopped:
-            now = datetime.utcnow()
+            now = datetime.now()
             for job in self.parent.jobs:
                 if not job.next_run:
                     continue
