@@ -18,6 +18,23 @@ login_manager.login_view = "login"
 location = os.path.realpath(os.path.join(os.getcwd(),
                                          os.path.dirname(__file__)))
 
+def replace_nones(dict_or_list):
+    """Update a dict or list in place to replace
+    'none' string values with Python None."""
+
+    def replace_none_in_value(value):
+        if isinstance(value, basestring) and value.lower() == "none":
+            return None
+        return value
+
+    items = dict_or_list.iteritems() if isinstance(dict_or_list, dict) else enumerate(dict_or_list)
+
+    for accessor, value in items:
+        if isinstance(value, (dict, list)):
+            replace_nones(value)
+        else:
+            dict_or_list[accessor] = replace_none_in_value(value)
+
 def get_config_file():
     """ Return the loaded config file if one exists. """
 
@@ -38,6 +55,7 @@ def get_config_file():
                     to_load = open(os.path.join(directory, filename))
                     config = yaml.load(to_load.read())
                     to_load.close()
+                    replace_nones(config)
                     return config
             except:
                 pass
@@ -53,6 +71,7 @@ def get_config_file():
     new_config = open(new_config_path, 'r')
     config = yaml.load(new_config.read())
     new_config.close()
+    replace_nones(config)
     return config
 
 
