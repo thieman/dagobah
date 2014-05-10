@@ -24,7 +24,7 @@ class SQLiteBackend(BaseBackend):
     required_packages = [{'pypi_name': 'pysqlite',
                           'module_name': 'sqlite3',
                           'version_key': 'version',
-                          'version': '2.6.0'},
+                          'version': '2.4.0'},
                          {'pypi_name': 'sqlalchemy',
                           'module_name': 'sqlalchemy',
                           'version_key': '__version__',
