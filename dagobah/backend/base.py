@@ -40,7 +40,13 @@ class BaseBackend(object):
                 failures.append('Package {0} not found, please install it from pypi.'.format(spec['pypi_name']))
                 continue
 
-            installed_version = getattr(module, spec['version_key'])
+            # everyone has to be special
+            if spec['pypi_name'] == 'pysqlite':
+                module = __import__('pysqlite2._sqlite')
+                installed_version = getattr(module._sqlite, spec['version_key'])
+            else:
+                installed_version = getattr(module, spec['version_key'])
+
             if Version(installed_version, partial=True) < Version(spec['version'], partial=True):
                 msg = 'Package {0} requires at least version {1}, found version {2}.'.format(spec['pypi_name'],
                                                                                              spec['version'],
