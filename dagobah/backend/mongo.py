@@ -24,6 +24,10 @@ TRUNCATE_LOG_SIZES_CHAR = {'stdout': 500000,
 
 class MongoBackend(BaseBackend):
     """ Mongo Backend implementation """
+    required_packages = [{'pypi_name': 'pymongo',
+                          'module_name': 'pymongo',
+                          'version_key': 'version',
+                          'version': '2.5'}]
 
     def __init__(self, host, port, db, dagobah_collection='dagobah',
                  job_collection='dagobah_job', log_collection='dagobah_log'):

@@ -3,6 +3,9 @@
 import os
 import binascii
 import json
+import logging
+
+from semantic_version import Version
 
 class BaseBackend(object):
     """ Base class for prototypes and compound functions.
@@ -13,13 +16,47 @@ class BaseBackend(object):
     will not persist anything permanently.
     """
 
+    # this is a list of dicts describing the additional packages that
+    # need to be installed to use this backend
+    # Keys: pypi_name, module_name, version_key, spec_version
+    # See the SQLiteBackend for an example implementation
+    required_packages = []
+
     def __init__(self):
-        pass
+        self.verify_required_packages()
 
 
     def __repr__(self):
         return '<BaseBackend>'
 
+
+    def verify_required_packages(self):
+        failures = []
+        for spec in self.required_packages:
+
+            try:
+                module = __import__(spec['module_name'])
+            except ImportError:
+                failures.append('Package {} not found, please install it from pypi.'.format(spec['pypi_name']))
+                continue
+
+            installed_version = getattr(module, spec['version_key'])
+            if Version(installed_version, partial=True) < Version(spec['version'], partial=True):
+                msg = 'Package {} requires at least version {}, found version {}.'.format(spec['pypi_name'],
+                                                                                          spec['version'],
+                                                                                          installed_version)
+                failures.append(msg)
+            elif installed_version != spec['version']:
+                msg = 'Package {} has version {} which is later than specified version {}.'.format(spec['pypi_name'],
+                                                                                                   installed_version,
+                                                                                                   spec['version'])
+                msg += ' If you experience issues, try downgrading to version {}.'.format(spec['version'])
+                logging.warn(msg)
+
+        if failures:
+            for failure in failures:
+                logging.error(failure)
+            raise ImportError("Package requirements not met for backend {}.".format(self.__class__.__name__))
 
     def get_known_dagobah_ids(self):
         return []

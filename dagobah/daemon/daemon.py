@@ -1,6 +1,7 @@
 """ HTTP Daemon implementation for Dagobah service. """
 
 import os
+import sys
 import logging
 
 from flask import Flask, send_from_directory
@@ -193,6 +194,11 @@ def init_logger(location, config):
     numeric_level = getattr(logging, level_string, None)
 
     logging.basicConfig(filename=path, level=numeric_level)
+
+    root = logging.getLogger()
+    stdout_logger = logging.StreamHandler(sys.stdout)
+    stdout_logger.setLevel(logging.INFO)
+    root.addHandler(stdout_logger)
 
     print 'Logging output to %s' % path
     logging.info('Logger initialized at level %s' % level_string)
