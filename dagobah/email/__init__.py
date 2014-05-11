@@ -1,3 +1,5 @@
+import logging
+
 from dagobah.email.text import TextEmail
 from dagobah.email.basic import BasicEmail
 
@@ -16,7 +18,7 @@ def get_email_handler(handler_name, email_options):
         return None
 
     elif auth_required and user is None:
-        print 'Email.auth_required is True but Email.user is None. Emailing of reports will be disabled.'
+        logging.warn('Email.auth_required is True but Email.user is None. Emailing of reports will be disabled.')
         return None
 
     elif handler_name == 'text':
@@ -24,3 +26,6 @@ def get_email_handler(handler_name, email_options):
 
     elif handler_name == 'basic':
         return BasicEmail(**email_options)
+
+    logging.warn("Dagobahd.email config key unrecognized. Emailing of reports will be disabled.")
+    return None
