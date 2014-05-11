@@ -37,7 +37,8 @@ class BaseBackend(object):
             try:
                 module = __import__(spec['module_name'])
             except ImportError:
-                failures.append('Package {0} not found, please install it from pypi.'.format(spec['pypi_name']))
+                failures.append('Package {0} not found, please install it. pip install {0}=={1}'.format(spec['pypi_name'],
+                                                                                                        spec['version']))
                 continue
 
             # everyone has to be special
