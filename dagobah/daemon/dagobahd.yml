@@ -5,9 +5,7 @@ Dagobahd:
   port: 9000
 
   # the app's secret key, used for maintaining user sessions
-  # WARNING: change this to your own random value!
-  # an easy way to create a key with python is "import os; os.urandom(24)"
-  app_secret: 'g\xde\xf5\x06@K\xf5:\x1fmZ\xac\x1fO\xe8\xcd\xde\xcf\x90\xaeY7\x8c\x96'
+  app_secret: %(app_secret)s
 
   # credentials for single-user auth
   auth_disabled: False

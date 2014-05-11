@@ -77,9 +77,8 @@ def get_config_file():
 
 def print_standard_conf():
     """ Print the sample config file to stdout. """
-    config_file = open(os.path.join(location, 'dagobahd.yml'))
-    print config_file.read()
-    config_file.close()
+    print return_standard_conf()
+
 
 
 def return_standard_conf():
@@ -87,6 +86,7 @@ def return_standard_conf():
     config_file = open(os.path.join(location, 'dagobahd.yml'))
     result = config_file.read()
     config_file.close()
+    result = result % {'app_secret': os.urandom(24).encode('hex')}
     return result
 
 
