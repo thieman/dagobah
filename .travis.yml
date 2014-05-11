@@ -6,8 +6,8 @@ python:
 
 install:
   - "pip install -r requirements.txt"
-  - "pip install pymongo"
-  - "pip install pysqlite sqlalchemy alembic"
+  - "pip install pymongo==2.5"
+  - "pip install pysqlite==2.6.0 sqlalchemy==0.9.4 alembic==0.6.4"
 
 services:
   - mongodb
