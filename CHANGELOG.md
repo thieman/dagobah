@@ -1,3 +1,7 @@
+### v0.3.0
+
+  * Added Email.auth_required field to config to allow for email servers that do not require auth
+
 ### v0.2.3 (January 16, 2014)
 
   * Bug fix
