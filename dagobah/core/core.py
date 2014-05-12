@@ -117,7 +117,6 @@ class Dagobah(object):
                 job.add_dependency(from_node, to_node)
 
 
-
     def commit(self, cascade=False):
         """ Commit this Dagobah instance to the backend.
 
@@ -319,7 +318,7 @@ class Job(DAG):
 
         else:
             if base_datetime is None:
-                base_datetime = datetime.utcnow()
+                base_datetime = datetime.now()
             self.cron_schedule = cron_schedule
             self.cron_iter = croniter(cron_schedule, base_datetime)
             self.next_run = self.cron_iter.get_next(datetime)
@@ -339,14 +338,14 @@ class Job(DAG):
             raise DagobahError(reason)
 
         # don't increment if the job was run manually
-        if self.cron_iter and datetime.utcnow() > self.next_run:
+        if self.cron_iter and datetime.now() > self.next_run:
             self.next_run = self.cron_iter.get_next(datetime)
 
         self.run_log = {'job_id': self.job_id,
                         'name': self.name,
                         'parent_id': self.parent.dagobah_id,
                         'log_id': self.backend.get_new_log_id(),
-                        'start_time': datetime.utcnow(),
+                        'start_time': datetime.now(),
                         'tasks': {}}
         self._set_status('running')
 
@@ -372,7 +371,7 @@ class Job(DAG):
             raise DagobahError('no failed tasks to retry')
 
         self._set_status('running')
-        self.run_log['last_retry_time'] = datetime.utcnow()
+        self.run_log['last_retry_time'] = datetime.now()
 
         for task_name in failed_task_names:
             self._put_task_in_run_log(task_name)
@@ -488,7 +487,7 @@ class Job(DAG):
 
     def _put_task_in_run_log(self, task_name):
         """ Initializes the run log task entry for this task. """
-        data = {'start_time': datetime.utcnow(),
+        data = {'start_time': datetime.now(),
                 'command': self.tasks[task_name].command}
         self.run_log['tasks'][task_name] = data
 
@@ -663,7 +662,7 @@ class Task(object):
                                         shell=True,
                                         stdout=self.stdout_file,
                                         stderr=self.stderr_file)
-        self.started_at = datetime.utcnow()
+        self.started_at = datetime.now()
         self._start_check_timer()
 
 
@@ -674,12 +673,12 @@ class Task(object):
 
             # timeout check
             if (self.soft_timeout != 0 and
-                (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout and
+                (datetime.now() - self.started_at).seconds >= self.soft_timeout and
                 not self.terminate_sent):
                 self.terminate()
 
             if (self.hard_timeout != 0 and
-                (datetime.utcnow() - self.started_at).seconds >= self.hard_timeout and
+                (datetime.now() - self.started_at).seconds >= self.hard_timeout and
                 not self.kill_sent):
                 self.kill()
 
@@ -703,7 +702,7 @@ class Task(object):
                             return_code=self.process.returncode,
                             stdout = self.stdout,
                             stderr = self.stderr,
-                            complete_time = datetime.utcnow())
+                            complete_time = datetime.now())
 
 
     def terminate(self):
@@ -836,7 +835,7 @@ class Task(object):
     def _task_complete(self, **kwargs):
         """ Performs cleanup tasks and notifies Job that the Task finished. """
         self.parent_job.completion_lock.acquire()
-        self.completed_at = datetime.utcnow()
+        self.completed_at = datetime.now()
         self.successful = kwargs.get('success', None)
         self.parent_job._complete_task(self.name, **kwargs)
 

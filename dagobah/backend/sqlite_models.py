@@ -153,7 +153,7 @@ class DagobahLog(Base):
     tasks = relationship('DagobahLogTask', backref='log')
 
     def __init__(self):
-        self.save_date = datetime.utcnow()
+        self.save_date = datetime.now()
 
     def __repr__(self):
         return "<SQLite:DagobahLog (%d)>" % self.id
@@ -176,7 +176,7 @@ class DagobahLog(Base):
         for key in ['job_id', 'start_time', 'last_retry_time']:
             if key in data:
                 setattr(self, key, data[key])
-        self.save_date = datetime.utcnow()
+        self.save_date = datetime.now()
 
 
 class DagobahLogTask(Base):
@@ -195,7 +195,7 @@ class DagobahLogTask(Base):
 
     def __init__(self, name):
         self.name = name
-        self.save_date = datetime.utcnow()
+        self.save_date = datetime.now()
 
     def __repr__(self):
         return "<SQLite:DagobahLogTask (%d)>" % self.id
@@ -214,4 +214,4 @@ class DagobahLogTask(Base):
                     'stderr']:
             if key in data:
                 setattr(self, key, data[key])
-        self.save_date = datetime.utcnow()
+        self.save_date = datetime.now()
