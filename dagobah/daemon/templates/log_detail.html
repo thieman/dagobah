@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block head %}
+{{ super() }}
+
+<script>
+  var jobName = '{{ job.name }}';
+  var taskName = '{{ task_name }}';
+  var logId = '{{ log_id }}';
+</script>
+
+<link rel="stylesheet" href="/static/css/log_detail.css"></link>
+
+{% endblock head %}
+
+{% block navbar_current %}
+<li><a href='{{ url_for('job_detail', job_id=job.job_id) }}'>Job: {{ job.name }}</a></li>
+<li><a href='#'>Task Detail: {{ task_name }}</a></li>
+{% endblock navbar_current %}
+
+{% block content %}
+
+<div class='page-header'>
+  <h3 id='header'>Run History: {{ task_name }}</h3>
+  <h3 id='task-status' class='right'></h3>
+</div>
+
+<div id='logs' class='row'>
+  <div class='span12'>  
+
+    <div class='log-controls'>
+      <button id='stdout' class='btn btn-sequence btn-primary'>Stdout</button>
+      <button id='stderr' class='btn btn-sequence btn-primary'>Stderr</button>
+
+      <span id='log-type' class='right-header'>Stdout</span>
+    </div>
+
+    <textarea id='log-detail'></textarea>
+
+  </div>
+</div>
+
+{% endblock content %}
+
+{% block body_scripts %}
+  <script src="/static/js/log_detail.js"></script>
+{% endblock body_scripts %}

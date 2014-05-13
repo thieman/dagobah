@@ -1,0 +1,36 @@
+.page-header h3 {
+	display: inline-block;
+}
+
+.right {
+	text-align: right;
+}
+
+.btn-sequence {
+	margin-right: 10px;
+}
+
+.page-header .right {
+	float: right;
+}
+
+textarea {
+	margin-top: 20px;
+	width: 100%;
+	height: 400px;
+	font-family: "Lucida Console", Monaco, monospace;
+}
+
+.right-header {
+	float: right;
+	font-size: 26.25px;
+	color: #2d2d2d;
+}
+
+.span6 .alert {
+	width: 80%;
+}
+
+td:last-child {
+	width: 8%;
+}

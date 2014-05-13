@@ -1,3 +1,11 @@
+var historyTableTemplate = Handlebars.compile($('#history-table-template').html());
+var historyNameTemplate = Handlebars.compile($('#history-name-template').html());
+
+Handlebars.registerPartial('historyId',historyNameTemplate);
+
+var historyData = [];
+loadHistoryTable();
+
 $('#save-soft-timeout').click(function() {
 
 	$.ajax({
@@ -119,3 +127,73 @@ $('#tail-stderr').click(function() {
 	);
 
 });
+
+function loadHistoryTable() {
+
+	$.getJSON($SCRIPT_ROOT + '/api/logs',
+			  {
+				  job_name: jobName,
+				  task_name: taskName,
+			  },
+			  function(data) {
+				  data = data.result;
+				  renderHistoryTable(data);
+			  }
+			 );
+}
+
+function convertToIsoTime(timestring) {
+	var string_split = timestring.split(" ");
+	var isoTime = string_split[0] + "T" + string_split[1];
+	return isoTime;
+}
+
+function determineRuntime(completion, start){
+	// Backwards compatability: start time was not stored for logs before
+	if (start === undefined) {
+		return "Runtime not available."
+	}
+	var completion_string = convertToIsoTime(completion);
+	var completion_time = new Date(completion_string).getTime();
+	var start_string = convertToIsoTime(start);
+	var starting_time = new Date(start_string).getTime();
+	var milliseconds = completion_time - starting_time;
+	var numhours = Math.floor(milliseconds / 3600000);
+	milliseconds = milliseconds - (numhours * 3600000);
+	var numminutes = Math.floor(milliseconds / 60000);
+	milliseconds = milliseconds - (numminutes * 60000);
+	var numseconds = Math.floor(milliseconds / 1000);
+	milliseconds = milliseconds - (numseconds * 1000);
+	var result = String(numhours) + ":" + String(numminutes) + ":" + String(numseconds) + "." + String(milliseconds);
+	return result;
+}
+
+function renderHistoryTable(data){
+	if (data.length === 0) {
+		setTimeout(renderHistoryTable, 100);
+		return;
+	}
+
+	$('#history-body').empty();
+
+	for (var i = 0; i < data.length; i++) {
+		var thisJob = data[i];
+		var start_time = thisJob['tasks'][taskName].start_time;
+		var completion_time = thisJob['tasks'][taskName].complete_time;
+		var run_time = null;
+		if (completion_time === undefined) {
+			run_time = 'Did not complete.';
+		} else {
+			run_time = determineRuntime(completion_time, start_time);
+		}
+
+		$('#history-body').append(
+			historyTableTemplate({
+			historyId: thisJob.log_id,
+			runtime: run_time,
+			completionTime: completion_time,
+			logURL: $SCRIPT_ROOT + '/job/' + thisJob.job_id + '/' + taskName + '/' + thisJob.log_id
+		})
+		);
+	}
+}
