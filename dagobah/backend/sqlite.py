@@ -219,7 +219,7 @@ class SQLiteBackend(BaseBackend):
         return result
 
     def get_run_log(self, job_id, task_name, log_id):
-        log = self.Sessionsession.query(DagobahLog).\
+        log = self.session.query(DagobahLog).\
             filter_by(job_id=job_id).\
             filter_by(id=log_id).\
             first()
