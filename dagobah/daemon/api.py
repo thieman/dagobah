@@ -39,7 +39,7 @@ def get_job():
 @login_required
 @api_call
 def get_run_log_history():
-    args = dict(request._args)
+    args = dict(request.args)
     if not validate_dict(args,
                          required=['job_name', 'task_name'],
                          job_name=str,
@@ -69,7 +69,7 @@ def get_log():
     task = job.tasks.get(args['task_name'], None)
     if not task:
         abort(400)
-        return task.get_run_log(args['log_id'])
+    return task.get_run_log(args['log_id'])
 
 
 @app.route('/api/head', methods=['GET'])

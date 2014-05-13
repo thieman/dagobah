@@ -703,6 +703,7 @@ class Task(object):
                             return_code=self.process.returncode,
                             stdout = self.stdout,
                             stderr = self.stderr,
+                            start_time = self.started_at,
                             complete_time = datetime.utcnow())
 
 
