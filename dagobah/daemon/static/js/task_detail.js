@@ -64,15 +64,15 @@ function showLogText(logType, value) {
 $('#head-stdout').click(function() {
 
 	$.getJSON($SCRIPT_ROOT + '/api/head',
-			  {
-				  job_name: jobName,
-				  task_name: taskName,
-				  stream: 'stdout',
-				  num_lines: 100
-			  },
-			  function(data) {
-				  showLogText('Head: Stdout', data['result']);
-			  }
+			{
+				job_name: jobName,
+				task_name: taskName,
+				stream: 'stdout',
+				num_lines: 100
+			},
+			function(data) {
+				showLogText('Head: Stdout', data['result']);
+			}
 	);
 
 });
@@ -81,15 +81,15 @@ $('#head-stdout').click(function() {
 $('#tail-stdout').click(function() {
 
 	$.getJSON($SCRIPT_ROOT + '/api/tail',
-			  {
-				  job_name: jobName,
-				  task_name: taskName,
-				  stream: 'stdout',
-				  num_lines: 100
-			  },
-			  function(data) {
-				  showLogText('Tail: Stdout', data['result']);
-			  }
+			{
+				job_name: jobName,
+				task_name: taskName,
+				stream: 'stdout',
+				num_lines: 100
+			},
+			function(data) {
+				showLogText('Tail: Stdout', data['result']);
+			}
 	);
 
 });
@@ -98,15 +98,15 @@ $('#tail-stdout').click(function() {
 $('#head-stderr').click(function() {
 
 	$.getJSON($SCRIPT_ROOT + '/api/head',
-			  {
-				  job_name: jobName,
-				  task_name: taskName,
-				  stream: 'stderr',
-				  num_lines: 100
-			  },
-			  function(data) {
-				  showLogText('Head: Stderr', data['result']);
-			  }
+			{
+				job_name: jobName,
+				task_name: taskName,
+				stream: 'stderr',
+				num_lines: 100
+			},
+			function(data) {
+				showLogText('Head: Stderr', data['result']);
+			}
 	);
 
 });
@@ -115,15 +115,15 @@ $('#head-stderr').click(function() {
 $('#tail-stderr').click(function() {
 
 	$.getJSON($SCRIPT_ROOT + '/api/tail',
-			  {
-				  job_name: jobName,
-				  task_name: taskName,
-				  stream: 'stderr',
-				  num_lines: 100
-			  },
-			  function(data) {
-				  showLogText('Tail: Stderr', data['result']);
-			  }
+			{
+				job_name: jobName,
+				task_name: taskName,
+				stream: 'stderr',
+				num_lines: 100
+			},
+			function(data) {
+				showLogText('Tail: Stderr', data['result']);
+			}
 	);
 
 });
@@ -131,41 +131,23 @@ $('#tail-stderr').click(function() {
 function loadHistoryTable() {
 
 	$.getJSON($SCRIPT_ROOT + '/api/logs',
-			  {
-				  job_name: jobName,
-				  task_name: taskName,
-			  },
-			  function(data) {
-				  data = data.result;
-				  renderHistoryTable(data);
-			  }
-			 );
-}
-
-function convertToIsoTime(timestring) {
-	var string_split = timestring.split(" ");
-	var isoTime = string_split[0] + "T" + string_split[1];
-	return isoTime;
+			{
+				job_name: jobName,
+				task_name: taskName,
+			},
+			function(data) {
+				data = data.result;
+				renderHistoryTable(data);
+			}
+			);
 }
 
 function determineRuntime(completion, start){
-	// Backwards compatability: start time was not stored for logs before
-	if (start === undefined) {
-		return "Runtime not available."
-	}
-	var completion_string = convertToIsoTime(completion);
-	var completion_time = new Date(completion_string).getTime();
-	var start_string = convertToIsoTime(start);
-	var starting_time = new Date(start_string).getTime();
-	var milliseconds = completion_time - starting_time;
-	var numhours = Math.floor(milliseconds / 3600000);
-	milliseconds = milliseconds - (numhours * 3600000);
-	var numminutes = Math.floor(milliseconds / 60000);
-	milliseconds = milliseconds - (numminutes * 60000);
-	var numseconds = Math.floor(milliseconds / 1000);
-	milliseconds = milliseconds - (numseconds * 1000);
-	var result = String(numhours) + ":" + String(numminutes) + ":" + String(numseconds) + "." + String(milliseconds);
-	return result;
+	// Note that this implementation will not work for run times > 1 day
+	var m_completion = moment(completion, "YYYY-MM-DD HH:mm:ss.SSS");
+	var m_start = moment(start, "YYYY-MM-DD HH:mm:ss.SSS");
+	var diff = m_completion.diff(m_start, 'milliseconds');
+	return moment.utc(diff).format("HH:mm:ss.SSS")
 }
 
 function renderHistoryTable(data){
