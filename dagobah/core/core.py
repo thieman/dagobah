@@ -761,14 +761,12 @@ class Task(object):
         return self._read_temp_file(self.stderr_file)
 
     def get_run_log_history(self):
-        history = self.backend.get_run_log_history(self.parent_job.job_id,
-                                                   self.name)
-        return history
+        return self.backend.get_run_log_history(self.parent_job.job_id,
+                                                self.name)
 
     def get_run_log(self, log_id):
-        log = self.backend.get_run_log(self.parent_job.job_id, self.name,
-                                       log_id)
-        return log
+        return self.backend.get_run_log(self.parent_job.job_id, self.name,
+                                        log_id)
 
 
     def _map_string_to_file(self, stream):

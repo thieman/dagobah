@@ -206,17 +206,13 @@ class SQLiteBackend(BaseBackend):
             first()
         return log.json
 
-    def get_run_log_history(self, job_id, task_name):
+    def get_run_log_history(self, job_id, task_name, limit=10):
         logs = self.session.query(DagobahLog).\
             filter_by(job_id=job_id).\
             order_by(DagobahLog.save_date.desc()).\
-            limit(10).\
+            limit(limit).\
             all()
-        result = []
-        for log in logs:
-            if task_name in log.json['tasks']:
-                result.append(log.json)
-        return result
+        return [log.json for log in logs if task_name in log.json['tasks']]
 
     def get_run_log(self, job_id, task_name, log_id):
         log = self.session.query(DagobahLog).\
@@ -225,10 +221,8 @@ class SQLiteBackend(BaseBackend):
             first()
         if log is None:
             return None
-        start_time = log.json['start_time']
         if task_name in log.json['tasks']:
             result = log.json['tasks'][task_name]
-            result['start_time'] = start_time
             return result
         else:
             return None
