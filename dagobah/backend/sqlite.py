@@ -312,6 +312,5 @@ class SQLiteBackend(BaseBackend):
         config = Config(os.path.join(os.path.dirname(__file__), 'alembic.ini'))
         config.set_section_option('alembic', 'script_location',
                                   os.path.join(os.path.dirname(__file__), 'migrations'))
-        config.set_main_option('sqlalchemy.url',
-                               'sqlite:///' + self.filepath)
+        config.set_main_option('sqlalchemy.url', self.connect_string)
         return config
