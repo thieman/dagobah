@@ -1,5 +1,6 @@
 ### v0.3.0
 
+  * Historical task run logs can now be viewed in the web UI
   * Added Email.auth_required field to config to allow for email servers that do not require auth
   * An app secret is now generated for you when you first create a config file
 
