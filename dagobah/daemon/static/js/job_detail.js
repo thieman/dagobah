@@ -455,10 +455,10 @@ function updateNotes(newNotes) {
 		data: data,
 		dataType: 'json',
 		success: function() {
-			showAlert('new-alert', 'success', 'Notes updated.');
+			showAlert('notes-alert', 'success', 'Notes updated.');
 		},
 		error: function() {
-			showAlert('new-alert', 'error', 'There was an error updating notes.');
+			showAlert('notes-alert', 'error', 'There was an error updating notes.');
 		},
 		async: true
 	});
