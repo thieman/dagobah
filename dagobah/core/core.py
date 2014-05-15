@@ -596,7 +596,8 @@ class Job(DAG):
                   'dependencies': dependencies,
                   'status': self.state.status,
                   'cron_schedule': self.cron_schedule,
-                  'next_run': self.next_run}
+                  'next_run': self.next_run,
+                  'notes': self.notes}
 
         if strict_json:
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
