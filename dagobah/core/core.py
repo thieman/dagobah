@@ -417,6 +417,15 @@ class Job(DAG):
         self.parent.commit(cascade=True)
 
 
+    def update_job_notes(self, job_name, notes):
+        if not self.state.allow_edit_job:
+            raise DagobahError('job cannot be edited in its current state')
+
+        setattr(self, 'notes', notes)
+
+        self.parent.commit(cascade=True)
+
+
     def edit_task(self, task_name, **kwargs):
         """ Change the name of a Task owned by this Job.
 
