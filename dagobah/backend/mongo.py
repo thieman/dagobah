@@ -139,3 +139,16 @@ class MongoBackend(BaseBackend):
         for rec in cur:
             return rec
         return {}
+
+    def get_run_log_history(self, job_id, task_name, limit=10):
+        q = {'job_id': ObjectId(job_id),
+             'tasks.%s' % task_name: {'$exists': True}}
+        cur = self.log_coll.find(q).sort([('save_date',
+                                           pymongo.DESCENDING)]).limit(limit)
+        return list(cur)
+
+    def get_run_log(self, job_id, task_name, log_id):
+        q = {'job_id': ObjectId(job_id),
+             'tasks.%s' % task_name: {'$exists': True},
+             'log_id': ObjectId(log_id)}
+        return self.log_coll.find_one(q)['tasks'][task_name]

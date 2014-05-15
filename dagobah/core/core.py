@@ -703,6 +703,7 @@ class Task(object):
                             return_code=self.process.returncode,
                             stdout = self.stdout,
                             stderr = self.stderr,
+                            start_time = self.started_at,
                             complete_time = datetime.utcnow())
 
 
@@ -758,6 +759,14 @@ class Task(object):
     def get_stderr(self):
         """ Returns the entire stderr output of this process. """
         return self._read_temp_file(self.stderr_file)
+
+    def get_run_log_history(self):
+        return self.backend.get_run_log_history(self.parent_job.job_id,
+                                                self.name)
+
+    def get_run_log(self, log_id):
+        return self.backend.get_run_log(self.parent_job.job_id, self.name,
+                                        log_id)
 
 
     def _map_string_to_file(self, stream):
