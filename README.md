@@ -60,7 +60,7 @@ To use a backend, you need to install the drivers using the commands below and t
 
  * [Travis Thieman](https://twitter.com/thieman)
  * [Shon T. Urbas](https://github.com/surbas)
- * [Utkarsh Sengar](https://twitter.com/utkarsh2012)
+ * [Utkarsh Sengar](https://twitter.com/utsengar)
  * Stephanie Wei
  * [Ryan Clough](https://github.com/rclough)
 
