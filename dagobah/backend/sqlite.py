@@ -56,7 +56,8 @@ class SQLiteBackend(BaseBackend):
         self.lock = threading.Lock()
 
         Base.metadata.create_all(self.engine)
-        self.run_alembic_migration()
+        if self.filepath != 'memory':
+            self.run_alembic_migration()
 
     def __repr__(self):
         return '<SQLiteBackend (path: %s)>' % (self.filepath)
@@ -304,28 +305,12 @@ class SQLiteBackend(BaseBackend):
                 task_rec.update_from_dict(task)
 
     def run_alembic_migration(self):
-        """ Migrate to latest Alembic revision if not up-to-date. """
+        config = self._get_alembic_config()
+        alembic.command.upgrade(config, 'head')
 
-        def migrate_if_required(rev, context):
-            rev = script.get_revision(rev)
-            if not (rev and rev.is_head):
-                migration_required = True
-
-            return []
-
-        migration_required = False
+    def _get_alembic_config(self):
         config = Config(os.path.join(os.path.dirname(__file__), 'alembic.ini'))
         config.set_section_option('alembic', 'script_location',
                                   os.path.join(os.path.dirname(__file__), 'migrations'))
-        config.set_main_option('sqlalchemy.url',
-                               'sqlite:///' + self.filepath)
-        script = ScriptDirectory.from_config(config)
-
-        with EnvironmentContext(config, script, fn=migrate_if_required):
-            script.run_env()
-
-        if migration_required:
-            logging.info('Migrating SQLite database to latest revision')
-            alembic.command.upgrade(config, 'head')
-        else:
-            logging.info('SQLite database is on the latest revision')
+        config.set_main_option('sqlalchemy.url', self.connect_string)
+        return config
