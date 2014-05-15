@@ -9,6 +9,29 @@
 </script>
 
 <link rel="stylesheet" href="/static/css/task_detail.css"></link>
+
+{% raw %}
+<script id="history-table-template" type="text/x-handlebars-template">
+    <tr data-log='{{ historyId }}'>
+        {{> historyId }}
+        <td><span data-attr='completion_time' data-transform='class title'
+                class={{ completionTime }}>{{ completionTime }}</span>
+        </td>
+        <td><span data-attr='runtime' data-transform='class title'
+                class={{ runtime }}>{{ runtime }}</span>
+        </td>
+        <td>
+            <button class='btn btn-primary' onclick="window.location.href = '{{ logURL }}';">View</button>
+        </td>
+    </tr>
+</script>
+<script id="history-name-template" type="text/x-handlebars-template">
+    <td data-attr='log_id'>
+        {{#if historyId}}{{historyId}}{{/if}}
+    </td>
+</script>
+{% endraw %}
+
 {% endblock head %}
 
 {% block navbar_current %}
@@ -96,6 +119,17 @@
 
   </div>
 </div>
+
+<table class='table table-striped'>
+    <thead>
+        <th>Run ID</th>
+        <th>Completion Time</th>
+        <th>Runtime</th>
+        <th></th>
+    </thead>
+    <tbody id='history-body'>
+    </tbody>
+</table>
 
 {% endblock content %}
 

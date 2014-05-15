@@ -35,6 +35,43 @@ def get_job():
     return job._serialize()
 
 
+@app.route('/api/logs', methods=['GET'])
+@login_required
+@api_call
+def get_run_log_history():
+    args = dict(request.args)
+    if not validate_dict(args,
+                         required=['job_name', 'task_name'],
+                         job_name=str,
+                         task_name=str):
+        abort(400)
+
+    job = dagobah.get_job(args['job_name'])
+    task = job.tasks.get(args['task_name'], None)
+    if not task:
+        abort(400)
+    return task.get_run_log_history()
+
+
+@app.route('/api/log', methods=['GET'])
+@login_required
+@api_call
+def get_log():
+    args = dict(request.args)
+    if not validate_dict(args,
+                         required=['job_name', 'task_name', 'log_id'],
+                         job_name=str,
+                         task_name=str,
+                         log_id=str):
+        abort(400)
+
+    job = dagobah.get_job(args['job_name'])
+    task = job.tasks.get(args['task_name'], None)
+    if not task:
+        abort(400)
+    return task.get_run_log(args['log_id'])
+
+
 @app.route('/api/head', methods=['GET'])
 @login_required
 @api_call

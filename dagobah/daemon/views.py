@@ -49,6 +49,19 @@ def task_detail(job_id=None, task_name=None):
                            task=[task for task in job['tasks']
                                  if task['name'] == task_name][0])
 
+@app.route('/job/<job_id>/<task_name>/<log_id>', methods=['GET'])
+@login_required
+def log_detail(job_id=None, task_name=None, log_id=None):
+        """ Show a detailed description of a specific log. """
+        jobs = get_jobs()
+        job = [job for job in jobs if str(job['job_id']) == job_id][0]
+        return render_template('log_detail.html',
+                               job=job,
+                               task_name=task_name,
+                               task=[task for task in job['tasks']
+                                     if task['name'] == task_name][0],
+                               log_id=log_id)
+
 @app.route('/settings', methods=['GET'])
 @login_required
 def settings_view():

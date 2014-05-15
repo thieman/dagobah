@@ -15,7 +15,10 @@ import sqlalchemy as sa
 
 
 def upgrade():
-    op.add_column('dagobah_job', sa.Column('notes', sa.String(1000)))
+    conn = op.get_bind()
+    columns = conn.execute('select * from dagobah_job limit 1')._metadata.keys
+    if 'notes' not in columns:
+        op.add_column('dagobah_job', sa.Column('notes', sa.String(1000)))
 
 
 def downgrade():

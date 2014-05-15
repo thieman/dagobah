@@ -205,6 +205,7 @@ class DagobahLogTask(Base):
         return {'success': self.success,
                 'return_code': self.return_code,
                 'complete_time': self.complete_time,
+                'start_time': self.start_time,
                 'stdout': self.stdout,
                 'stderr': self.stderr}
 

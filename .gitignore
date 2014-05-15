@@ -36,3 +36,6 @@ nosetests.xml
 
 # Virtualenv
 venv
+
+# Vim packages
+*.ropeproject
