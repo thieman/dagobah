@@ -241,6 +241,7 @@ class Job(DAG):
         self.cron_iter = None
         self.run_log = None
         self.completion_lock = threading.Lock()
+        self.notes = None
 
         self._set_status('waiting')
 
