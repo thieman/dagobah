@@ -56,7 +56,8 @@ class SQLiteBackend(BaseBackend):
         self.lock = threading.Lock()
 
         Base.metadata.create_all(self.engine)
-        self.run_alembic_migration()
+        if self.filepath != 'memory':
+            self.run_alembic_migration()
 
     def __repr__(self):
         return '<SQLiteBackend (path: %s)>' % (self.filepath)
@@ -304,7 +305,6 @@ class SQLiteBackend(BaseBackend):
                 task_rec.update_from_dict(task)
 
     def run_alembic_migration(self):
-        """ Migrate to latest Alembic revision if not up-to-date. """
         config = self._get_alembic_config()
         alembic.command.upgrade(config, 'head')
 
