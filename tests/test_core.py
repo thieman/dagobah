@@ -177,6 +177,7 @@ def test_serialize_dagobah():
     job.add_edge('list', 'grep')
     base_datetime = datetime(2012, 1, 1, 1, 0, 0)
     job.schedule('*/5 * * * *', base_datetime)
+    job.update_job_notes("Here are some notes")
     dagobah_id = dagobah.dagobah_id
     test_result = {'dagobah_id': dagobah_id,
                    'created_jobs': 1,
@@ -201,7 +202,8 @@ def test_serialize_dagobah():
                                               'grep': []},
                              'status': 'waiting',
                              'cron_schedule': '*/5 * * * *',
-                             'next_run': datetime(2012, 1, 1, 1, 5, 0)}]}
+                             'next_run': datetime(2012, 1, 1, 1, 5, 0),
+                             'notes': 'Here are some notes'}]}
     print dagobah._serialize()
     print test_result
     assert dagobah._serialize() == test_result
