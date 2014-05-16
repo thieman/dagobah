@@ -368,7 +368,7 @@ def update_job_notes():
         abort(400)
 
     job = dagobah.get_job(args['job_name'])
-    job.update_job_notes(args['job_name'], args['notes'])
+    job.update_job_notes(args['notes'])
 
 
 @app.route('/api/edit_task', methods=['POST'])

@@ -116,6 +116,9 @@ class Dagobah(object):
             for to_node in to_nodes:
                 job.add_dependency(from_node, to_node)
 
+        if job_json.get('notes', None):
+            job.update_job_notes(job_json['notes'])
+
 
 
     def commit(self, cascade=False):
@@ -418,7 +421,7 @@ class Job(DAG):
         self.parent.commit(cascade=True)
 
 
-    def update_job_notes(self, job_name, notes):
+    def update_job_notes(self, notes):
         if not self.state.allow_edit_job:
             raise DagobahError('job cannot be edited in its current state')
 
