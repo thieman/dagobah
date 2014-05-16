@@ -30,7 +30,8 @@ class MongoBackend(BaseBackend):
                           'version': '2.5'}]
 
     def __init__(self, host, port, db, dagobah_collection='dagobah',
-                 job_collection='dagobah_job', log_collection='dagobah_log'):
+                 job_collection='dagobah_job', log_collection='dagobah_log',
+                 host_collection='dagobah_host'):
         super(MongoBackend, self).__init__()
 
         self.host = host
@@ -47,6 +48,7 @@ class MongoBackend(BaseBackend):
         self.dagobah_coll = self.db[dagobah_collection]
         self.job_coll = self.db[job_collection]
         self.log_coll = self.db[log_collection]
+        self.host_coll = self.db[host_collection]
 
     def __repr__(self):
         return '<MongoBackend (host: %s, port: %s)>' % (self.host, self.port)
@@ -67,6 +69,12 @@ class MongoBackend(BaseBackend):
         while True:
             candidate = ObjectId()
             if not self.job_coll.find_one({'_id': candidate}):
+                return candidate
+
+    def get_new_host_id(self):
+        while True:
+            candidate = ObjectId()
+            if not self.host_coll.find_one({'_id': candidate}):
                 return candidate
 
     def get_new_log_id(self):
@@ -109,8 +117,16 @@ class MongoBackend(BaseBackend):
         append = {'save_date': datetime.utcnow()}
         self.job_coll.save(dict(job_json.items() + append.items()))
 
+    def commit_host(self, host_json):
+        host_json['_id'] = host_json['host_id']
+        append = {'save_date': datetime.utcnow()}
+        self.host_coll.save(dict(host_json.items() + append.items()))
+
     def delete_job(self, job_id):
         self.job_coll.remove({'_id': job_id})
+
+    def delete_host(self, host_id):
+        self.host_coll.remove({'_id': host_id})
 
     def commit_log(self, log_json):
         """ Commits a run log to the Mongo backend.
