@@ -118,6 +118,31 @@ class Scheduler(threading.Thread):
             time.sleep(1)
 
 
+class Host(object):
+    """
+    Controler for remote hosts
+    """
+
+    def __init__(self, parent, backend, host_id, host_name):
+        self.parent = parent
+        self.backend = backend
+        self.id = host_id
+        self.name = host_name
+
+    def commit(self):
+        """ Store metadata on this Host to the backend. """
+        self.backend.commit_host(self._serialize())
+        self.parent.commit()
+
+    def _serialize(self):
+        """ Serialize a representation of this Host to a Python dict. """
+
+        result = {'host_id': self.id,
+                  'parent_id': self.parent.dagobah_id,
+                  'host_name': self.name}
+
+        return result
+
 class StrictJSONEncoder(json.JSONEncoder):
     def default(self, o):
         try:
