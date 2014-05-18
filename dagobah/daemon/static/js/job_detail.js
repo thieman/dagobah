@@ -178,8 +178,8 @@ function deleteDependency(fromTaskName, toTaskName) {
 		success: function() {
 			job.removeDependencyFromGraph(fromTaskName, toTaskName);
 			showAlert('graph-alert', 'success', 'Dependency from ' +
-					  fromTaskName + ' to ' + toTaskName +
-					  ' was successfully removed.');
+					fromTaskName + ' to ' + toTaskName +
+					' was successfully removed.');
 		},
 		error: function() {
 			showAlert('graph-alert', 'error', 'There was an error removing this dependency.');
@@ -430,8 +430,38 @@ function updateJobNextRun() {
     if (job.next_run === null) {
         $('#next-run').val('Not scheduled');
     } else {
-	    $('#next-run').val(moment.utc(job.next_run).local().format('LLL'));
+		$('#next-run').val(moment.utc(job.next_run).local().format('LLL'));
     }
+}
+
+$('#save-notes').click(function() {
+	var notes = $('#job-notes').val();
+	updateNotes(notes);
+});
+
+function updateNotes(newNotes) {
+	if (!job.loaded) {
+		return;
+	}
+
+	data = {
+		job_name: job.name,
+		notes: newNotes,
+	};
+
+	$.ajax({
+		type: 'POST',
+		url: $SCRIPT_ROOT + '/api/update_job_notes',
+		data: data,
+		dataType: 'json',
+		success: function() {
+			showAlert('notes-alert', 'success', 'Notes updated.');
+		},
+		error: function() {
+			showAlert('notes-alert', 'error', 'There was an error updating notes.');
+		},
+		async: true
+	});
 }
 
 $('#save-schedule').click(function() {
