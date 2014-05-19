@@ -185,12 +185,14 @@ def add_task_to_job():
                          required=['job_name', 'task_command', 'task_name'],
                          job_name=str,
                          task_command=str,
-                         task_name=str):
+                         task_name=str,
+                         task_target=str):
         abort(400)
 
     dagobah.add_task_to_job(args['job_name'],
                             args['task_command'],
-                            args['task_name'])
+                            args['task_name'],
+                            host_id=args.clearget("task_target", None))
 
 
 @app.route('/api/delete_task', methods=['POST'])
@@ -368,7 +370,8 @@ def edit_task():
                          name=str,
                          command=str,
                          soft_timeout=int,
-                         hard_timeout=int):
+                         hard_timeout=int,
+                         host_id=str):
         abort(400)
 
     job = dagobah.get_job(args['job_name'])
@@ -449,3 +452,36 @@ def import_job():
     file = request.files['file']
     if (file and allowed_file(file.filename, ['json'])):
         dagobah.add_job_from_json(file.read(), destructive=True)
+
+
+@app.route('/api/hosts', methods=['GET'])
+@login_required
+@api_call
+def get_hosts():
+    return dagobah._serialize().get('hosts', {})
+
+
+@app.route('/api/add_host', methods=['POST'])
+@login_required
+@api_call
+def add_host():
+    args = dict(request.form)
+    if not validate_dict(args,
+                         required=['host_name'],
+                         host_name=str):
+        abort(400)
+
+    dagobah.add_host(args['host_name'])
+
+
+@app.route('/api/delete_host', methods=['POST'])
+@login_required
+@api_call
+def delete_host():
+    args = dict(request.form)
+    if not validate_dict(args,
+                         required=['host_name'],
+                         host_name=str):
+        abort(400)
+
+    dagobah.delete_host(args['host_name'])

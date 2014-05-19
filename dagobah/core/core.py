@@ -257,7 +257,7 @@ class Dagobah(object):
                   'jobs': [job._serialize(include_run_logs=include_run_logs,
                                           strict_json=strict_json)
                            for job in self.jobs],
-                  'hosts': [host._serialize() for host in self.add_jobhosts]}
+                  'hosts': [host._serialize() for host in self.hosts]}
         if strict_json:
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
