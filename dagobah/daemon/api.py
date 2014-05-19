@@ -192,7 +192,7 @@ def add_task_to_job():
     dagobah.add_task_to_job(args['job_name'],
                             args['task_command'],
                             args['task_name'],
-                            host_id=args.clearget("task_target", None))
+                            host_id=args.get("task_target", None))
 
 
 @app.route('/api/delete_task', methods=['POST'])

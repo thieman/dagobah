@@ -667,8 +667,8 @@ class Task(object):
 
         self.remote_channel = None
         self.process = None
-        self.stdout = None
-        self.stderr = None
+        self.stdout = ""
+        self.stderr = ""
         self.stdout_file = None
         self.stderr_file = None
 
@@ -709,6 +709,9 @@ class Task(object):
 
         self.stdout_file = os.tmpfile()
         self.stderr_file = os.tmpfile()
+
+        self.stdout = ""
+        self.stderr = ""
 
         self.started_at = None
         self.completed_at = None
@@ -788,12 +791,12 @@ class Task(object):
                 temp_file.close()
 
         if self.terminate_sent:
-            self.stderr = '\nDAGOBAH SENT SIGTERM TO THIS PROCESS\n'
+            self.stderr += '\nDAGOBAH SENT SIGTERM TO THIS PROCESS\n'
         if self.kill_sent:
-            self.stderr = '\nDAGOBAH SENT SIGKILL TO THIS PROCESS\n'
+            self.stderr += '\nDAGOBAH SENT SIGKILL TO THIS PROCESS\n'
         if self.failure:
             return_code = -1
-            self.stderr = '\nAn error occurred.\n'
+            self.stderr += '\nAn error occurred.\n'
 
         self.stdout_file = None
         self.stderr_file = None
