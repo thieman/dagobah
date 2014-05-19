@@ -58,7 +58,7 @@ To use a backend, you need to install the drivers using the commands below and t
 
 #### Tasks can even be run on remote machines (Set up hosts on the settings page, using your SSH config. [Details](https://github.com/rclough/dagobah/wiki/Adding-and-using-remote-hosts-in-Dagobah))
 
-<img src="http://i.imgur.com/3sNjJiz.png" height="400">
+<img src="http://i.imgur.com/3sNjJiz.png" height="200">
 
 #### Contributors
 
