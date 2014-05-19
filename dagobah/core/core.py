@@ -760,8 +760,11 @@ class Task(object):
             o = config.lookup(host)
             self.remote_client = paramiko.SSHClient()
             self.remote_client.load_system_host_keys()
-            self.remote_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            self.remote_client.connect(o['hostname'], username=o['user'], key_filename=o['identityfile'][0], timeout=82800)
+            self.remote_client.set_missing_host_key_policy(
+                paramiko.AutoAddPolicy())
+            self.remote_client.connect(o['hostname'], username=o['user'],
+                                       key_filename=o['identityfile'][0],
+                                       timeout=82800)
             transport = self.remote_client.get_transport()
             transport.set_keepalive(10)
 
@@ -771,9 +774,6 @@ class Task(object):
         except Exception as e:
             self.stderr_remote = str(e)
             self.remote_client.close()
-
-
-
 
     def check_complete(self):
         """ Runs completion flow for this task if it's finished. """
