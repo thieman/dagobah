@@ -207,41 +207,41 @@ class Dagobah(object):
             raise DagobahError('job %s does not exist' % job_or_job_name)
 
         if not job.state.allow_change_graph:
-            raise DagobahError("job's graph is immutable in its current state: %s"
+            raise DagobahError("job's graph is immutable in its current " +
+                               "state: %s"
                                % job.state.status)
 
         job.add_task(task_command, task_name, **kwargs)
         job.commit()
 
-        def add_host(self, host_name, host_id=None):
-            """ Add a new host """
-            if not self._host_is_added(host_name=host_name):
-                raise DagobahError('Host %s is already added.' % host_name)
+    def add_host(self, host_name, host_id=None):
+        """ Add a new host """
+        if not self._host_is_added(host_name=host_name):
+            raise DagobahError('Host %s is already added.' % host_name)
 
-            if not host_id:
-                host_id = self.backend.get_new_host_id()
+        if not host_id:
+            host_id = self.backend.get_new_host_id()
 
-            self.hosts.append(Host(self, self.backend, host_id, host_name))
+        self.hosts.append(Host(self, self.backend, host_id, host_name))
 
-            host = self.get_host(host_id)
-            host.commit()
+        host = self.get_host(host_id)
+        host.commit()
 
-        def delete_host(self, host_name):
-            """ Delete a host """
-            for idx, host in enumerate(self.hosts):
-                if host.name == host_name:
-                    self.backend.delete_host(host.id)
-                    del self.hosts[idx]
-                    self.commit()
-                    return
-            raise DagobahError('no host with name %s exists' % host_name)
+    def delete_host(self, host_name):
+        """ Delete a host """
+        for idx, host in enumerate(self.hosts):
+            if host.name == host_name:
+                self.backend.delete_host(host.id)
+                del self.hosts[idx]
+                self.commit()
+                return
+        raise DagobahError('no host with name %s exists' % host_name)
 
-
-        def _host_is_added(self, host_name=None):
-            """ Returns Boolean of whether the specified host is already added. """
-            return (False
-                    if [host for host in self.hosts if host.name == host_name]
-                    else True)
+    def _host_is_added(self, host_name=None):
+        """ Returns Boolean of whether the specified host is already added. """
+        return (False
+                if [host for host in self.hosts if host.name == host_name]
+                else True)
 
     def _name_is_available(self, job_name):
         """ Returns Boolean of whether the specified name is already in use. """
