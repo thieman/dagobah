@@ -131,8 +131,13 @@ class TestMongo(object):
                                  'dependencies': {'do some grepping': []},
                                  'status': 'waiting',
                                  'cron_schedule': None,
+<<<<<<< HEAD
                                  'next_run': None}],
                        'hosts': []}
+=======
+                                 'next_run': None,
+                                 'notes': None}]}
+>>>>>>> eb4598e115392b1c33f1c068aa91036110f28bb0
 
 
     def test_commit_job(self):
@@ -165,7 +170,8 @@ class TestMongo(object):
                        'status': 'waiting',
                        'cron_schedule': None,
                        'next_run': None,
-                       'save_date': rec['save_date']}
+                       'save_date': rec['save_date'],
+                       'notes': None}
 
 
     def test_construct_from_backend(self):

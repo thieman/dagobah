@@ -129,6 +129,9 @@ class Dagobah(object):
             for to_node in to_nodes:
                 job.add_dependency(from_node, to_node)
 
+        if job_json.get('notes', None):
+            job.update_job_notes(job_json['notes'])
+
 
 
     def commit(self, cascade=False):
@@ -292,6 +295,7 @@ class Job(DAG):
         self.cron_iter = None
         self.run_log = None
         self.completion_lock = threading.Lock()
+        self.notes = None
 
         self._set_status('waiting')
 
@@ -464,6 +468,15 @@ class Job(DAG):
         for key in ['name']:
             if key in kwargs and isinstance(kwargs[key], str):
                 setattr(self, key, kwargs[key])
+
+        self.parent.commit(cascade=True)
+
+
+    def update_job_notes(self, notes):
+        if not self.state.allow_edit_job:
+            raise DagobahError('job cannot be edited in its current state')
+
+        setattr(self, 'notes', notes)
 
         self.parent.commit(cascade=True)
 
@@ -641,7 +654,8 @@ class Job(DAG):
                   'dependencies': dependencies,
                   'status': self.state.status,
                   'cron_schedule': self.cron_schedule,
-                  'next_run': self.next_run}
+                  'next_run': self.next_run,
+                  'notes': self.notes}
 
         if strict_json:
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))

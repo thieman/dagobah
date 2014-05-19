@@ -358,6 +358,21 @@ def edit_job():
     job.edit(**args)
 
 
+@app.route('/api/update_job_notes', methods=['POST'])
+@login_required
+@api_call
+def update_job_notes():
+    args = dict(request.form)
+    if not validate_dict(args,
+                         required=['job_name', 'notes'],
+                         job_name=str,
+                         notes=str):
+        abort(400)
+
+    job = dagobah.get_job(args['job_name'])
+    job.update_job_notes(args['notes'])
+
+
 @app.route('/api/edit_task', methods=['POST'])
 @login_required
 @api_call

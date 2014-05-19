@@ -43,6 +43,7 @@ class DagobahJob(Base):
     status = Column(String(30), nullable=False)
     cron_schedule = Column(String(100))
     next_run = Column(DateTime)
+    notes = Column(String(1000))
 
     tasks = relationship('DagobahTask', backref='job')
     dependencies = relationship('DagobahDependency', backref='job')
@@ -64,11 +65,12 @@ class DagobahJob(Base):
                 'cron_schedule': self.cron_schedule,
                 'next_run': self.next_run,
                 'tasks': [task.json for task in self.tasks],
-                'dependencies': self._gather_dependencies()}
+                'dependencies': self._gather_dependencies(),
+                'notes': self.notes}
 
     def update_from_dict(self, data):
         for key in ['parent_id', 'name', 'status', 'cron_schedule',
-                    'next_run']:
+                    'next_run', 'notes']:
             if key in data:
                 setattr(self, key, data[key])
 
