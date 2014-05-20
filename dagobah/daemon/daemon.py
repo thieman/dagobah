@@ -127,6 +127,8 @@ def init_dagobah(testing=False):
     backend = get_backend(config)
     event_handler = configure_event_hooks(config)
     dagobah = Dagobah(backend, event_handler)
+    dagobah.ssh_config = get_conf(config, 'Dagobahd.ssh_config',
+                                '~/.ssh/config')
 
     known_ids = [id for id in backend.get_known_dagobah_ids()
                  if id != dagobah.dagobah_id]

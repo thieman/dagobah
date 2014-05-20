@@ -7,12 +7,12 @@ import threading
 import subprocess
 import json
 import paramiko
-from os.path import expanduser
 
 from croniter import croniter
 
 from dagobah.core.dag import DAG
-from dagobah.core.components import Scheduler, JobState, Host, StrictJSONEncoder
+from dagobah.core.components import (Scheduler, JobState, Host,
+                                     StrictJSONEncoder)
 from dagobah.backend.base import BaseBackend
 
 
@@ -38,6 +38,7 @@ class Dagobah(object):
         self.created_jobs = 0
         self.scheduler = Scheduler(self)
         self.scheduler.daemon = True
+        self.ssh_config = "~/.ssh/config"
 
         self.scheduler.start()
 
@@ -756,7 +757,8 @@ class Task(object):
     def remote_ssh(self, host):
         try:
             config = paramiko.SSHConfig()
-            config.parse(open(expanduser("~")+'/.ssh/config'))
+            config.parse(open(os.path.expanduser(self.parent_job.parent.
+                                                 ssh_config)))
             o = config.lookup(host)
             self.remote_client = paramiko.SSHClient()
             self.remote_client.load_system_host_keys()

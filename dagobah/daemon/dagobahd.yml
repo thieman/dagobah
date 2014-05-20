@@ -23,6 +23,12 @@ Dagobahd:
   # basic: Simple, tabular HTML email
   email: basic
 
+  # SSH config file for remote host authentication.
+  # If you don't plan on executing tasks on remote servers, leaving this
+  # default is fine. If you need to create an ssh config, the default
+  # location is sugested
+  ssh_config: ~/.ssh/config
+
 Logging:
 
   # change to False to disable logging entirely
