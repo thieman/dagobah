@@ -16,8 +16,7 @@ from dateutil import parser
 from dagobah.backend.base import BaseBackend
 from dagobah.backend.sqlite_models import (Base, Dagobah, DagobahJob,
                                            DagobahTask, DagobahDependency,
-                                           DagobahLog, DagobahLogTask,
-                                           DagobahHost)
+                                           DagobahLog, DagobahLogTask)
 
 
 class SQLiteBackend(BaseBackend):
@@ -73,11 +72,6 @@ class SQLiteBackend(BaseBackend):
         count = self.session.query(sqlalchemy.func.max(Dagobah.id)).scalar()
         return max(count, 0) + 1
 
-    def get_new_host_id(self):
-        count = self.session.query(sqlalchemy.func.max(DagobahHost.id))\
-            .scalar()
-        return max(count, 0) + 1
-
     def get_new_job_id(self):
         count = self.session.query(sqlalchemy.func.max(DagobahJob.id)).scalar()
         return max(count, 0) + 1
@@ -119,18 +113,6 @@ class SQLiteBackend(BaseBackend):
                 rec.jobs.append(new_job)
                 self._update_job_rec(new_job, dagobah_json, 'dagobah')
 
-        for host in dagobah_json.get('hosts', []):
-            existing = self.session.query(DagobahHost).\
-                filter_by(id = host['host_id']).\
-                first()
-
-            if existing:
-                self._update_host_rec(existing, dagobah_json)
-            else:
-                new_host = DagobahHost(host['host_name'])
-                rec.hosts.append(new_host)
-                self._update_host_rec(new_host, dagobah_json)
-
         self.session.commit()
 
     def delete_dagobah(self, dagobah_id):
@@ -145,9 +127,6 @@ class SQLiteBackend(BaseBackend):
 
         for job in rec.jobs:
             self.delete_job(job.id)
-
-        for host in rec.hosts:
-            self.delete_host(host.id)
 
         self.session.delete(rec)
         self.session.commit()
@@ -345,28 +324,6 @@ class SQLiteBackend(BaseBackend):
         for task in job_data.get('tasks', []):
             if task.get('name', None) == task_rec.name:
                 task_rec.update_from_dict(task)
-
-    def delete_host(self, host_id):
-        host = self.session.query(DagobahHost).filter_by(id=host_id).one()
-        self.session.delete(host)
-        self.session.commit()
-
-    def commit_host(self, host_json):
-        rec = self.session.query(DagobahHost).\
-            filter_by(id=host_json['host_id']).\
-            first()
-
-        if not rec:
-            rec = DagobahHost(host_json['host_name'])
-            self.session.add(rec)
-
-            self._update_host_rec(rec, host_json)
-            self.session.commit()
-
-    def _update_host_rec(self, host_rec, job_data):
-        for host in job_data.get('hosts', []):
-            if host.get('host_name', None) == host_rec.name:
-                host_rec.update_from_dict(host)
 
     def run_alembic_migration(self):
         config = self._get_alembic_config()

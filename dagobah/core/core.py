@@ -11,8 +11,7 @@ import paramiko
 from croniter import croniter
 
 from dagobah.core.dag import DAG
-from dagobah.core.components import (Scheduler, JobState, Host,
-                                     StrictJSONEncoder)
+from dagobah.core.components import Scheduler, JobState, StrictJSONEncoder
 from dagobah.backend.base import BaseBackend
 
 
@@ -28,17 +27,17 @@ class Dagobah(object):
     backend used for permanent storage.
     """
 
-    def __init__(self, backend=BaseBackend(), event_handler=None):
+    def __init__(self, backend=BaseBackend(), event_handler=None,
+                 ssh_conf="~/.ssh/config"):
         """ Construct a new Dagobah instance with a specified Backend. """
         self.backend = backend
         self.event_handler = event_handler
         self.dagobah_id = self.backend.get_new_dagobah_id()
         self.jobs = []
-        self.hosts = []
         self.created_jobs = 0
         self.scheduler = Scheduler(self)
         self.scheduler.daemon = True
-        self.ssh_config = "~/.ssh/config"
+        self.ssh_conf = ssh_conf
 
         self.scheduler.start()
 
@@ -59,9 +58,6 @@ class Dagobah(object):
             job.backend = backend
             for task in job.tasks.values():
                 task.backend = backend
-
-        for host in self.hosts:
-            host.backend = backend
 
         self.commit(cascade=True)
 
@@ -85,10 +81,6 @@ class Dagobah(object):
 
         for job_json in rec.get('jobs', []):
             self._add_job_from_spec(job_json)
-
-        for host_json in rec.get('hosts', []):
-            self.add_host(host_name=host_json['host_name'],
-                          host_id=host_json['host_id'])
 
         self.commit(cascade=True)
 
@@ -123,7 +115,7 @@ class Dagobah(object):
                                  str(task['name']),
                                  soft_timeout=task.get('soft_timeout', 0),
                                  hard_timeout=task.get('hard_timeout', 0),
-                                 host_id=task.get('host_id', None))
+                                 hostname=task.get('hostname', None))
 
         dependencies = job_json.get('dependencies', {})
         for from_node, to_nodes in dependencies.iteritems():
@@ -149,7 +141,6 @@ class Dagobah(object):
     def delete(self):
         """ Delete this Dagobah instance from the Backend. """
         self.jobs = []
-        self.hosts = []
         self.created_jobs = 0
         self.backend.delete_dagobah(self.dagobah_id)
 
@@ -171,12 +162,34 @@ class Dagobah(object):
         job = self.get_job(job_name)
         job.commit()
 
+    def load_ssh_conf(self):
+        conf_file = open(os.path.expanduser(self.ssh_conf))
+        ssh_config = paramiko.SSHConfig()
+        ssh_config.parse(conf_file)
+        conf_file.close()
+        return ssh_config
 
-    def get_host(self, host_id):
-        """ Returns a Host by name, or None if none exists"""
-        for host in self.hosts:
-            if host.id == host_id:
-                return host
+    def get_hosts(self):
+        conf = self.load_ssh_conf()
+
+        # Please help me make this cleaner I'm in list comprehension hell
+
+        # Explanation: the _config option contains a list of dictionaries,
+        # each dictionary is a representation of a "host", complete with
+        # configuration options (user, address, identityfile). The "host"
+        # attribute of each dict is a list of hostnames that share the same
+        # config options. For most users this contains only one entry, but
+        # all are valid host choices. We filter hosts with "*" because dagobah
+        # does not support wildcard matching for a task to run on all hosts.
+        hosts = [item for sublist in
+                 [hostnames['host'] for hostnames in conf._config]
+                 for item in sublist if not '*' in item ]
+        return hosts
+
+    def get_host(self, hostname):
+        """ Returns a Host dict with config options, or None if none exists"""
+        if hostname in self.get_hosts():
+            return self.load_ssh_conf().lookup(hostname)
         return None
 
     def get_job(self, job_name):
@@ -218,35 +231,6 @@ class Dagobah(object):
         job.add_task(task_command, task_name, **kwargs)
         job.commit()
 
-    def add_host(self, host_name, host_id=None):
-        """ Add a new host """
-        if not self._host_is_added(host_name=host_name):
-            raise DagobahError('Host %s is already added.' % host_name)
-
-        if not host_id:
-            host_id = self.backend.get_new_host_id()
-
-        self.hosts.append(Host(self, self.backend, host_id, host_name))
-
-        host = self.get_host(host_id)
-        host.commit()
-
-    def delete_host(self, host_name):
-        """ Delete a host """
-        for idx, host in enumerate(self.hosts):
-            if host.name == host_name:
-                self.backend.delete_host(host.id)
-                del self.hosts[idx]
-                self.commit()
-                return
-        raise DagobahError('no host with name %s exists' % host_name)
-
-    def _host_is_added(self, host_name=None):
-        """ Returns Boolean of whether the specified host is already added. """
-        return (False
-                if [host for host in self.hosts if host.name == host_name]
-                else True)
-
     def _name_is_available(self, job_name):
         """ Returns Boolean of whether the specified name is already in use. """
         return (False
@@ -260,8 +244,7 @@ class Dagobah(object):
                   'created_jobs': self.created_jobs,
                   'jobs': [job._serialize(include_run_logs=include_run_logs,
                                           strict_json=strict_json)
-                           for job in self.jobs],
-                  'hosts': [host._serialize() for host in self.hosts]}
+                           for job in self.jobs]}
         if strict_json:
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
@@ -491,7 +474,7 @@ class Job(DAG):
 
         if not self.state.allow_edit_task:
             raise DagobahError("tasks cannot be edited in this job's " +
-                             "current state")
+                               "current state")
 
         if task_name not in self.tasks:
             raise DagobahError('task %s not found' % task_name)
@@ -499,7 +482,7 @@ class Job(DAG):
         if 'name' in kwargs and isinstance(kwargs['name'], str):
             if kwargs['name'] in self.tasks:
                 raise DagobahError('task name %s is unavailable' %
-                               kwargs['name'])
+                                   kwargs['name'])
 
         task = self.tasks[task_name]
         for key in ['name', 'command']:
@@ -512,8 +495,8 @@ class Job(DAG):
         if 'hard_timeout' in kwargs:
             task.set_hard_timeout(kwargs['hard_timeout'])
 
-        if 'host_id' in kwargs:
-            task.set_host_id(kwargs['host_id'])
+        if 'hostname' in kwargs:
+            task.set_hostname(kwargs['hostname'])
 
         if 'name' in kwargs and isinstance(kwargs['name'], str):
             self.rename_edges(task_name, kwargs['name'])
@@ -672,13 +655,13 @@ class Task(object):
     """
 
     def __init__(self, parent_job, command, name,
-                 soft_timeout=0, hard_timeout=0, host_id=None):
+                 soft_timeout=0, hard_timeout=0, hostname=None):
         self.parent_job = parent_job
         self.backend = self.parent_job.backend
         self.event_handler = self.parent_job.event_handler
         self.command = command
         self.name = name
-        self.host_id = host_id
+        self.hostname = hostname
 
         self.remote_channel = None
         self.process = None
@@ -715,8 +698,8 @@ class Task(object):
         self.parent_job.commit()
 
 
-    def set_host_id(self, host_id):
-        self.host_id = host_id
+    def set_hostname(self, hostname):
+        self.hostname = hostname
         self.parent_job.commit()
 
     def reset(self):
@@ -738,11 +721,10 @@ class Task(object):
     def start(self):
         """ Begin execution of this task. """
         self.reset()
-        if self.host_id:
-            host = [host for host in self.parent_job.parent.hosts
-                    if str(host.id) == str(self.host_id)]
+        if self.hostname:
+            host = self.parent_job.parent.get_host(self.hostname)
             if host:
-                self.remote_ssh(host[0].name)
+                self.remote_ssh(host)
             else:
                 self.failure = True
         else:
@@ -755,17 +737,14 @@ class Task(object):
         self._start_check_timer()
 
     def remote_ssh(self, host):
+        """ Execute a command on SSH. Takes a paramiko host dict """
         try:
-            config = paramiko.SSHConfig()
-            config.parse(open(os.path.expanduser(self.parent_job.parent.
-                                                 ssh_config)))
-            o = config.lookup(host)
             self.remote_client = paramiko.SSHClient()
             self.remote_client.load_system_host_keys()
             self.remote_client.set_missing_host_key_policy(
                 paramiko.AutoAddPolicy())
-            self.remote_client.connect(o['hostname'], username=o['user'],
-                                       key_filename=o['identityfile'][0],
+            self.remote_client.connect(host['hostname'], username=host['user'],
+                                       key_filename=host['identityfile'][0],
                                        timeout=82800)
             transport = self.remote_client.get_transport()
             transport.set_keepalive(10)
@@ -779,10 +758,10 @@ class Task(object):
             self.stderr += type(e).__name__ + ": " + str(e) + "\n"
             self.stderr += "Was looking for host \"" + str(host) + "\"\n"
             self.stderr += "Found in config:\n"
-            self.stderr += "host: \"" + str(o) + "\"\n"
-            self.stderr += "hostname: \"" + str(o.get('hostname')) + "\"\n"
-            self.stderr += "user: \"" + str(o.get('user')) + "\"\n"
-            self.stderr += "identityfile: \"" + str(o.get('identityfile')) + "\"\n"
+            self.stderr += "host: \"" + str(host) + "\"\n"
+            self.stderr += "hostname: \"" + str(host.get('hostname')) + "\"\n"
+            self.stderr += "user: \"" + str(host.get('user')) + "\"\n"
+            self.stderr += "identityfile: \"" + str(host.get('identityfile')) + "\"\n"
             self.remote_client.close()
 
     def check_complete(self):
@@ -1015,7 +994,7 @@ class Task(object):
                   'success': self.successful,
                   'soft_timeout': self.soft_timeout,
                   'hard_timeout': self.hard_timeout,
-                  'host_id': self.host_id}
+                  'hostname': self.hostname}
 
         if include_run_logs:
             last_run = self.backend.get_latest_run_log(self.parent_job.job_id,
