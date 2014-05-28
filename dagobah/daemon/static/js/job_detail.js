@@ -127,50 +127,36 @@ function onSaveTaskEditClick() {
 	var original = $(input).attr('data-original');
 	var newValue = $(input).val();
 
-	console.log(newValue);
-
 	var td = $(this).parent();
 	var tr = $(td).parent();
 	var index = $(tr).children('td').index(td);
 
-	console.log("here1");
 	var taskName = $(tr).attr('data-task');
 
 	if (original !== null &&  original !== newValue) {
-		console.log("here2");
 		if (field == "Remote Target" || newValue !== '') {
 			editTask(taskName, field, newValue);
 		}
 	} else {
-		console.log("here3");
 		showAlert('table-alert', 'info', 'Task was not changed.');
 		newValue = original;
 	}
 
-	console.log("here4");
 	td.remove();
 
 	var template = fieldTemplateMap[field];
-	console.log(template);
 
 	if (index === 0) {
 		tr.prepend(template({ text: newValue }));
 	} else {
-		console.log("here5");
-		console.log($(tr));
-		console.log($(tr).children())
 		$(tr).children().each(function() {
-			console.log("here6");
 			if ( $(tr).children().index(this) === (index - 1) ) {
-				console.log("here7");
-				console.log($(this));
 				var something = template({ text: newValue});
 				$(this).after(template({ text: newValue }));
 			}
 		});
 	}
 
-	console.log("here8");
 	bindEvents();
 
 }
