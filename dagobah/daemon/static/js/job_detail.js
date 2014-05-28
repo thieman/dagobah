@@ -17,19 +17,30 @@ Handlebars.registerPartial('tasksSoftTimeout', tasksSoftTimeoutTemplate);
 Handlebars.registerPartial('tasksHardTimeout', tasksHardTimeoutTemplate);
 Handlebars.registerPartial('tasksRemoteTarget', tasksRemoteTargetTemplate);
 
+Handlebars.registerHelper('equal', function(lvalue, rvalue, options) {
+	if (arguments.length < 3)
+		throw new Error("Handlebars Helper equal needs 2 parameters");
+	if( lvalue!=rvalue ) {
+		return options.inverse(this);
+	} else {
+	return options.fn(this);
+	}
+});
+
 var fieldMap = {
 	"Task": 'name',
 	"Command": 'command',
 	"Soft Timeout": 'soft_timeout',
 	"Hard Timeout": 'hard_timeout',
-	"Remote Target": 'host_id'
+	"Remote Target": 'hostname'
 };
 
 var fieldTemplateMap = {
 	"Task": tasksNameTemplate,
 	"Command": tasksCommandTemplate,
 	"Soft Timeout": tasksSoftTimeoutTemplate,
-	"Hard Timeout": tasksHardTimeoutTemplate
+	"Hard Timeout": tasksHardTimeoutTemplate,
+	"Remote Target": tasksRemoteTargetTemplate
 };
 
 function runWhenJobLoaded() {
@@ -38,17 +49,6 @@ function runWhenJobLoaded() {
 		setInterval(updateJobStatusViews, 500);
 		setInterval(updateJobNextRun, 500);
 		setInterval(updateTasksTable, 500);
-		//Get hosts
-		$.getJSON($SCRIPT_ROOT + '/api/hosts', {},
-			function(result) {
-				console.log("Loading hosts");
-				var options = $("#target-hosts-dropdown");
-				$.each(result['result'], function() {
-					console.log(this.host_name);
-					options.append($("<option />").val(this.host_id).text(this.host_name));
-				});
-			}
-		);
 	} else {
 		setTimeout(runWhenJobLoaded, 50);
 	}
@@ -122,40 +122,55 @@ function editTask(taskName, field, newValue) {
 
 function onSaveTaskEditClick() {
 
-	var input = $(this).siblings('input');
+	var input = $(this).siblings('[data-field]');
 	var field = $(input).attr('data-field');
 	var original = $(input).attr('data-original');
 	var newValue = $(input).val();
+
+	console.log(newValue);
 
 	var td = $(this).parent();
 	var tr = $(td).parent();
 	var index = $(tr).children('td').index(td);
 
+	console.log("here1");
 	var taskName = $(tr).attr('data-task');
 
 	if (original !== null &&  original !== newValue) {
+		console.log("here2");
 		if (field == "Remote Target" || newValue !== '') {
 			editTask(taskName, field, newValue);
 		}
 	} else {
+		console.log("here3");
 		showAlert('table-alert', 'info', 'Task was not changed.');
 		newValue = original;
 	}
 
+	console.log("here4");
 	td.remove();
 
 	var template = fieldTemplateMap[field];
+	console.log(template);
 
 	if (index === 0) {
 		tr.prepend(template({ text: newValue }));
 	} else {
+		console.log("here5");
+		console.log($(tr));
+		console.log($(tr).children())
 		$(tr).children().each(function() {
+			console.log("here6");
 			if ( $(tr).children().index(this) === (index - 1) ) {
+				console.log("here7");
+				console.log($(this));
+				var something = template({ text: newValue});
 				$(this).after(template({ text: newValue }));
 			}
 		});
 	}
 
+	console.log("here8");
 	bindEvents();
 
 }

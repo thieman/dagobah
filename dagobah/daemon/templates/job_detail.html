@@ -91,16 +91,29 @@
   </script>
 
   <script id="tasks-data-remote-target-template" type="text/x-handlebars-template">
-    <td data-attr='host_id'>
+    <td data-attr='hostname'>
       {{text}}<i class='icon-pencil edit-task'></i>
     </td>
   </script>
 
   <script id="tasks-edit-template" type="text/x-handlebars-template">
     <td>
+      {{#equal field "Remote Target"}}
+        <select id='target-hosts-dropdown' name='targethosts' data-field='{{ field }}'
+          data-original='{{ original }}' value='{{ original }}'>
+                <option></option>
+            {% endraw %}
+            {% for host in hosts %}
+            <option value="{{ host }}">{{ host }}</option>
+            {% endfor %}
+            {% raw %}
+ 
+      </select>
+      {{else}}
       <input type='text' class='submit-on-enter' data-field='{{ field }}'
              data-original='{{ original }}' value='{{ original }}'>
       </input>
+      {{/equal}}
       <button class='btn btn-success save-task-edit'>Save</button>
     </td>
   </script>
@@ -225,6 +238,9 @@
   <div id="target_hosts" style="display: none;">
     <label>Target Hosts:</label>
         <select id="target-hosts-dropdown" name="target_hosts">
+        {% for host in hosts %}
+            <option value="{{ host }}">{{ host }}</option>
+        {% endfor %}
     </select>
   </div>
 
