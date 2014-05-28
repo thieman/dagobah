@@ -179,8 +179,7 @@ def test_serialize_dagobah():
     job.schedule('*/5 * * * *', base_datetime)
     job.update_job_notes("Here are some notes")
     dagobah_id = dagobah.dagobah_id
-    test_result = {'hosts': [],
-                   'dagobah_id': dagobah_id,
+    test_result = {'dagobah_id': dagobah_id,
                    'created_jobs': 1,
                    'jobs': [{'job_id': job.job_id,
                              'name': 'test_job',
@@ -192,7 +191,7 @@ def test_serialize_dagobah():
                                         'success': None,
                                         'soft_timeout': 0,
                                         'hard_timeout': 0,
-                                        'host_id': None},
+                                        'hostname': None},
                                        {'command': 'grep',
                                         'name': 'grep',
                                         'completed_at': None,
@@ -200,7 +199,7 @@ def test_serialize_dagobah():
                                         'success': None,
                                         'soft_timeout': 0,
                                         'hard_timeout': 0,
-                                        'host_id': None},],
+                                        'hostname': None},],
                              'dependencies': {'list': ['grep'],
                                               'grep': []},
                              'status': 'waiting',

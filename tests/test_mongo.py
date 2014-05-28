@@ -127,13 +127,12 @@ class TestMongo(object):
                                             'success': None,
                                             'soft_timeout': 0,
                                             'hard_timeout': 0,
-                                            'host_id': None}],
+                                            'hostname': None}],
                                  'dependencies': {'do some grepping': []},
                                  'status': 'waiting',
                                  'cron_schedule': None,
                                  'next_run': None,
-                                 'notes': None}],
-                       'hosts': []}
+                                 'notes': None}]}
 
 
     def test_commit_job(self):
@@ -161,7 +160,7 @@ class TestMongo(object):
                                   'success': None,
                                   'soft_timeout': 0,
                                   'hard_timeout': 0,
-                                  'host_id': None}],
+                                  'hostname': None}],
                        'dependencies': {'do some grepping': []},
                        'status': 'waiting',
                        'cron_schedule': None,
