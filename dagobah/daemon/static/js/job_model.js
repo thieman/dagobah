@@ -152,6 +152,7 @@ Job.prototype.addDependency = function(link) {
 		return;
 	}
 
+    var that = this;
 	var fromName = link.source.id;
 	var toName = link.target.id;
 
@@ -169,7 +170,8 @@ Job.prototype.addDependency = function(link) {
 			showAlert('graph-alert', 'success', 'Dependency from ' + fromName + ' to ' + toName + ' saved successfully.');
 		},
 		error: function() {
-			showAlert('graph-alert', 'error', "There was an error saving this dependency. To be sure you're looking at accurate data, refresh the page.");
+		    showAlert('graph-alert', 'error', "There was an error saving this dependency. The dependency you were trying to add has been removed from the graph.");
+            that.removeDependencyFromGraph(fromName, toName);
 		}
 	});
 
