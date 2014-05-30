@@ -153,8 +153,8 @@ Job.prototype.addDependency = function(link) {
 	}
 
     var that = this;
-	var fromName = link.source.id;
-	var toName = link.target.id;
+    var fromName = link.source.id;
+    var toName = link.target.id;
 
 	$.ajax({
 		type: 'POST',
