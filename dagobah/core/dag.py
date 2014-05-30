@@ -2,6 +2,9 @@
 
 from copy import copy, deepcopy
 
+class DAGValidationError(Exception):
+    pass
+
 class DAG(object):
     """ Directed acyclic graph implementation. """
 
@@ -32,7 +35,13 @@ class DAG(object):
         """ Add an edge (dependency) between the specified nodes. """
         if ind_node not in self.graph or dep_node not in self.graph:
             raise KeyError('one or more nodes do not exist in graph')
-        self.graph[ind_node].add(dep_node)
+        test_graph = deepcopy(self.graph)
+        test_graph[ind_node].add(dep_node)
+        is_valid, message = self.validate(test_graph)
+        if is_valid:
+            self.graph[ind_node].add(dep_node)
+        else:
+            raise DAGValidationError()
 
 
     def delete_edge(self, ind_node, dep_node):
@@ -84,20 +93,22 @@ class DAG(object):
         self.graph = {}
 
 
-    def ind_nodes(self):
+    def ind_nodes(self, graph=None):
         """ Returns a list of all nodes in the graph with no dependencies. """
-        all_nodes, dependent_nodes = set(self.graph.keys()), set()
-        for downstream_nodes in self.graph.itervalues():
+        graph = graph if graph is not None else self.graph
+        all_nodes, dependent_nodes = set(graph.keys()), set()
+        for downstream_nodes in graph.itervalues():
             [dependent_nodes.add(node) for node in downstream_nodes]
         return list(all_nodes - dependent_nodes)
 
 
-    def validate(self):
+    def validate(self, graph=None):
         """ Returns (Boolean, message) of whether DAG is valid. """
-        if len(self.ind_nodes()) == 0:
+        graph = graph if graph is not None else self.graph
+        if len(self.ind_nodes(graph)) == 0:
             return (False, 'no independent nodes detected')
         try:
-            self._topological_sort()
+            self._topological_sort(graph)
         except ValueError:
             return (False, 'failed topological sort')
         return (True, 'valid')
@@ -105,10 +116,7 @@ class DAG(object):
 
     def _dependencies(self, target_node, graph=None):
         """ Returns a list of all nodes from incoming edges. """
-
-        if graph is None:
-            graph = self.graph
-
+        graph = graph if graph is not None else self.graph
         result = set()
         for node, outgoing_nodes in graph.iteritems():
             if target_node in outgoing_nodes:
@@ -116,16 +124,14 @@ class DAG(object):
         return list(result)
 
 
-    def _topological_sort(self):
+    def _topological_sort(self, graph=None):
         """ Returns a topological ordering of the DAG.
 
         Raises an error if this is not possible (graph is not valid).
         """
-
-        # woooo pseudocode from wikipedia!
-        graph = deepcopy(self.graph)
+        graph = deepcopy(graph if graph is not None else self.graph)
         l = []
-        q = deepcopy(self.ind_nodes())
+        q = deepcopy(self.ind_nodes(graph))
         while len(q) != 0:
             n = q.pop(0)
             l.append(n)

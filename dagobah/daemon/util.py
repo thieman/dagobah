@@ -1,8 +1,9 @@
 """ Utility functions for the Dagobah daemon. """
 
+import logging
 from datetime import date, datetime
 
-from flask import request, json, Response, abort
+from flask import request, json, Response, abort, jsonify
 from functools import wraps
 
 try:
@@ -13,8 +14,7 @@ except ImportError:
     except ImportError:
         pass
 
-from dagobah.core import DagobahError
-
+from dagobah.core import DagobahError, DAGValidationError
 
 class DagobahEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -45,13 +45,13 @@ def api_call(fn):
     def wrapper(*args, **kwargs):
         try:
             result = fn(*args, **kwargs)
-        except DagobahError:
+        except (DagobahError, DAGValidationError) as e:
             if request and request.endpoint == fn.__name__:
-                abort(400)
-            raise
+                return jsonify(error_type=type(e).__name__, message=e.message), 400
+            raise e
         except Exception as e:
-            print e
-            raise
+            logging.exception(e)
+            raise e
 
         if request and request.endpoint == fn.__name__:
             status_code = None
