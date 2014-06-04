@@ -770,12 +770,12 @@ class Task(object):
         # Remote channel, not completed
         if self.remote_channel and not self.remote_channel.exit_status_ready():
             self._timeout_check()
-            self._start_check_timer()
             # Get some stdout/std error
             if self.remote_channel.recv_ready():
                 self.stdout += self.remote_channel.recv(1024)
             if self.remote_channel.recv_stderr_ready():
                 self.stderr += self.remote_channel.recv_stderr(1024)
+            self._start_check_timer()
             return
 
         # Return if subprocess exists (local command only) and is still running
@@ -802,9 +802,6 @@ class Task(object):
 
         if self.terminate_sent:
             self.stderr += '\nDAGOBAH SENT SIGTERM TO THIS PROCESS\n'
-            print "terminate was sent"
-            print str(self.remote_channel)
-            print "return code: " + str(return_code)
         if self.kill_sent:
             self.stderr += '\nDAGOBAH SENT SIGKILL TO THIS PROCESS\n'
         if self.remote_failure:
@@ -823,7 +820,7 @@ class Task(object):
 
     def terminate(self):
         """ Send SIGTERM to the task's process. """
-        if hasattr(self, 'remote_client'):
+        if hasattr(self, 'remote_client') and self.remote_client is not None:
             self.terminate_sent = True
             self.remote_client.close()
             return
