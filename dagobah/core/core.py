@@ -767,46 +767,21 @@ class Task(object):
 
     def check_complete(self):
         """ Runs completion flow for this task if it's finished. """
-        # Remote channel, not completed
-        if self.remote_channel and not self.remote_channel.exit_status_ready():
-            self._timeout_check()
-            # Get some stdout/std error
-            if self.remote_channel.recv_ready():
-                self.stdout += self.remote_channel.recv(1024)
-            if self.remote_channel.recv_stderr_ready():
-                self.stderr += self.remote_channel.recv_stderr(1024)
+        # Tasks not completed
+        if self.remote_not_complete() or self.local_not_complete():
             self._start_check_timer()
             return
 
-        # Return if subprocess exists (local command only) and is still running
-        if self.process and self.process.poll() is None:
-            self._timeout_check()
-            self._start_check_timer()
-            return
+        return_code = self.completed_task()
 
-        # If its remote and finished running
-        if self.remote_channel and self.remote_channel.exit_status_ready():
-            # Collect all remaining stdout/stderr
-            while self.remote_channel.recv_ready():
-                self.stdout += self.remote_channel.recv(1024)
-            while self.remote_channel.recv_stderr_ready():
-                self.stderr += self.remote_channel.recv_stderr(1024)
-            return_code = self.remote_channel.recv_exit_status()
-        # Otherwise check for finished local command
-        elif self.process:
-            return_code = self.process.returncode
-            self.stdout, self.stderr = (self._read_temp_file(self.stdout_file),
-                                        self._read_temp_file(self.stderr_file))
-            for temp_file in [self.stdout_file, self.stderr_file]:
-                temp_file.close()
-
+        # Handle task errors
         if self.terminate_sent:
             self.stderr += '\nDAGOBAH SENT SIGTERM TO THIS PROCESS\n'
         if self.kill_sent:
             self.stderr += '\nDAGOBAH SENT SIGKILL TO THIS PROCESS\n'
         if self.remote_failure:
             return_code = -1
-            self.stderr += '\nAn error occurred.\n'
+            self.stderr += '\nAn error occurred with the remote machine.\n'
 
         self.stdout_file = None
         self.stderr_file = None
@@ -817,6 +792,46 @@ class Task(object):
                             stderr=self.stderr,
                             start_time=self.started_at,
                             complete_time=datetime.utcnow())
+
+    def remote_not_complete(self):
+        """
+        Returns true if this task is on a remote channel, and on a remote
+        machine. False if it is either not remote, or not completed
+        """
+        if self.remote_channel and not self.remote_channel.exit_status_ready():
+            self._timeout_check()
+            # Get some stdout/std error
+            if self.remote_channel.recv_ready():
+                self.stdout += self.remote_channel.recv(1024)
+            if self.remote_channel.recv_stderr_ready():
+                self.stderr += self.remote_channel.recv_stderr(1024)
+            return True
+        return False
+
+    def local_not_complete(self):
+        """ Returns true if task is local and not complete"""
+        if self.process and self.process.poll() is None:
+            self._timeout_check()
+            return True
+        return False
+
+    def completed_task(self):
+        """ Handle wrapping up a completed task, local or remote"""
+        # If its remote and finished running
+        if self.remote_channel and self.remote_channel.exit_status_ready():
+            # Collect all remaining stdout/stderr
+            while self.remote_channel.recv_ready():
+                self.stdout += self.remote_channel.recv(1024)
+            while self.remote_channel.recv_stderr_ready():
+                self.stderr += self.remote_channel.recv_stderr(1024)
+            return self.remote_channel.recv_exit_status()
+        # Otherwise check for finished local command
+        elif self.process:
+            self.stdout, self.stderr = (self._read_temp_file(self.stdout_file),
+                                        self._read_temp_file(self.stderr_file))
+            for temp_file in [self.stdout_file, self.stderr_file]:
+                temp_file.close()
+            return self.process.returncode
 
     def terminate(self):
         """ Send SIGTERM to the task's process. """
@@ -832,7 +847,7 @@ class Task(object):
 
     def kill(self):
         """ Send SIGKILL to the task's process. """
-        if hasattr(self, 'remote_client'):
+        if hasattr(self, 'remote_client') and self.remote_client is not None:
             self.kill_sent = True
             self.remote_client.close()
             return
