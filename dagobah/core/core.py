@@ -678,7 +678,7 @@ class Task(object):
 
         self.terminate_sent = False
         self.kill_sent = False
-        self.failure = False
+        self.remote_failure = False
 
         self.set_soft_timeout(soft_timeout)
         self.set_hard_timeout(hard_timeout)
@@ -717,6 +717,7 @@ class Task(object):
 
         self.terminate_sent = False
         self.kill_sent = False
+        self.remote_failure = False
 
     def start(self):
         """ Begin execution of this task. """
@@ -726,7 +727,7 @@ class Task(object):
             if host:
                 self.remote_ssh(host)
             else:
-                self.failure = True
+                self.remote_failure = True
         else:
             self.process = subprocess.Popen(self.command,
                                             shell=True,
@@ -753,7 +754,7 @@ class Task(object):
             self.remote_channel.get_pty()
             self.remote_channel.exec_command(self.command)
         except Exception as e:
-            self.failure = True
+            self.remote_failure = True
             self.stderr += "Exception when trying to SSH related to: "
             self.stderr += type(e).__name__ + ": " + str(e) + "\n"
             self.stderr += "Was looking for host \"" + str(host) + "\"\n"
@@ -806,7 +807,7 @@ class Task(object):
             print "return code: " + str(return_code)
         if self.kill_sent:
             self.stderr += '\nDAGOBAH SENT SIGKILL TO THIS PROCESS\n'
-        if self.failure:
+        if self.remote_failure:
             return_code = -1
             self.stderr += '\nAn error occurred.\n'
 
