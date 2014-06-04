@@ -28,7 +28,7 @@ class Dagobah(object):
     """
 
     def __init__(self, backend=BaseBackend(), event_handler=None,
-                 ssh_conf="~/.ssh/config"):
+                 ssh_config="~/.ssh/config"):
         """ Construct a new Dagobah instance with a specified Backend. """
         self.backend = backend
         self.event_handler = event_handler
@@ -37,7 +37,7 @@ class Dagobah(object):
         self.created_jobs = 0
         self.scheduler = Scheduler(self)
         self.scheduler.daemon = True
-        self.ssh_conf = ssh_conf
+        self.ssh_config = ssh_config
 
         self.scheduler.start()
 
@@ -163,7 +163,7 @@ class Dagobah(object):
         job.commit()
 
     def load_ssh_conf(self):
-        conf_file = open(os.path.expanduser(self.ssh_conf))
+        conf_file = open(os.path.expanduser(self.ssh_config))
         ssh_config = paramiko.SSHConfig()
         ssh_config.parse(conf_file)
         conf_file.close()
