@@ -151,7 +151,6 @@ function onSaveTaskEditClick() {
 	} else {
 		$(tr).children().each(function() {
 			if ( $(tr).children().index(this) === (index - 1) ) {
-				var something = template({ text: newValue});
 				$(this).after(template({ text: newValue }));
 			}
 		});
