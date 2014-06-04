@@ -9,13 +9,18 @@ from nose.tools import nottest, raises
 from dagobah.core.core import Dagobah, Job, Task, DagobahError
 from dagobah.backend.base import BaseBackend
 
+import os
+
 dagobah = None
 
 @nottest
 def blank_dagobah():
     global dagobah
     backend = BaseBackend()
-    dagobah = Dagobah(backend)
+    location = os.path.realpath(os.path.join(os.getcwd(),
+                                             os.path.dirname(__file__)))
+    dagobah = Dagobah(backend, ssh_config=os.path.join(location,
+                                                       "test_ssh_config"))
 
 
 @with_setup(blank_dagobah)
@@ -243,3 +248,10 @@ def test_construct_with_timeouts():
     assert job.tasks['From Dagobah'].hard_timeout == 120
     assert job.tasks['From Job'].soft_timeout == 10
     assert job.tasks['From Job'].hard_timeout == 20
+
+@with_setup(blank_dagobah)
+def test_ssh_config_load():
+    hosts = dagobah.get_hosts()
+    assert "test_host" in hosts
+    assert "*" not in hosts
+    assert "nonexistant" not in hosts
