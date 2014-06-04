@@ -755,14 +755,14 @@ class Task(object):
             self.remote_channel.exec_command(self.command)
         except Exception as e:
             self.remote_failure = True
-            self.stderr += "Exception when trying to SSH related to: "
-            self.stderr += type(e).__name__ + ": " + str(e) + "\n"
-            self.stderr += "Was looking for host \"" + str(host) + "\"\n"
-            self.stderr += "Found in config:\n"
-            self.stderr += "host: \"" + str(host) + "\"\n"
-            self.stderr += "hostname: \"" + str(host.get('hostname')) + "\"\n"
-            self.stderr += "user: \"" + str(host.get('user')) + "\"\n"
-            self.stderr += "identityfile: \"" + str(host.get('identityfile')) + "\"\n"
+            self.stderr += 'Exception when trying to SSH related to: '
+            self.stderr += '{0}: {1}\n"'.format(type(e).__name__, str(e))
+            self.stderr += 'Was looking for host "{0}"\n'.format(str(host))
+            self.stderr += 'Found in config:\n'
+            self.stderr += 'host: "{0}"\n'.format(str(host))
+            self.stderr += 'hostname: "{0}"\n'.format(str(host.get('hostname')))
+            self.stderr += 'user: "{0}"\n'.format(str(host.get('user')))
+            self.stderr += 'identityfile: "{0}"\n'.format(str(host.get('identityfile')))
             self.remote_client.close()
 
     def check_complete(self):
