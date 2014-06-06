@@ -1,8 +1,8 @@
 """ Tests on the DAG implementation """
 
 from nose import with_setup
-from nose.tools import nottest
-from dagobah.core import DAG
+from nose.tools import nottest, raises
+from dagobah.core import DAG, DAGValidationError
 
 dag = None
 
@@ -78,12 +78,11 @@ def test_successful_validation():
     assert dag.validate()[0] == True
 
 
+@raises(DAGValidationError)
 @with_setup(blank_setup)
 def test_failed_validation():
     dag.from_dict({'a': ['b'],
                    'b': ['a']})
-    assert dag.validate()[0] == False
-
 
 @with_setup(start_with_graph)
 def test_downstream():

@@ -227,7 +227,6 @@ def add_dependency():
     job = dagobah.get_job(args['job_name'])
     job.add_dependency(args['from_task_name'], args['to_task_name'])
 
-
 @app.route('/api/delete_dependency', methods=['POST'])
 @login_required
 @api_call
