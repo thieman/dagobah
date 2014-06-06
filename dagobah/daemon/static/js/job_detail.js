@@ -2,30 +2,45 @@ var tasksTableHeadersTemplate = Handlebars.compile($('#tasks-table-headers-templ
 var tasksTableResultsTemplate = Handlebars.compile($('#tasks-table-results-template').html());
 var tasksTableCommandsTemplate = Handlebars.compile($('#tasks-table-commands-template').html());
 var tasksTableTimeoutsTemplate = Handlebars.compile($('#tasks-table-timeouts-template').html());
+var tasksTableRemoteTemplate = Handlebars.compile($('#tasks-table-remote-template').html());
 var editTaskTemplate = Handlebars.compile($('#tasks-edit-template').html());
 
 var tasksNameTemplate = Handlebars.compile($('#tasks-data-name-template').html());
 var tasksCommandTemplate = Handlebars.compile($('#tasks-data-command-template').html());
 var tasksSoftTimeoutTemplate = Handlebars.compile($('#tasks-data-soft-timeout-template').html());
 var tasksHardTimeoutTemplate = Handlebars.compile($('#tasks-data-hard-timeout-template').html());
+var tasksRemoteTargetTemplate = Handlebars.compile($('#tasks-data-remote-target-template').html());
 
 Handlebars.registerPartial('tasksName', tasksNameTemplate);
 Handlebars.registerPartial('tasksCommand', tasksCommandTemplate);
 Handlebars.registerPartial('tasksSoftTimeout', tasksSoftTimeoutTemplate);
 Handlebars.registerPartial('tasksHardTimeout', tasksHardTimeoutTemplate);
+Handlebars.registerPartial('tasksRemoteTarget', tasksRemoteTargetTemplate);
+
+Handlebars.registerHelper('equal', function(lvalue, rvalue, options) {
+	if (arguments.length < 3)
+		throw new Error("Handlebars Helper equal needs 2 parameters");
+	if( lvalue!=rvalue ) {
+		return options.inverse(this);
+	} else {
+	return options.fn(this);
+	}
+});
 
 var fieldMap = {
 	"Task": 'name',
 	"Command": 'command',
 	"Soft Timeout": 'soft_timeout',
-	"Hard Timeout": 'hard_timeout'
+	"Hard Timeout": 'hard_timeout',
+	"Remote Target": 'hostname'
 };
 
 var fieldTemplateMap = {
 	"Task": tasksNameTemplate,
 	"Command": tasksCommandTemplate,
 	"Soft Timeout": tasksSoftTimeoutTemplate,
-	"Hard Timeout": tasksHardTimeoutTemplate
+	"Hard Timeout": tasksHardTimeoutTemplate,
+	"Remote Target": tasksRemoteTargetTemplate
 };
 
 function runWhenJobLoaded() {
@@ -107,7 +122,7 @@ function editTask(taskName, field, newValue) {
 
 function onSaveTaskEditClick() {
 
-	var input = $(this).siblings('input');
+	var input = $(this).siblings('[data-field]');
 	var field = $(input).attr('data-field');
 	var original = $(input).attr('data-original');
 	var newValue = $(input).val();
@@ -118,8 +133,10 @@ function onSaveTaskEditClick() {
 
 	var taskName = $(tr).attr('data-task');
 
-	if (original !== null && newValue !== '' &&  original !== newValue) {
-		editTask(taskName, field, newValue);
+	if (original !== null &&  original !== newValue) {
+		if (field == "Remote Target" || newValue !== '') {
+			editTask(taskName, field, newValue);
+		}
 	} else {
 		showAlert('table-alert', 'info', 'Task was not changed.');
 		newValue = original;
@@ -222,10 +239,17 @@ function deleteTask(taskName, alertId) {
 
 }
 
+$('#remote_checkbox').click(function () {
+    $("#target_hosts").toggle(this.checked);
+});
+
 $('#add-task').click(function() {
 
 	var newName = $('#new-task-name').val();
 	var newCommand = $('#new-task-command').val();
+	if ($('#remote_checkbox').is(':checked')){
+		var newTargetHostId = $('#target-hosts-dropdown').val();
+	}
 
 	if (newName === null || newName === '') {
 		showAlert('new-alert', 'error', 'Please enter a name for the new task.');
@@ -236,24 +260,35 @@ $('#add-task').click(function() {
 		return;
 	}
 
-	addNewTask(newName, newCommand);
+	addNewTask(newName, newCommand, newTargetHostId);
 
 });
 
-function addNewTask(newName, newCommand) {
+function addNewTask(newName, newCommand, newTargetHostId) {
 
 	if (!job.loaded) {
 		return;
 	}
 
-	$.ajax({
-		type: 'POST',
-		url: $SCRIPT_ROOT + '/api/add_task_to_job',
-		data: {
+	if (newTargetHostId) {
+		data = {
+			job_name: job.name,
+			task_name: newName,
+			task_command: newCommand,
+			task_target: newTargetHostId
+		};
+	} else {
+		data = {
 			job_name: job.name,
 			task_name: newName,
 			task_command: newCommand
-		},
+		};
+	}
+
+	$.ajax({
+		type: 'POST',
+		url: $SCRIPT_ROOT + '/api/add_task_to_job',
+		data: data,
 		dataType: 'json',
 		success: function() {
 			showAlert('new-alert', 'success', 'Task added to job.');
@@ -263,6 +298,7 @@ function addNewTask(newName, newCommand) {
 			});
 			$('#new-task-name').val('');
 			$('#new-task-command').val('');
+			$('#target-hosts-dropdown').val('');
 		},
 		error: function() {
 			showAlert('new-alert', 'error', 'There was an error adding the task to this job.');
@@ -285,12 +321,15 @@ function resetTasksTable(tableMode) {
 	$('#tasks-headers').empty();
 	$('#tasks-body').empty();
 
+	var headers=[];
 	if (tableMode === 'results') {
-		var headers = ['Task', 'Started', 'Completed', 'Result', ''];
+		headers = ['Task', 'Started', 'Completed', 'Result', ''];
 	} else if (tableMode === 'commands') {
-		var headers = ['Task', 'Command', ''];
+		headers = ['Task', 'Command', ''];
 	} else if (tableMode === 'timeouts') {
-		var headers = ['Task', 'Soft Timeout', 'Hard Timeout', ''];
+		headers = ['Task', 'Soft Timeout', 'Hard Timeout', ''];
+	} else if (tableMode === 'remote') {
+		headers = ['Task', 'Remote Target', ''];
 	}
 
 	for (var i = 0; i < headers.length; i++) {
@@ -313,7 +352,7 @@ function resetTasksTable(tableMode) {
 			);
 		} else if (tableMode === 'commands') {
 			$('#tasks-body').append(
-				tasksTableCommandsTemplate({
+					tasksTableCommandsTemplate({
 					taskName: thisTask.name,
 					taskURL: $SCRIPT_ROOT + '/job/' + job.id + '/' + thisTask.name
 				})
@@ -321,6 +360,13 @@ function resetTasksTable(tableMode) {
 		} else if (tableMode === 'timeouts') {
 			$('#tasks-body').append(
 				tasksTableTimeoutsTemplate({
+					taskName: thisTask.name,
+					taskURL: $SCRIPT_ROOT + '/job/' + job.id + '/' + thisTask.name
+				})
+			);
+		} else if (tableMode === 'remote') {
+			$('#tasks-body').append(
+					tasksTableRemoteTemplate({
 					taskName: thisTask.name,
 					taskURL: $SCRIPT_ROOT + '/job/' + job.id + '/' + thisTask.name
 				})

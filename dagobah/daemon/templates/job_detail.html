@@ -53,6 +53,17 @@
     </tr>
   </script>
 
+  <script id="tasks-table-remote-template" type="text/x-handlebars-template">
+    <tr data-task='{{ taskName }}'>
+      {{> tasksName }}
+      {{> tasksRemoteTarget }}
+      <td>
+        <button class='btn btn-primary' onclick="window.location.href = '{{ taskURL }}';">View Task</button>
+        <button class='btn btn-danger task-delete' onclick="return false;"><i class='icon-trash'></i>
+      </td>
+    </tr>
+  </script>
+
   <script id="tasks-data-name-template" type="text/x-handlebars-template">
     <td data-attr='name'>
       {{#if text}}{{text}}{{/if}}
@@ -79,11 +90,30 @@
     </td>
   </script>
 
+  <script id="tasks-data-remote-target-template" type="text/x-handlebars-template">
+    <td data-attr='hostname'>
+      {{text}}<i class='icon-pencil edit-task'></i>
+    </td>
+  </script>
+
   <script id="tasks-edit-template" type="text/x-handlebars-template">
     <td>
+      {{#equal field "Remote Target"}}
+        <select id='target-hosts-dropdown' name='targethosts' data-field='{{ field }}'
+          data-original='{{ original }}' value='{{ original }}'>
+                <option></option>
+            {% endraw %}
+            {% for host in hosts %}
+            <option value="{{ host }}">{{ host }}</option>
+            {% endfor %}
+            {% raw %}
+ 
+      </select>
+      {{else}}
       <input type='text' class='submit-on-enter' data-field='{{ field }}'
              data-original='{{ original }}' value='{{ original }}'>
       </input>
+      {{/equal}}
       <button class='btn btn-success save-task-edit'>Save</button>
     </td>
   </script>
@@ -184,16 +214,15 @@
 </div>
 
 <div class='row' id='config'>
-    <div class='span12'>
-        <h3>Job Notes</h3>
-        <div id='notes-alert' class='alert hidden'>
-        </div>
-        <textarea id='job-notes'>{{ job.notes }}</textarea>
-        <br/>
-        <button id='save-notes' class='btn btn-success' onclick='return false;'>Save Notes</button>
-        <br/>
-        <br/>
-    </div>
+  <div class='span12'>
+   <h3>Job Notes</h3>
+    <div id='notes-alert' class='alert hidden'>
+  </div>
+   <textarea id='job-notes'>{{ job.notes }}</textarea>
+    <br/>
+   <button id='save-notes' class='btn btn-success' onclick='return false;'>Save Notes</button>
+   <br/>
+   <br/>
 </div>
 
 <h3>Add New Task</h3>
@@ -202,6 +231,18 @@
 
   <label>Name</label>
   <input id='new-task-name' class='input-xxlarge' type='text' placeholder='Task Name'></input>
+
+  <label class="checkbox">
+      <input type="checkbox" value="remote" id="remote_checkbox"> Remote
+  </label>
+  <div id="target_hosts" style="display: none;">
+    <label>Target Hosts:</label>
+        <select id="target-hosts-dropdown" name="target_hosts">
+        {% for host in hosts %}
+            <option value="{{ host }}">{{ host }}</option>
+        {% endfor %}
+    </select>
+  </div>
 
   <label>Command</label>
   <textarea id='new-task-command' rows="3" placeholder='Task Command'></textarea>
@@ -219,6 +260,7 @@
       <button class='btn active' value='results'>Results</button>
       <button class='btn' value='commands'>Commands</button>
       <button class='btn' value='timeouts'>Timeouts</button>
+      <button class='btn' value='remote'>Remote</button>
     </div>
 
     <div id='table-alert' class='alert hidden'>

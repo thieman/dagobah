@@ -185,12 +185,14 @@ def add_task_to_job():
                          required=['job_name', 'task_command', 'task_name'],
                          job_name=str,
                          task_command=str,
-                         task_name=str):
+                         task_name=str,
+                         task_target=str):
         abort(400)
 
     dagobah.add_task_to_job(args['job_name'],
                             args['task_command'],
-                            args['task_name'])
+                            args['task_name'],
+                            hostname=args.get("task_target", None))
 
 
 @app.route('/api/delete_task', methods=['POST'])
@@ -383,13 +385,22 @@ def edit_task():
                          name=str,
                          command=str,
                          soft_timeout=int,
-                         hard_timeout=int):
+                         hard_timeout=int,
+                         hostname=str):
         abort(400)
 
     job = dagobah.get_job(args['job_name'])
     task = job.tasks.get(args['task_name'], None)
     if not task:
         abort(400)
+
+    # validate host
+    if args.get('hostname') not in dagobah.get_hosts():
+        # Check for empty host, if so then task is no longer remote
+        if args.get('hostname') == '':
+            args['hostname'] = None
+        else:
+            abort(400)
 
     del args['job_name']
     del args['task_name']
@@ -464,3 +475,10 @@ def import_job():
     file = request.files['file']
     if (file and allowed_file(file.filename, ['json'])):
         dagobah.add_job_from_json(file.read(), destructive=True)
+
+
+@app.route('/api/hosts', methods=['GET'])
+@login_required
+@api_call
+def get_hosts():
+    return dagobah.get_hosts()

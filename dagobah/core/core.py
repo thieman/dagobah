@@ -6,6 +6,7 @@ import time
 import threading
 import subprocess
 import json
+import paramiko
 
 from croniter import croniter
 
@@ -26,7 +27,8 @@ class Dagobah(object):
     backend used for permanent storage.
     """
 
-    def __init__(self, backend=BaseBackend(), event_handler=None):
+    def __init__(self, backend=BaseBackend(), event_handler=None,
+                 ssh_config="~/.ssh/config"):
         """ Construct a new Dagobah instance with a specified Backend. """
         self.backend = backend
         self.event_handler = event_handler
@@ -35,6 +37,7 @@ class Dagobah(object):
         self.created_jobs = 0
         self.scheduler = Scheduler(self)
         self.scheduler.daemon = True
+        self.ssh_config = ssh_config
 
         self.scheduler.start()
 
@@ -92,6 +95,8 @@ class Dagobah(object):
                 pass
         self._add_job_from_spec(rec, use_job_id=False)
 
+        self.commit(cascade=True)
+
 
     def _add_job_from_spec(self, job_json, use_job_id=True):
         """ Add a single job to the Dagobah from a spec. """
@@ -109,7 +114,8 @@ class Dagobah(object):
                                  str(task['command']),
                                  str(task['name']),
                                  soft_timeout=task.get('soft_timeout', 0),
-                                 hard_timeout=task.get('hard_timeout', 0))
+                                 hard_timeout=task.get('hard_timeout', 0),
+                                 hostname=task.get('hostname', None))
 
         dependencies = job_json.get('dependencies', {})
         for from_node, to_nodes in dependencies.iteritems():
@@ -156,6 +162,35 @@ class Dagobah(object):
         job = self.get_job(job_name)
         job.commit()
 
+    def load_ssh_conf(self):
+        conf_file = open(os.path.expanduser(self.ssh_config))
+        ssh_config = paramiko.SSHConfig()
+        ssh_config.parse(conf_file)
+        conf_file.close()
+        return ssh_config
+
+    def get_hosts(self):
+        conf = self.load_ssh_conf()
+
+        # Please help me make this cleaner I'm in list comprehension hell
+
+        # Explanation: the _config option contains a list of dictionaries,
+        # each dictionary is a representation of a "host", complete with
+        # configuration options (user, address, identityfile). The "host"
+        # attribute of each dict is a list of hostnames that share the same
+        # config options. For most users this contains only one entry, but
+        # all are valid host choices. We filter hosts with "*" because dagobah
+        # does not support wildcard matching for a task to run on all hosts.
+        hosts = [item for sublist in
+                 [hostnames['host'] for hostnames in conf._config]
+                 for item in sublist if not '*' in item ]
+        return hosts
+
+    def get_host(self, hostname):
+        """ Returns a Host dict with config options, or None if none exists"""
+        if hostname in self.get_hosts():
+            return self.load_ssh_conf().lookup(hostname)
+        return None
 
     def get_job(self, job_name):
         """ Returns a Job by name, or None if none exists. """
@@ -189,12 +224,12 @@ class Dagobah(object):
             raise DagobahError('job %s does not exist' % job_or_job_name)
 
         if not job.state.allow_change_graph:
-            raise DagobahError("job's graph is immutable in its current state: %s"
+            raise DagobahError("job's graph is immutable in its current " +
+                               "state: %s"
                                % job.state.status)
 
         job.add_task(task_command, task_name, **kwargs)
         job.commit()
-
 
     def _name_is_available(self, job_name):
         """ Returns Boolean of whether the specified name is already in use. """
@@ -439,7 +474,7 @@ class Job(DAG):
 
         if not self.state.allow_edit_task:
             raise DagobahError("tasks cannot be edited in this job's " +
-                             "current state")
+                               "current state")
 
         if task_name not in self.tasks:
             raise DagobahError('task %s not found' % task_name)
@@ -447,7 +482,7 @@ class Job(DAG):
         if 'name' in kwargs and isinstance(kwargs['name'], str):
             if kwargs['name'] in self.tasks:
                 raise DagobahError('task name %s is unavailable' %
-                               kwargs['name'])
+                                   kwargs['name'])
 
         task = self.tasks[task_name]
         for key in ['name', 'command']:
@@ -459,6 +494,9 @@ class Job(DAG):
 
         if 'hard_timeout' in kwargs:
             task.set_hard_timeout(kwargs['hard_timeout'])
+
+        if 'hostname' in kwargs:
+            task.set_hostname(kwargs['hostname'])
 
         if 'name' in kwargs and isinstance(kwargs['name'], str):
             self.rename_edges(task_name, kwargs['name'])
@@ -617,16 +655,18 @@ class Task(object):
     """
 
     def __init__(self, parent_job, command, name,
-                 soft_timeout=0, hard_timeout=0):
+                 soft_timeout=0, hard_timeout=0, hostname=None):
         self.parent_job = parent_job
         self.backend = self.parent_job.backend
         self.event_handler = self.parent_job.event_handler
         self.command = command
         self.name = name
+        self.hostname = hostname
 
+        self.remote_channel = None
         self.process = None
-        self.stdout = None
-        self.stderr = None
+        self.stdout = ""
+        self.stderr = ""
         self.stdout_file = None
         self.stderr_file = None
 
@@ -638,6 +678,7 @@ class Task(object):
 
         self.terminate_sent = False
         self.kill_sent = False
+        self.remote_failure = False
 
         self.set_soft_timeout(soft_timeout)
         self.set_hard_timeout(hard_timeout)
@@ -656,11 +697,19 @@ class Task(object):
         self.hard_timeout = timeout
         self.parent_job.commit()
 
+
+    def set_hostname(self, hostname):
+        self.hostname = hostname
+        self.parent_job.commit()
+
     def reset(self):
         """ Reset this Task to a clean state prior to execution. """
 
         self.stdout_file = os.tmpfile()
         self.stderr_file = os.tmpfile()
+
+        self.stdout = ""
+        self.stderr = ""
 
         self.started_at = None
         self.completed_at = None
@@ -668,61 +717,128 @@ class Task(object):
 
         self.terminate_sent = False
         self.kill_sent = False
-
+        self.remote_failure = False
 
     def start(self):
         """ Begin execution of this task. """
         self.reset()
-        self.process = subprocess.Popen(self.command,
-                                        shell=True,
-                                        stdout=self.stdout_file,
-                                        stderr=self.stderr_file)
+        if self.hostname:
+            host = self.parent_job.parent.get_host(self.hostname)
+            if host:
+                self.remote_ssh(host)
+            else:
+                self.remote_failure = True
+        else:
+            self.process = subprocess.Popen(self.command,
+                                            shell=True,
+                                            stdout=self.stdout_file,
+                                            stderr=self.stderr_file)
+
         self.started_at = datetime.utcnow()
         self._start_check_timer()
 
+    def remote_ssh(self, host):
+        """ Execute a command on SSH. Takes a paramiko host dict """
+        try:
+            self.remote_client = paramiko.SSHClient()
+            self.remote_client.load_system_host_keys()
+            self.remote_client.set_missing_host_key_policy(
+                paramiko.AutoAddPolicy())
+            self.remote_client.connect(host['hostname'], username=host['user'],
+                                       key_filename=host['identityfile'][0],
+                                       timeout=82800)
+            transport = self.remote_client.get_transport()
+            transport.set_keepalive(10)
+
+            self.remote_channel = transport.open_session()
+            self.remote_channel.get_pty()
+            self.remote_channel.exec_command(self.command)
+        except Exception as e:
+            self.remote_failure = True
+            self.stderr += 'Exception when trying to SSH related to: '
+            self.stderr += '{0}: {1}\n"'.format(type(e).__name__, str(e))
+            self.stderr += 'Was looking for host "{0}"\n'.format(str(host))
+            self.stderr += 'Found in config:\n'
+            self.stderr += 'host: "{0}"\n'.format(str(host))
+            self.stderr += 'hostname: "{0}"\n'.format(str(host.get('hostname')))
+            self.stderr += 'user: "{0}"\n'.format(str(host.get('user')))
+            self.stderr += 'identityfile: "{0}"\n'.format(str(host.get('identityfile')))
+            self.remote_client.close()
 
     def check_complete(self):
         """ Runs completion flow for this task if it's finished. """
-
-        if self.process.poll() is None:
-
-            # timeout check
-            if (self.soft_timeout != 0 and
-                (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout and
-                not self.terminate_sent):
-                self.terminate()
-
-            if (self.hard_timeout != 0 and
-                (datetime.utcnow() - self.started_at).seconds >= self.hard_timeout and
-                not self.kill_sent):
-                self.kill()
-
+        # Tasks not completed
+        if self.remote_not_complete() or self.local_not_complete():
             self._start_check_timer()
             return
 
-        self.stdout, self.stderr = (self._read_temp_file(self.stdout_file),
-                                    self._read_temp_file(self.stderr_file))
-        for temp_file in [self.stdout_file, self.stderr_file]:
-            temp_file.close()
+        return_code = self.completed_task()
 
+        # Handle task errors
         if self.terminate_sent:
             self.stderr += '\nDAGOBAH SENT SIGTERM TO THIS PROCESS\n'
         if self.kill_sent:
             self.stderr += '\nDAGOBAH SENT SIGKILL TO THIS PROCESS\n'
+        if self.remote_failure:
+            return_code = -1
+            self.stderr += '\nAn error occurred with the remote machine.\n'
 
         self.stdout_file = None
         self.stderr_file = None
 
-        self._task_complete(success=True if self.process.returncode == 0 else False,
-                            return_code=self.process.returncode,
-                            stdout = self.stdout,
-                            stderr = self.stderr,
-                            start_time = self.started_at,
-                            complete_time = datetime.utcnow())
+        self._task_complete(success=True if return_code == 0 else False,
+                            return_code=return_code,
+                            stdout=self.stdout,
+                            stderr=self.stderr,
+                            start_time=self.started_at,
+                            complete_time=datetime.utcnow())
 
+    def remote_not_complete(self):
+        """
+        Returns true if this task is on a remote channel, and on a remote
+        machine. False if it is either not remote, or not completed
+        """
+        if self.remote_channel and not self.remote_channel.exit_status_ready():
+            self._timeout_check()
+            # Get some stdout/std error
+            if self.remote_channel.recv_ready():
+                self.stdout += self.remote_channel.recv(1024)
+            if self.remote_channel.recv_stderr_ready():
+                self.stderr += self.remote_channel.recv_stderr(1024)
+            return True
+        return False
+
+    def local_not_complete(self):
+        """ Returns true if task is local and not complete"""
+        if self.process and self.process.poll() is None:
+            self._timeout_check()
+            return True
+        return False
+
+    def completed_task(self):
+        """ Handle wrapping up a completed task, local or remote"""
+        # If its remote and finished running
+        if self.remote_channel and self.remote_channel.exit_status_ready():
+            # Collect all remaining stdout/stderr
+            while self.remote_channel.recv_ready():
+                self.stdout += self.remote_channel.recv(1024)
+            while self.remote_channel.recv_stderr_ready():
+                self.stderr += self.remote_channel.recv_stderr(1024)
+            return self.remote_channel.recv_exit_status()
+        # Otherwise check for finished local command
+        elif self.process:
+            self.stdout, self.stderr = (self._read_temp_file(self.stdout_file),
+                                        self._read_temp_file(self.stderr_file))
+            for temp_file in [self.stdout_file, self.stderr_file]:
+                temp_file.close()
+            return self.process.returncode
 
     def terminate(self):
         """ Send SIGTERM to the task's process. """
+        if hasattr(self, 'remote_client') and self.remote_client is not None:
+            self.terminate_sent = True
+            self.remote_client.close()
+            return
         if not self.process:
             raise DagobahError('task does not have a running process')
         self.terminate_sent = True
@@ -731,6 +847,10 @@ class Task(object):
 
     def kill(self):
         """ Send SIGKILL to the task's process. """
+        if hasattr(self, 'remote_client') and self.remote_client is not None:
+            self.kill_sent = True
+            self.remote_client.close()
+            return
         if not self.process:
             raise DagobahError('task does not have a running process')
         self.kill_sent = True
@@ -773,6 +893,19 @@ class Task(object):
     def get_stderr(self):
         """ Returns the entire stderr output of this process. """
         return self._read_temp_file(self.stderr_file)
+
+
+    def _timeout_check(self):
+        # timeout check
+        if (self.soft_timeout != 0 and
+            (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout
+                and not self.terminate_sent):
+            self.terminate()
+
+        if (self.hard_timeout != 0 and
+            (datetime.utcnow() - self.started_at).seconds >= self.hard_timeout
+                and not self.kill_sent):
+            self.kill()
 
     def get_run_log_history(self):
         return self.backend.get_run_log_history(self.parent_job.job_id,
@@ -873,7 +1006,8 @@ class Task(object):
                   'completed_at': self.completed_at,
                   'success': self.successful,
                   'soft_timeout': self.soft_timeout,
-                  'hard_timeout': self.hard_timeout}
+                  'hard_timeout': self.hard_timeout,
+                  'hostname': self.hostname}
 
         if include_run_logs:
             last_run = self.backend.get_latest_run_log(self.parent_job.job_id,

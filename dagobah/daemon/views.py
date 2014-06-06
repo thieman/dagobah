@@ -35,7 +35,7 @@ def job_detail(job_id=None):
     jobs = [job for job in get_jobs() if str(job['job_id']) == job_id]
     if not jobs:
         abort(404)
-    return render_template('job_detail.html', job=jobs[0])
+    return render_template('job_detail.html', job=jobs[0], hosts=dagobah.get_hosts())
 
 @app.route('/job/<job_id>/<task_name>', methods=['GET'])
 @login_required

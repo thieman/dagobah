@@ -1,0 +1,6 @@
+Host *
+    IdentityFile ~/.ssh/id_rsa
+
+Host test_host
+    HostName actual.address.or.ip.com
+    User remoteuser
