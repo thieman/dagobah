@@ -1,7 +1,7 @@
 ### v0.3.0
 
   * **Remote Tasks:** Tasks may now be assigned a remote host to run on. These are sourced directly from your SSH config. The location of this file is configurable and defaults to ~/.ssh/config.
-  * Historical task run logs can now be viewed in the web UI
+  * **Historical Task Run Logs**: Results from previous runs of a task may now be viewed on the Task Detail page
   * Added Email.auth_required field to config to allow for email servers that do not require auth
   * An app secret is now generated for you when you first create a config file
 
