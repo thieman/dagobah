@@ -74,13 +74,14 @@ function onEditTaskClick() {
 	td.remove();
 
 	if (index === 0) {
-		tr.prepend(editTaskTemplate({ original: original, field: field }));
+	  tr.prepend(editTaskTemplate({ original: original, field: field, knownHosts: knownHosts }));
 	} else {
 		$(tr).children().each(function() {
 			if ( $(tr).children().index(this) === (index - 1) ) {
 				$(this).after(editTaskTemplate({
 					original: original,
-					field: field
+				    field: field,
+                    knownHosts: knownHosts
 				}));
 			}
 		});

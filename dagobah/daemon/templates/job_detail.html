@@ -6,7 +6,8 @@
 <link rel="stylesheet" href="/static/css/job_graph.css"></link>
 
 <script>
-  var jobName = '{{ job.name }}';
+    var jobName = '{{ job.name }}';
+    var knownHosts = {{ hosts|tojson|safe }};
 </script>
 
 {% raw %}
@@ -100,14 +101,11 @@
     <td>
       {{#equal field "Remote Target"}}
         <select id='target-hosts-dropdown' name='targethosts' data-field='{{ field }}'
-          data-original='{{ original }}' value='{{ original }}'>
-                <option></option>
-            {% endraw %}
-            {% for host in hosts %}
-            <option value="{{ host }}">{{ host }}</option>
-            {% endfor %}
-            {% raw %}
- 
+                data-original='{{ original }}' value='{{ original }}'>
+          <option></option>
+          {{#each knownHosts}}
+            <option value="{{this}}">{{this}}</option>
+          {{/each}}
       </select>
       {{else}}
       <input type='text' class='submit-on-enter' data-field='{{ field }}'
