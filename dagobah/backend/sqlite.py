@@ -13,10 +13,10 @@ from alembic.script import ScriptDirectory
 from alembic.environment import EnvironmentContext
 from dateutil import parser
 
-from dagobah.backend.base import BaseBackend
-from dagobah.backend.sqlite_models import (Base, Dagobah, DagobahJob,
-                                           DagobahTask, DagobahDependency,
-                                           DagobahLog, DagobahLogTask)
+from ..backend.base import BaseBackend
+from ..backend.sqlite_models import (Base, Dagobah, DagobahJob,
+                                     DagobahTask, DagobahDependency,
+                                     DagobahLog, DagobahLogTask)
 
 
 class SQLiteBackend(BaseBackend):

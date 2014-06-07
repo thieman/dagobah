@@ -10,9 +10,9 @@ import paramiko
 
 from croniter import croniter
 
-from dagobah.core.dag import DAG
-from dagobah.core.components import Scheduler, JobState, StrictJSONEncoder
-from dagobah.backend.base import BaseBackend
+from .dag import DAG
+from .components import Scheduler, JobState, StrictJSONEncoder
+from ..backend.base import BaseBackend
 
 
 class DagobahError(Exception):

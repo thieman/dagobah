@@ -3,7 +3,7 @@
 from datetime import datetime
 from email.mime.text import MIMEText
 
-from dagobah.email.common import EmailTemplate
+from .common import EmailTemplate
 
 class TextEmail(EmailTemplate):
 

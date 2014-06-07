@@ -3,8 +3,8 @@
 from flask import render_template, redirect, url_for, abort
 from flask_login import login_required
 
-from dagobah.daemon.daemon import app
-from dagobah.daemon.api import get_jobs, import_job
+from .daemon import app
+from .api import get_jobs, import_job
 
 dagobah = app.config['dagobah']
 

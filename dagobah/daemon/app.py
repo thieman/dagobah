@@ -1,7 +1,7 @@
-from dagobah.daemon.daemon import app, login_manager
-from dagobah.daemon.auth import *
-from dagobah.daemon.api import *
-from dagobah.daemon.views import *
+from .daemon import app, login_manager
+from .auth import *
+from .api import *
+from .views import *
 
 def daemon_entrypoint():
     app.debug = False
