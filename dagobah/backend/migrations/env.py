@@ -13,6 +13,8 @@ fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
+# seems like we can't use relative imports here because
+# alembic runs as a script rather than a package?
 from dagobah.backend.sqlite_models import Base
 target_metadata = Base.metadata
 

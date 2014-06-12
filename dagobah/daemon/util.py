@@ -14,7 +14,7 @@ except ImportError:
     except ImportError:
         pass
 
-from dagobah.core import DagobahError, DAGValidationError
+from ..core import DagobahError, DAGValidationError
 
 class DagobahEncoder(json.JSONEncoder):
     def default(self, obj):

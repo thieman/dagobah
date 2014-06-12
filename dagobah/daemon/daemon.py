@@ -8,8 +8,8 @@ from flask import Flask, send_from_directory
 from flask_login import LoginManager
 import yaml
 
-from dagobah.core import Dagobah, EventHandler
-from dagobah.email import get_email_handler
+from ..core import Dagobah, EventHandler
+from ..email import get_email_handler
 
 app = Flask(__name__)
 
@@ -211,7 +211,7 @@ def get_backend(config):
     backend_string = get_conf(config, 'Dagobahd.backend', None)
 
     if backend_string is None:
-        from dagobah.backend.base import BaseBackend
+        from ..backend.base import BaseBackend
         return BaseBackend()
 
     elif backend_string.lower() == 'sqlite':
@@ -221,7 +221,7 @@ def get_backend(config):
                                                   'SQLiteBackend.%s' % conf_kwarg)
 
         try:
-            from dagobah.backend.sqlite import SQLiteBackend
+            from ..backend.sqlite import SQLiteBackend
         except:
             raise ImportError('Could not initialize the SQLite Backend. Are you sure' +
                               ' the optional drivers are installed? If not, try running ' +
@@ -238,7 +238,7 @@ def get_backend(config):
         backend_kwargs['port'] = int(backend_kwargs['port'])
 
         try:
-            from dagobah.backend.mongo import MongoBackend
+            from ..backend.mongo import MongoBackend
         except:
             raise ImportError('Could not initialize the MongoDB Backend. Are you sure' +
                               ' the optional drivers are installed? If not, try running ' +

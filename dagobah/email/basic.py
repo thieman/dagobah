@@ -6,7 +6,7 @@ from email.mime.text import MIMEText
 
 import premailer
 
-from dagobah.email.common import EmailTemplate
+from .common import EmailTemplate
 
 class BasicEmail(EmailTemplate):
 
