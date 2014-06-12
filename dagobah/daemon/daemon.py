@@ -114,6 +114,9 @@ def init_dagobah(testing=False):
     event_handler = configure_event_hooks(config)
     ssh_config = get_conf(config, 'Dagobahd.ssh_config', '~/.ssh/config')
 
+    if not os.path.isfile(os.path.expanduser(ssh_config)):
+        logging.warn("SSH config doesn't exist, no remote hosts will be listed")
+
     dagobah = Dagobah(backend, event_handler, ssh_config)
     known_ids = [id for id in backend.get_known_dagobah_ids()
                  if id != dagobah.dagobah_id]

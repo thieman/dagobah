@@ -28,7 +28,7 @@ class Dagobah(object):
     """
 
     def __init__(self, backend=BaseBackend(), event_handler=None,
-                 ssh_config="~/.ssh/config"):
+                 ssh_config=None):
         """ Construct a new Dagobah instance with a specified Backend. """
         self.backend = backend
         self.event_handler = event_handler
@@ -163,14 +163,21 @@ class Dagobah(object):
         job.commit()
 
     def load_ssh_conf(self):
-        conf_file = open(os.path.expanduser(self.ssh_config))
-        ssh_config = paramiko.SSHConfig()
-        ssh_config.parse(conf_file)
-        conf_file.close()
-        return ssh_config
+        try:
+            conf_file = open(os.path.expanduser(self.ssh_config))
+            ssh_config = paramiko.SSHConfig()
+            ssh_config.parse(conf_file)
+            conf_file.close()
+            return ssh_config
+        except IOError:
+            # SSH config not found
+            return None
 
     def get_hosts(self):
         conf = self.load_ssh_conf()
+
+        if conf is None:
+            return []
 
         # Please help me make this cleaner I'm in list comprehension hell
 
