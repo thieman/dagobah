@@ -51,6 +51,6 @@ setup(name='dagobah',
       tests_require=['nose', 'pymongo'],
       entry_points={'console_scripts':
                     ['dagobahd = dagobah.daemon.app:daemon_entrypoint',
-                     'echo_dagobah_conf = dagobah.daemon.daemon:print_standard_conf']
+                     'echo_dagobah_conf = dagobah:print_standard_conf']
                     },
       zip_safe=False)
