@@ -16,4 +16,3 @@ def return_standard_conf():
     config_file.close()
     result = result % {'app_secret': os.urandom(24).encode('hex')}
     return result
->>>>>>> Fix stdout leak in echo_dagobah_conf command. Closes #73.
