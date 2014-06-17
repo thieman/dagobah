@@ -57,12 +57,12 @@ def test_reset_graph():
 
 @with_setup(start_with_graph)
 def test_ind_nodes():
-    assert dag.ind_nodes() == ['a']
+    assert dag.ind_nodes(dag.graph) == ['a']
 
 
 @with_setup(start_with_graph)
 def test_dependent_on():
-    assert set(dag._dependencies('d')) == set(['b', 'c'])
+    assert set(dag._dependencies('d',dag.graph)) == set(['b', 'c'])
 
 
 @with_setup(blank_setup)
@@ -86,4 +86,4 @@ def test_failed_validation():
 
 @with_setup(start_with_graph)
 def test_downstream():
-    assert set(dag.downstream('a')) == set(['b', 'c'])
+    assert set(dag.downstream('a', dag.graph)) == set(['b', 'c'])
