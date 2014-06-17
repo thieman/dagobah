@@ -11,6 +11,7 @@ class DAG(object):
     def __init__(self):
         """ Construct a new DAG with no nodes or edges. """
         self.graph = {}
+        self.snapshot = None
 
 
     def add_node(self, node_name):
@@ -65,8 +66,11 @@ class DAG(object):
                     edges.add(new_task_name)
 
 
-    def downstream(self, node):
+    def downstream(self, node, graph=None):
         """ Returns a list of all nodes this node has edges towards. """
+        if graph is None:
+            raise Exception("Snapshot has not been initialized, or no graph " +
+                            "specified")
         if node not in self.graph:
             raise KeyError('node %s is not in graph' % node)
         return list(self.graph[node])
@@ -95,11 +99,21 @@ class DAG(object):
 
     def ind_nodes(self, graph=None):
         """ Returns a list of all nodes in the graph with no dependencies. """
-        graph = graph if graph is not None else self.graph
+        if graph is None:
+            raise Exception("Snapshot has not been initialized, or no graph " +
+                            "specified")
         all_nodes, dependent_nodes = set(graph.keys()), set()
         for downstream_nodes in graph.itervalues():
             [dependent_nodes.add(node) for node in downstream_nodes]
         return list(all_nodes - dependent_nodes)
+
+    def create_snapshot(self):
+        """ Set up the snapshot of current graph """
+        self.snapshot = deepcopy(self.graph)
+
+    def erase_snapshot(self):
+        """ Erase the current snapshot """
+        self.snapshot = None
 
 
     def validate(self, graph=None):
@@ -116,7 +130,9 @@ class DAG(object):
 
     def _dependencies(self, target_node, graph=None):
         """ Returns a list of all nodes from incoming edges. """
-        graph = graph if graph is not None else self.graph
+        if graph is None:
+            raise Exception("Snapshot has not been initialized, or no graph " +
+                            "specified")
         result = set()
         for node, outgoing_nodes in graph.iteritems():
             if target_node in outgoing_nodes:
