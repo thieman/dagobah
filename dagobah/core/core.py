@@ -288,6 +288,8 @@ class Job(DAG):
         self.completion_lock = threading.Lock()
         self.notes = None
 
+        self.snapshot = None
+
         self._set_status('waiting')
 
         self.commit()
@@ -380,11 +382,11 @@ class Job(DAG):
             raise DagobahError('job cannot be started in its current state; ' +
                                'it is probably already running')
 
-        is_valid, reason = self.validate()
+        self.snapshot = deepcopy(self.graph)
+
+        is_valid, reason = self.validate(self.snapshot)
         if not is_valid:
             raise DagobahError(reason)
-
-        self.create_snapshot()
 
         # don't increment if the job was run manually
         if self.cron_iter and datetime.utcnow() > self.next_run:
@@ -594,7 +596,7 @@ class Job(DAG):
             finally:
                 self.backend.release_lock()
 
-        self.erase_snapshot()
+        self.snapshot = None
 
         self.completion_lock.release()
 
