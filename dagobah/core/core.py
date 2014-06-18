@@ -9,6 +9,7 @@ import json
 import paramiko
 
 from croniter import croniter
+from copy import deepcopy
 
 from .dag import DAG
 from .components import Scheduler, JobState, StrictJSONEncoder
