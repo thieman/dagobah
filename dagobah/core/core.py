@@ -9,6 +9,7 @@ import json
 import paramiko
 
 from croniter import croniter
+from copy import deepcopy
 
 from .dag import DAG
 from .components import Scheduler, JobState, StrictJSONEncoder
@@ -288,6 +289,8 @@ class Job(DAG):
         self.completion_lock = threading.Lock()
         self.notes = None
 
+        self.snapshot = None
+
         self._set_status('waiting')
 
         self.commit()
@@ -380,7 +383,9 @@ class Job(DAG):
             raise DagobahError('job cannot be started in its current state; ' +
                                'it is probably already running')
 
-        is_valid, reason = self.validate()
+        self.snapshot = deepcopy(self.graph)
+
+        is_valid, reason = self.validate(self.snapshot)
         if not is_valid:
             raise DagobahError(reason)
 
@@ -399,7 +404,7 @@ class Job(DAG):
         for task in self.tasks.itervalues():
             task.reset()
 
-        for task_name in self.ind_nodes():
+        for task_name in self.ind_nodes(self.snapshot):
             self._put_task_in_run_log(task_name)
             self.tasks[task_name].start()
 
@@ -518,7 +523,7 @@ class Job(DAG):
 
         self.run_log['tasks'][task_name] = kwargs
 
-        for node in self.downstream(task_name):
+        for node in self.downstream(task_name, self.snapshot):
             self._start_if_ready(node)
 
         try:
@@ -592,13 +597,15 @@ class Job(DAG):
             finally:
                 self.backend.release_lock()
 
+        self.snapshot = None
+
         self.completion_lock.release()
 
 
     def _start_if_ready(self, task_name):
         """ Start this task if all its dependencies finished successfully. """
         task = self.tasks[task_name]
-        dependencies = self._dependencies(task_name)
+        dependencies = self._dependencies(task_name, self.snapshot)
         for dependency in dependencies:
             if self.run_log['tasks'].get(dependency, {}).get('success', False) == True:
                 continue
