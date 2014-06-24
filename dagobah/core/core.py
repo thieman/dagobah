@@ -17,6 +17,7 @@ from ..backend.base import BaseBackend
 
 
 class DagobahError(Exception):
+    print 'lol'
     pass
 
 
