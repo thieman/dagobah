@@ -1034,3 +1034,81 @@ class Task(object):
         if strict_json:
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
+
+class JobTask(Task):
+    """ Task that references a job """
+    def __init__(self, parent_job, job_name, soft_timeout=0, hard_timeout=0):
+        """
+        Only adds the job_name variable, the ID is a randomly generated
+        name to prevent collision with wanting the same subjob multiple
+        times in the same parent job.
+        """
+        super(JobTask, self).__init__(self, parent_job, None,
+                                      job_name + os.urandom(10), soft_timeout,
+                                      hard_timeout, None)
+        self.job_name = job_name
+
+    def start(self):
+        raise DagobahError("Method not valid for JobTask")
+
+    def stop(self):
+        raise DagobahError("Method not valid for JobTask")
+
+    def set_soft_timeout(self, timeout):
+        raise DagobahError("Method not valid for JobTask")
+
+    def set_hard_timeout(self, timeout):
+        raise DagobahError("Method not valid for JobTask")
+
+    def set_hostname(self, hostname):
+        raise DagobahError("Method not valid for JobTask")
+
+    def reset(self):
+        raise DagobahError("Method not valid for JobTask")
+
+    def check_complete(self):
+        raise DagobahError("Method not valid for JobTask")
+
+    def completed_task(self):
+        raise DagobahError("Method not valid for JobTask")
+
+    def terminate(self):
+        raise DagobahError("Method not valid for JobTask")
+
+    def kill(self):
+        raise DagobahError("Method not valid for JobTask")
+
+    def head(self, stream='stdout', num_lines=10):
+        raise DagobahError("Method not valid for JobTask")
+
+    def tail(self, stream='stdout', num_lines=10):
+        raise DagobahError("Method not valid for JobTask")
+
+    def get_stdout(self):
+        raise DagobahError("Method not valid for JobTask")
+
+    def get_stderr(self):
+        raise DagobahError("Method not valid for JobTask")
+
+    def get_run_log_history(self):
+        raise DagobahError("Method not valid for JobTask")
+
+    def get_run_log(self, log_id):
+        raise DagobahError("Method not valid for JobTask")
+
+    def _serialize(self, include_run_logs=False, strict_json=False):
+        """ Serialize a representation of this Task to a Python dict. """
+
+        result = {'command': self.command,
+                  'name': self.name,
+                  'started_at': self.started_at,
+                  'completed_at': self.completed_at,
+                  'success': self.successful,
+                  'soft_timeout': self.soft_timeout,
+                  'hard_timeout': self.hard_timeout,
+                  'hostname': self.hostname,
+                  'job_name': self.job_name}
+
+        return result
+
+
