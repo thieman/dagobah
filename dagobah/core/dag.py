@@ -65,8 +65,10 @@ class DAG(object):
                     edges.add(new_task_name)
 
 
-    def downstream(self, node):
+    def downstream(self, node, graph):
         """ Returns a list of all nodes this node has edges towards. """
+        if graph is None:
+            raise Exception("Graph given is None")
         if node not in self.graph:
             raise KeyError('node %s is not in graph' % node)
         return list(self.graph[node])
@@ -93,9 +95,10 @@ class DAG(object):
         self.graph = {}
 
 
-    def ind_nodes(self, graph=None):
+    def ind_nodes(self, graph):
         """ Returns a list of all nodes in the graph with no dependencies. """
-        graph = graph if graph is not None else self.graph
+        if graph is None:
+            raise Exception("Graph given is None")
         all_nodes, dependent_nodes = set(graph.keys()), set()
         for downstream_nodes in graph.itervalues():
             [dependent_nodes.add(node) for node in downstream_nodes]
@@ -114,9 +117,10 @@ class DAG(object):
         return (True, 'valid')
 
 
-    def _dependencies(self, target_node, graph=None):
+    def _dependencies(self, target_node, graph):
         """ Returns a list of all nodes from incoming edges. """
-        graph = graph if graph is not None else self.graph
+        if graph is None:
+            raise Exception("Graph given is None")
         result = set()
         for node, outgoing_nodes in graph.iteritems():
             if target_node in outgoing_nodes:

@@ -6,8 +6,8 @@ import json
 from flask import request, abort, send_file
 from flask_login import login_required
 
-from dagobah.daemon.daemon import app
-from dagobah.daemon.util import validate_dict, api_call, allowed_file
+from .daemon import app
+from .util import validate_dict, api_call, allowed_file
 
 dagobah = app.config['dagobah']
 

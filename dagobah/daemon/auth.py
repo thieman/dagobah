@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from flask import render_template, request, url_for, redirect
 from flask_login import UserMixin, login_user, logout_user, login_required
 
-from dagobah.daemon.app import app, login_manager
+from .app import app, login_manager
 
 class User(UserMixin):
     def get_id(self):

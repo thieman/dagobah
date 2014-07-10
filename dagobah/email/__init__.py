@@ -1,7 +1,7 @@
 import logging
 
-from dagobah.email.text import TextEmail
-from dagobah.email.basic import BasicEmail
+from .text import TextEmail
+from .basic import BasicEmail
 
 def get_email_handler(handler_name, email_options):
 

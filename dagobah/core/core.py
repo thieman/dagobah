@@ -9,10 +9,11 @@ import json
 import paramiko
 
 from croniter import croniter
+from copy import deepcopy
 
-from dagobah.core.dag import DAG
-from dagobah.core.components import Scheduler, JobState, StrictJSONEncoder
-from dagobah.backend.base import BaseBackend
+from .dag import DAG
+from .components import Scheduler, JobState, StrictJSONEncoder
+from ..backend.base import BaseBackend
 
 
 class DagobahError(Exception):
@@ -28,7 +29,7 @@ class Dagobah(object):
     """
 
     def __init__(self, backend=BaseBackend(), event_handler=None,
-                 ssh_config="~/.ssh/config"):
+                 ssh_config=None):
         """ Construct a new Dagobah instance with a specified Backend. """
         self.backend = backend
         self.event_handler = event_handler
@@ -163,14 +164,21 @@ class Dagobah(object):
         job.commit()
 
     def load_ssh_conf(self):
-        conf_file = open(os.path.expanduser(self.ssh_config))
-        ssh_config = paramiko.SSHConfig()
-        ssh_config.parse(conf_file)
-        conf_file.close()
-        return ssh_config
+        try:
+            conf_file = open(os.path.expanduser(self.ssh_config))
+            ssh_config = paramiko.SSHConfig()
+            ssh_config.parse(conf_file)
+            conf_file.close()
+            return ssh_config
+        except IOError:
+            # SSH config not found
+            return None
 
     def get_hosts(self):
         conf = self.load_ssh_conf()
+
+        if conf is None:
+            return []
 
         # Please help me make this cleaner I'm in list comprehension hell
 
@@ -281,6 +289,8 @@ class Job(DAG):
         self.completion_lock = threading.Lock()
         self.notes = None
 
+        self.snapshot = None
+
         self._set_status('waiting')
 
         self.commit()
@@ -373,7 +383,9 @@ class Job(DAG):
             raise DagobahError('job cannot be started in its current state; ' +
                                'it is probably already running')
 
-        is_valid, reason = self.validate()
+        self.snapshot = deepcopy(self.graph)
+
+        is_valid, reason = self.validate(self.snapshot)
         if not is_valid:
             raise DagobahError(reason)
 
@@ -392,7 +404,7 @@ class Job(DAG):
         for task in self.tasks.itervalues():
             task.reset()
 
-        for task_name in self.ind_nodes():
+        for task_name in self.ind_nodes(self.snapshot):
             self._put_task_in_run_log(task_name)
             self.tasks[task_name].start()
 
@@ -511,7 +523,7 @@ class Job(DAG):
 
         self.run_log['tasks'][task_name] = kwargs
 
-        for node in self.downstream(task_name):
+        for node in self.downstream(task_name, self.snapshot):
             self._start_if_ready(node)
 
         try:
@@ -585,13 +597,15 @@ class Job(DAG):
             finally:
                 self.backend.release_lock()
 
+        self.snapshot = None
+
         self.completion_lock.release()
 
 
     def _start_if_ready(self, task_name):
         """ Start this task if all its dependencies finished successfully. """
         task = self.tasks[task_name]
-        dependencies = self._dependencies(task_name)
+        dependencies = self._dependencies(task_name, self.snapshot)
         for dependency in dependencies:
             if self.run_log['tasks'].get(dependency, {}).get('success', False) == True:
                 continue

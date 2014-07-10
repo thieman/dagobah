@@ -511,7 +511,7 @@ function updateNotes(newNotes) {
     });
 }
 
-$('#save-schedule').click(function() {
+function updateSchedule(jobName, cronSchedule) {
 
     if (!job.loaded) {
         return;
@@ -521,20 +521,31 @@ $('#save-schedule').click(function() {
         type: 'POST',
         url: $SCRIPT_ROOT + '/api/schedule_job',
         data: {
-            job_name: job.name,
-            cron_schedule: $('#cron-schedule').val()
+            job_name: jobName,
+            cron_schedule: cronSchedule
         },
         dataType: 'json',
         success: function () {
-            showAlert('schedule-alert', 'success', 'Job scheduled successfully');
+            successMsg = cronSchedule === "" ? 'Job unscheduled successfully' : 'Job scheduled successfully';
+            showAlert('schedule-alert', 'success', successMsg);
             updateJobNextRun();
         },
         error: function() {
-            showAlert('schedule-alert', 'error', 'Unable to schedule job');
+            errorMsg = cronSchedule === "" ? 'Failed to unschedule job' : 'Failed to schedule job';
+            showAlert('schedule-alert', 'error', errorMsg);
         },
         async: true
     });
 
+}
+
+$('#save-schedule').click(function() {
+  updateSchedule(job.name, $('#cron-schedule').val());
+});
+
+$('#clear-schedule').click(function() {
+  $('#cron-schedule').val('None');
+  updateSchedule(job.name, '');
 });
 
 $('#start-job').click(function() {

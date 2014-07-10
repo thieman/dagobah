@@ -8,8 +8,9 @@ from flask import Flask, send_from_directory
 from flask_login import LoginManager
 import yaml
 
-from dagobah.core import Dagobah, EventHandler
-from dagobah.email import get_email_handler
+from .. import return_standard_conf
+from ..core import Dagobah, EventHandler
+from ..email import get_email_handler
 
 app = Flask(__name__)
 
@@ -76,21 +77,6 @@ def get_config_file():
     return config
 
 
-def print_standard_conf():
-    """ Print the sample config file to stdout. """
-    print return_standard_conf()
-
-
-
-def return_standard_conf():
-    """ Return the sample config file. """
-    config_file = open(os.path.join(location, 'dagobahd.yml'))
-    result = config_file.read()
-    config_file.close()
-    result = result % {'app_secret': os.urandom(24).encode('hex')}
-    return result
-
-
 def configure_app():
 
     app.secret_key = get_conf(config, 'Dagobahd.app_secret', 'default_secret')
@@ -127,6 +113,9 @@ def init_dagobah(testing=False):
     backend = get_backend(config)
     event_handler = configure_event_hooks(config)
     ssh_config = get_conf(config, 'Dagobahd.ssh_config', '~/.ssh/config')
+
+    if not os.path.isfile(os.path.expanduser(ssh_config)):
+        logging.warn("SSH config doesn't exist, no remote hosts will be listed")
 
     dagobah = Dagobah(backend, event_handler, ssh_config)
     known_ids = [id for id in backend.get_known_dagobah_ids()
@@ -211,7 +200,7 @@ def get_backend(config):
     backend_string = get_conf(config, 'Dagobahd.backend', None)
 
     if backend_string is None:
-        from dagobah.backend.base import BaseBackend
+        from ..backend.base import BaseBackend
         return BaseBackend()
 
     elif backend_string.lower() == 'sqlite':
@@ -221,7 +210,7 @@ def get_backend(config):
                                                   'SQLiteBackend.%s' % conf_kwarg)
 
         try:
-            from dagobah.backend.sqlite import SQLiteBackend
+            from ..backend.sqlite import SQLiteBackend
         except:
             raise ImportError('Could not initialize the SQLite Backend. Are you sure' +
                               ' the optional drivers are installed? If not, try running ' +
@@ -238,7 +227,7 @@ def get_backend(config):
         backend_kwargs['port'] = int(backend_kwargs['port'])
 
         try:
-            from dagobah.backend.mongo import MongoBackend
+            from ..backend.mongo import MongoBackend
         except:
             raise ImportError('Could not initialize the MongoDB Backend. Are you sure' +
                               ' the optional drivers are installed? If not, try running ' +

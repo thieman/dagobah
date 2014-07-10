@@ -16,7 +16,7 @@ except ImportError:
     from bson.objectid import ObjectId
 
 from dateutil import parser
-from dagobah.backend.base import BaseBackend
+from ..backend.base import BaseBackend
 
 TRUNCATE_LOG_SIZES_CHAR = {'stdout': 500000,
                            'stderr': 500000}
