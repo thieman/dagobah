@@ -1,4 +1,4 @@
-"""adding notes column
+"""Adding job_name column
 
 Revision ID: 7b623dad7bf9
 Revises: d455481ec6e4
