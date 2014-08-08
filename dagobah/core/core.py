@@ -745,6 +745,7 @@ class Task(object):
         else:
             self.process = subprocess.Popen(self.command,
                                             shell=True,
+                                            env=os.environ.copy(),
                                             stdout=self.stdout_file,
                                             stderr=self.stderr_file)
 
