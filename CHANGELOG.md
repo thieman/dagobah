@@ -1,3 +1,6 @@
+### v0.3.1 (August 11, 2014)
+  * **Environment Variables:** dagobahd user's environment variables are now accessible by tasks.
+
 ### v0.3.0
 
   * **Remote Tasks:** Tasks may now be assigned a remote host to run on. These are sourced directly from your SSH config. The location of this file is configurable and defaults to ~/.ssh/config.
