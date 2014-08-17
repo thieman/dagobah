@@ -659,6 +659,21 @@ class Job(DAG):
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
 
+    def implements_expandable(obj):
+        """ Checks for methods required to expand a task """
+        for expected_method in ['expand']:
+            if not (hasattr(obj, expected_method) and
+                    callable(getattr(obj, expected_method))):
+                return False
+        return True
+
+    def implements_runnable(obj):
+        """ Checks methods required to run a task. More methods to be added """
+        for expected_method in ['start']:
+            if not (hasattr(obj, expected_method) and
+                    callable(getattr(obj, expected_method))):
+                return False
+        return True
 
 class Task(object):
     """ Handles execution and reporting for an individual process.
@@ -1035,3 +1050,24 @@ class Task(object):
         if strict_json:
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
+
+
+
+class JobTask(object):
+    """ Expandable Task that references a job """
+    def __init__(self, parent_job, job_name):
+        self.parent_job = parent_job
+        self.job_name = job_name
+
+    def expand(self):
+        """ Expand this JobTask into a list of tasks """
+        return self.parent.parent.get_job(self.job_name).tasks.values()
+
+    def _serialize(self, include_run_logs=False, strict_json=False):
+        """ Serialize a representation of this Task to a Python dict. """
+
+        result = {'job_name': self.job_name}
+
+        return result
+
+
