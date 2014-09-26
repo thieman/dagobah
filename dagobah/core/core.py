@@ -414,6 +414,8 @@ class Job(DAG):
     def retry(self):
         """ Restarts failed tasks of a job. """
 
+        self.snapshot = deepcopy(self.graph)
+
         failed_task_names = []
         for task_name, log in self.run_log['tasks'].items():
             if log.get('success', True) == False:
