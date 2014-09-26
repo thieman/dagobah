@@ -255,3 +255,45 @@ def test_ssh_config_load():
     assert "test_host" in hosts
     assert "*" not in hosts
     assert "nonexistant" not in hosts
+
+@with_setup(blank_dagobah)
+def test_retry_from_failure():
+    """
+    Test retry after job failure
+
+    This sets up a job with 3 tasks, the 2nd of which will fail. Upon
+    successful failure, the failed task is corrected, and then run again,
+    whereupon it should succeed.
+    """
+    dagobah.add_job('test_job')
+    dagobah.add_task_to_job('test_job', 'pwd', 'a')
+    dagobah.add_task_to_job('test_job', 'false', 'b')
+    dagobah.add_task_to_job('test_job', 'ls', 'c')
+    job = dagobah.get_job('test_job')
+
+    job.add_dependency('a', 'b')
+    job.add_dependency('b', 'c')
+
+    job.start()
+
+    tries = 0
+    while tries < 5:
+        if job.state.status != 'running':
+            assert job.state.status == 'failed'
+            break
+        sleep(5)
+        tries += 1
+    if tries >= 5:
+        raise ValueError('test timed out, status ' + job.state.status)
+
+    job.edit_task("b", command="true")
+
+    job.retry()
+    tries = 0
+    while tries < 5:
+        if job.state.status != 'running':
+            assert job.state.status != 'failed'
+            return
+        sleep(5)
+        tries += 1
+    raise ValueError('test timed out')
