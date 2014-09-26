@@ -662,12 +662,13 @@ class Job(DAG):
             raise DagobahError("Attempting to initialize DAG snapshot without "
                                + "first destroying old snapshot.")
 
-        self.snapshot = deepcopy(self.graph)
+        snapshot_to_validate = deepcopy(self.graph)
 
-        is_valid, reason = self.validate(self.snapshot)
+        is_valid, reason = self.validate(snapshot_to_validate)
         if not is_valid:
-            self.destroy_snapshot()
             raise DagobahError(reason)
+
+        self.snapshot = snapshot_to_validate
 
     def destroy_snapshot(self):
         """ Destroy active copy of the snapshot """
