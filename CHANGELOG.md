@@ -1,3 +1,7 @@
+### v0.3.1 (September 26, 2014)
+
+  * Fixed critical bug [Issue #115](https://github.com/thieman/dagobah/issues/115)
+
 ### v0.3.0 (August 17, 2014)
 
   * **Remote Tasks:** Tasks may now be assigned a remote host to run on. These are sourced directly from your SSH config. The location of this file is configurable and defaults to ~/.ssh/config.
