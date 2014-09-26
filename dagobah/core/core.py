@@ -383,11 +383,7 @@ class Job(DAG):
             raise DagobahError('job cannot be started in its current state; ' +
                                'it is probably already running')
 
-        self.snapshot = deepcopy(self.graph)
-
-        is_valid, reason = self.validate(self.snapshot)
-        if not is_valid:
-            raise DagobahError(reason)
+        self.initialize_snapshot()
 
         # don't increment if the job was run manually
         if self.cron_iter and datetime.utcnow() > self.next_run:
@@ -414,7 +410,7 @@ class Job(DAG):
     def retry(self):
         """ Restarts failed tasks of a job. """
 
-        self.snapshot = deepcopy(self.graph)
+        self.initialize_snapshot()
 
         failed_task_names = []
         for task_name, log in self.run_log['tasks'].items():
@@ -599,8 +595,7 @@ class Job(DAG):
             finally:
                 self.backend.release_lock()
 
-        self.snapshot = None
-
+        self.destroy_snapshot()
         self.completion_lock.release()
 
 
@@ -660,6 +655,23 @@ class Job(DAG):
         if strict_json:
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
+
+    def initialize_snapshot(self):
+        """ Copy the DAG and validate """
+        if self.snapshot is not None:
+            raise DagobahError("Attempting to initialize DAG snapshot without "
+                               + "first destroying old snapshot.")
+
+        self.snapshot = deepcopy(self.graph)
+
+        is_valid, reason = self.validate(self.snapshot)
+        if not is_valid:
+            self.destroy_snapshot()
+            raise DagobahError(reason)
+
+    def destroy_snapshot(self):
+        """ Destroy active copy of the snapshot """
+        self.snapshot = None
 
 
 class Task(object):

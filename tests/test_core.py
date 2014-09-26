@@ -259,6 +259,8 @@ def test_ssh_config_load():
 @with_setup(blank_dagobah)
 def test_retry_from_failure():
     """
+    Test retry after job failure
+
     This sets up a job with 3 tasks, the 2nd of which will fail. Upon
     successful failure, the failed task is corrected, and then run again,
     whereupon it should succeed.
