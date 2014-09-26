@@ -2,6 +2,8 @@
 
 from datetime import datetime
 from time import sleep
+import signal
+from functools import wraps
 
 from nose import with_setup
 from nose.tools import nottest, raises
@@ -12,6 +14,29 @@ from dagobah.backend.base import BaseBackend
 import os
 
 dagobah = None
+
+class DagobahTestTimeoutException(Exception):
+    pass
+
+@nottest
+def raise_timeout_exception(*args, **kwargs):
+    raise DagobahTestTimeoutException()
+
+@nottest
+def wait_until_stopped(job):
+    while job.state.status == 'running':
+        sleep(0.1)
+        continue
+
+@nottest
+def supports_timeouts(fn):
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        signal.signal(signal.SIGALRM, raise_timeout_exception)
+        result = fn(*args, **kwargs)
+        signal.signal(signal.SIGALRM, lambda signalnum, handler: None)
+        return result
+    return wrapped
 
 @nottest
 def blank_dagobah():
@@ -257,6 +282,7 @@ def test_ssh_config_load():
     assert "nonexistant" not in hosts
 
 @with_setup(blank_dagobah)
+@supports_timeouts
 def test_retry_from_failure():
     """
     Test retry after job failure
@@ -274,26 +300,16 @@ def test_retry_from_failure():
     job.add_dependency('a', 'b')
     job.add_dependency('b', 'c')
 
+    signal.alarm(10)
     job.start()
 
-    tries = 0
-    while tries < 5:
-        if job.state.status != 'running':
-            assert job.state.status == 'failed'
-            break
-        sleep(5)
-        tries += 1
-    if tries >= 5:
-        raise ValueError('test timed out, status ' + job.state.status)
+    wait_until_stopped(job)
+    assert job.state.status == 'failed'
 
+    signal.alarm(10)
     job.edit_task("b", command="true")
-
     job.retry()
-    tries = 0
-    while tries < 5:
-        if job.state.status != 'running':
-            assert job.state.status != 'failed'
-            return
-        sleep(5)
-        tries += 1
-    raise ValueError('test timed out')
+
+    wait_until_stopped(job)
+    assert job.state.status != 'failed'
+    signal.alarm(0)
