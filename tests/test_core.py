@@ -34,6 +34,7 @@ def supports_timeouts(fn):
     def wrapped(*args, **kwargs):
         signal.signal(signal.SIGALRM, raise_timeout_exception)
         result = fn(*args, **kwargs)
+        signal.alarm(0)
         signal.signal(signal.SIGALRM, lambda signalnum, handler: None)
         return result
     return wrapped
@@ -312,4 +313,3 @@ def test_retry_from_failure():
 
     wait_until_stopped(job)
     assert job.state.status != 'failed'
-    signal.alarm(0)
