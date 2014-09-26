@@ -172,21 +172,17 @@ def test_add_task_to_job_bad_job():
 
 
 @with_setup(blank_dagobah)
+@supports_timeouts
 def test_run_job():
     dagobah.add_job('test_job')
     dagobah.add_task_to_job('test_job', 'ls', 'list')
     job = dagobah.get_job('test_job')
+
+    signal.alarm(10)
     job.start()
 
-    tries = 0
-    while tries < 5:
-        if job.state.status != 'running':
-            assert job.state.status != 'failed'
-            return
-        sleep(1)
-        tries += 1
-
-    raise ValueError('test timed out')
+    wait_until_stopped(job)
+    assert job.state.status != 'failed'
 
 
 @with_setup(blank_dagobah)
