@@ -11,7 +11,7 @@ import paramiko
 from croniter import croniter
 from copy import deepcopy
 
-from .dag import DAG
+from dag import DAG
 from .components import Scheduler, JobState, StrictJSONEncoder
 from ..backend.base import BaseBackend
 
@@ -629,7 +629,7 @@ class Job(DAG):
 
         # return tasks in sorted order if graph is in a valid state
         try:
-            topo_sorted = self._topological_sort()
+            topo_sorted = self.topological_sort()
             t = [self.tasks[task]._serialize(include_run_logs=include_run_logs,
                                              strict_json=strict_json)
                  for task in topo_sorted]
