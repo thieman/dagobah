@@ -19,6 +19,7 @@ from ..backend.base import BaseBackend
 logger = logging.getLogger('dagobah')
 
 class DagobahError(Exception):
+    logger.warn('DagobahError being constructed, something must have gone wrong')
     pass
 
 
@@ -33,6 +34,7 @@ class Dagobah(object):
     def __init__(self, backend=BaseBackend(), event_handler=None,
                  ssh_config=None):
         """ Construct a new Dagobah instance with a specified Backend. """
+        logger.debug('Starting Dagobah instance constructor')
         self.backend = backend
         self.event_handler = event_handler
         self.dagobah_id = self.backend.get_new_dagobah_id()
@@ -67,7 +69,7 @@ class Dagobah(object):
 
     def from_backend(self, dagobah_id):
         """ Reconstruct this Dagobah instance from the backend. """
-        logger.debug('Reconstructing from backend with ID {}'.format(dagobah_id))
+        logger.debug('Reconstructing Dagobah instance from backend with ID {0}'.format(dagobah_id))
         rec = self.backend.get_dagobah_json(dagobah_id)
         if not rec:
             raise DagobahError('dagobah with id %s does not exist '
@@ -91,6 +93,7 @@ class Dagobah(object):
 
     def add_job_from_json(self, job_json, destructive=False):
         """ Construct a new Job from an imported JSON spec. """
+        logger.debug('Importing job from JSON document: {0}'.format(job_json))
         rec = self.backend.decode_import_json(job_json)
         if destructive:
             try:
@@ -136,7 +139,7 @@ class Dagobah(object):
 
         If cascade is True, all child Jobs are commited as well.
         """
-
+        logger.debug('Committing Dagobah instance with cascade={0}'.format(cascade))
         self.backend.commit_dagobah(self._serialize())
         if cascade:
             [job.commit() for job in self.jobs]
@@ -144,6 +147,7 @@ class Dagobah(object):
 
     def delete(self):
         """ Delete this Dagobah instance from the Backend. """
+        logger.debug('Deleting Dagobah instance with ID {0}'.format(self.dagobah_id))
         self.jobs = []
         self.created_jobs = 0
         self.backend.delete_dagobah(self.dagobah_id)
@@ -151,6 +155,7 @@ class Dagobah(object):
 
     def add_job(self, job_name, job_id=None):
         """ Create a new, empty Job. """
+        logger.debug('Creating a new job named {0}'.format(job_name))
         if not self._name_is_available(job_name):
             raise DagobahError('name %s is not available' % job_name)
 
@@ -174,7 +179,7 @@ class Dagobah(object):
             conf_file.close()
             return ssh_config
         except IOError:
-            # SSH config not found
+            logger.warn('Tried to load SSH config but failed, probably file not found')
             return None
 
     def get_hosts(self):
@@ -201,6 +206,7 @@ class Dagobah(object):
         """ Returns a Host dict with config options, or None if none exists"""
         if hostname in self.get_hosts():
             return self.load_ssh_conf().lookup(hostname)
+        logger.warn('Tried to find host with name {0}, but host not found'.format(hostname))
         return None
 
     def get_job(self, job_name):
@@ -208,11 +214,13 @@ class Dagobah(object):
         for job in self.jobs:
             if job.name == job_name:
                 return job
+        logger.warn('Tried to find job with name {0}, but job not found'.format(job_name))
         return None
 
 
     def delete_job(self, job_name):
         """ Delete a job by name, or error out if no such job exists. """
+        logger.debug('Deleting job {0}'.format(job_name))
         for idx, job in enumerate(self.jobs):
             if job.name == job_name:
                 self.backend.delete_job(job.job_id)
@@ -230,6 +238,8 @@ class Dagobah(object):
             job = job_or_job_name
         else:
             job = self.get_job(job_or_job_name)
+
+        logger.debug('Adding task with command {0} to job {1}'.format(task_command, job.name))
 
         if not job:
             raise DagobahError('job %s does not exist' % job_or_job_name)
@@ -273,6 +283,7 @@ class Job(DAG):
     """
 
     def __init__(self, parent, backend, job_id, name):
+        logger.debug('Starting Job instance constructor with name {0}'.format(name))
         super(Job, self).__init__()
 
         self.parent = parent
@@ -301,6 +312,7 @@ class Job(DAG):
 
     def commit(self):
         """ Store metadata on this Job to the backend. """
+        logger.debug('Committing job {0}'.format(self.name))
         self.backend.commit_job(self._serialize())
         self.parent.commit()
 
@@ -308,6 +320,7 @@ class Job(DAG):
     def add_task(self, command, name=None, **kwargs):
         """ Adds a new Task to the graph with no edges. """
 
+        logger.debug('Adding task with command {0} to job {1}'.format(command, self.name))
         if not self.state.allow_change_graph:
             raise DagobahError("job's graph is immutable in its current state: %s"
                                % self.state.status)
@@ -323,6 +336,7 @@ class Job(DAG):
     def add_dependency(self, from_task_name, to_task_name):
         """ Add a dependency between two tasks. """
 
+        logger.debug('Adding dependency from {0} to {1}'.format(from_task_name, to_task_name))
         if not self.state.allow_change_graph:
             raise DagobahError("job's graph is immutable in its current state: %s"
                                % self.state.status)
@@ -334,6 +348,7 @@ class Job(DAG):
     def delete_task(self, task_name):
         """ Deletes the named Task in this Job. """
 
+        logger.debug('Deleting task {0}'.format(task_name))
         if not self.state.allow_change_graph:
             raise DagobahError("job's graph is immutable in its current state: %s"
                                % self.state.status)
@@ -349,6 +364,7 @@ class Job(DAG):
     def delete_dependency(self, from_task_name, to_task_name):
         """ Delete a dependency between two tasks. """
 
+        logger.debug('Deleting dependency from {0} to {1}'.format(from_task_name, to_task_name))
         if not self.state.allow_change_graph:
             raise DagobahError("job's graph is immutable in its current state: %s"
                                % self.state.status)
@@ -360,6 +376,7 @@ class Job(DAG):
     def schedule(self, cron_schedule, base_datetime=None):
         """ Schedules the job to run periodically using Cron syntax. """
 
+        logger.debug('Scheduling job {0} with cron schedule {1}'.format(self.name, cron_schedule))
         if not self.state.allow_change_schedule:
             raise DagobahError("job's schedule cannot be changed in state: %s"
                                % self.state.status)
@@ -376,12 +393,14 @@ class Job(DAG):
             self.cron_iter = croniter(cron_schedule, base_datetime)
             self.next_run = self.cron_iter.get_next(datetime)
 
+        logger.debug('Determined job {0} next run of {1}'.format(self.name, self.next_run))
         self.commit()
 
 
     def start(self):
         """ Begins the job by kicking off all tasks with no dependencies. """
 
+        logger.info('Job {0} starting job run'.format(self.name))
         if not self.state.allow_start:
             raise DagobahError('job cannot be started in its current state; ' +
                                'it is probably already running')
@@ -400,9 +419,11 @@ class Job(DAG):
                         'tasks': {}}
         self._set_status('running')
 
+        logger.debug('Job {0} resetting all tasks prior to start'.format(self.name))
         for task in self.tasks.itervalues():
             task.reset()
 
+        logger.debug('Job {0} seeding run logs'.format(self.name))
         for task_name in self.ind_nodes(self.snapshot):
             self._put_task_in_run_log(task_name)
             self.tasks[task_name].start()
@@ -413,6 +434,7 @@ class Job(DAG):
     def retry(self):
         """ Restarts failed tasks of a job. """
 
+        logger.info('Job {0} retrying all failed tasks'.format(self.name))
         self.initialize_snapshot()
 
         failed_task_names = []
@@ -426,6 +448,7 @@ class Job(DAG):
         self._set_status('running')
         self.run_log['last_retry_time'] = datetime.utcnow()
 
+        logger.debug('Job {0} seeding run logs'.format(self.name))
         for task_name in failed_task_names:
             self._put_task_in_run_log(task_name)
             self.tasks[task_name].start()
@@ -434,7 +457,8 @@ class Job(DAG):
 
 
     def terminate_all(self):
-        """ Terminate all currently running jobs. """
+        """ Terminate all currently running tasks. """
+        logger.info('Job {0} terminating all currently running tasks'.format(self.name))
         for task in self.tasks.itervalues():
             if task.started_at and not task.completed_at:
                 task.terminate()
@@ -442,6 +466,7 @@ class Job(DAG):
 
     def kill_all(self):
         """ Kill all currently running jobs. """
+        logger.info('Job {0} killing all currently running tasks'.format(self.name))
         for task in self.tasks.itervalues():
             if task.started_at and not task.completed_at:
                 task.kill()
@@ -454,6 +479,7 @@ class Job(DAG):
         Job, e.g. past run logs will no longer be accessible.
         """
 
+        logger.debug('Job {0} changing name to {1}'.format(self.name, kwargs.get('name')))
         if not self.state.allow_edit_job:
             raise DagobahError('job cannot be edited in its current state')
 
@@ -470,6 +496,7 @@ class Job(DAG):
 
 
     def update_job_notes(self, notes):
+        logger.debug('Job {0} updating notes'.format(self.name))
         if not self.state.allow_edit_job:
             raise DagobahError('job cannot be edited in its current state')
 
@@ -485,6 +512,7 @@ class Job(DAG):
         Task, e.g. past run logs will no longer be accessible.
         """
 
+        logger.debug('Job {0} editing task {1}'.format(self.name, task_name))
         if not self.state.allow_edit_task:
             raise DagobahError("tasks cannot be edited in this job's " +
                                "current state")
@@ -522,6 +550,7 @@ class Job(DAG):
     def _complete_task(self, task_name, **kwargs):
         """ Marks this task as completed. Kwargs are stored in the run log. """
 
+        logger.debug('Job {0} marking task {1} as completed'.format(self.name, task_name))
         self.run_log['tasks'][task_name] = kwargs
 
         for node in self.downstream(task_name, self.snapshot):
@@ -552,6 +581,7 @@ class Job(DAG):
 
     def _put_task_in_run_log(self, task_name):
         """ Initializes the run log task entry for this task. """
+        logger.debug('Job {0} initializing run log entry for task {1}'.format(self.name, task_name))
         data = {'start_time': datetime.utcnow(),
                 'command': self.tasks[task_name].command}
         self.run_log['tasks'][task_name] = data
@@ -567,6 +597,7 @@ class Job(DAG):
     def _on_completion(self):
         """ Checks to see if the Job has completed, and cleans up if it has. """
 
+        logger.debug('Job {0} running _on_completion check'.format(self.name))
         if self.state.status != 'running' or (not self._is_complete()):
             self.completion_lock.release()
             return
@@ -604,6 +635,7 @@ class Job(DAG):
 
     def _start_if_ready(self, task_name):
         """ Start this task if all its dependencies finished successfully. """
+        logger.debug('Job {0} running _start_if_ready for task {1}'.format(self.name, task_name))
         task = self.tasks[task_name]
         dependencies = self._dependencies(task_name, self.snapshot)
         for dependency in dependencies:
@@ -624,6 +656,7 @@ class Job(DAG):
 
     def _commit_run_log(self):
         """" Commit the current run log to the backend. """
+        logger.debug('Committing run log for job {0}'.format(self.name))
         self.backend.commit_log(self.run_log)
 
 
@@ -661,6 +694,7 @@ class Job(DAG):
 
     def initialize_snapshot(self):
         """ Copy the DAG and validate """
+        logger.debug('Initializing DAG snapshot for job {0}'.format(self.name))
         if self.snapshot is not None:
             raise DagobahError("Attempting to initialize DAG snapshot without "
                                + "first destroying old snapshot.")
@@ -675,6 +709,7 @@ class Job(DAG):
 
     def destroy_snapshot(self):
         """ Destroy active copy of the snapshot """
+        logger.debug('Destroying DAG snapshot for job {0}'.format(self.name))
         self.snapshot = None
 
 
@@ -688,6 +723,7 @@ class Task(object):
 
     def __init__(self, parent_job, command, name,
                  soft_timeout=0, hard_timeout=0, hostname=None):
+        logger.debug('Starting Task instance constructor with name {0}'.format(name))
         self.parent_job = parent_job
         self.backend = self.parent_job.backend
         self.event_handler = self.parent_job.event_handler
@@ -718,12 +754,14 @@ class Task(object):
         self.parent_job.commit()
 
     def set_soft_timeout(self, timeout):
+        logger.debug('Task {0} setting soft timeout'.format(self.name))
         if not isinstance(timeout, (int, float)) or timeout < 0:
             raise ValueError('timeouts must be non-negative numbers')
         self.soft_timeout = timeout
         self.parent_job.commit()
 
     def set_hard_timeout(self, timeout):
+        logger.debug('Task {0} setting hard timeout'.format(self.name))
         if not isinstance(timeout, (int, float)) or timeout < 0:
             raise ValueError('timeouts must be non-negative numbers')
         self.hard_timeout = timeout
@@ -731,11 +769,14 @@ class Task(object):
 
 
     def set_hostname(self, hostname):
+        logger.debug('Task {0} setting hostname'.format(self.name))
         self.hostname = hostname
         self.parent_job.commit()
 
     def reset(self):
         """ Reset this Task to a clean state prior to execution. """
+
+        logger.debug('Resetting task {0}'.format(self.name))
 
         self.stdout_file = os.tmpfile()
         self.stderr_file = os.tmpfile()
@@ -753,6 +794,7 @@ class Task(object):
 
     def start(self):
         """ Begin execution of this task. """
+        logger.info('Starting task {0}'.format(self.name))
         self.reset()
         if self.hostname:
             host = self.parent_job.parent.get_host(self.hostname)
@@ -772,6 +814,7 @@ class Task(object):
 
     def remote_ssh(self, host):
         """ Execute a command on SSH. Takes a paramiko host dict """
+        logger.info('Starting remote execution of task {0} on host {1}'.format(self.name, host['hostname']))
         try:
             self.remote_client = paramiko.SSHClient()
             self.remote_client.load_system_host_keys()
@@ -787,6 +830,7 @@ class Task(object):
             self.remote_channel.get_pty()
             self.remote_channel.exec_command(self.command)
         except Exception as e:
+            logger.warn('Exception encountered in remote task execution')
             self.remote_failure = True
             self.stderr += 'Exception when trying to SSH related to: '
             self.stderr += '{0}: {1}\n"'.format(type(e).__name__, str(e))
@@ -800,6 +844,8 @@ class Task(object):
 
     def check_complete(self):
         """ Runs completion flow for this task if it's finished. """
+        logger.debug('Running check_complete for task {0}'.format(self.name))
+
         # Tasks not completed
         if self.remote_not_complete() or self.local_not_complete():
             self._start_check_timer()
@@ -828,8 +874,8 @@ class Task(object):
 
     def remote_not_complete(self):
         """
-        Returns true if this task is on a remote channel, and on a remote
-        machine. False if it is either not remote, or not completed
+        Returns True if this task is on a remote channel, and on a remote
+        machine, False if it is either not remote or not completed
         """
         if self.remote_channel and not self.remote_channel.exit_status_ready():
             self._timeout_check()
@@ -842,7 +888,7 @@ class Task(object):
         return False
 
     def local_not_complete(self):
-        """ Returns true if task is local and not complete"""
+        """ Returns True if task is local and not completed"""
         if self.process and self.process.poll() is None:
             self._timeout_check()
             return True
@@ -868,6 +914,7 @@ class Task(object):
 
     def terminate(self):
         """ Send SIGTERM to the task's process. """
+        logger.info('Sending SIGTERM to task {0}'.format(self.name))
         if hasattr(self, 'remote_client') and self.remote_client is not None:
             self.terminate_sent = True
             self.remote_client.close()
@@ -880,6 +927,7 @@ class Task(object):
 
     def kill(self):
         """ Send SIGKILL to the task's process. """
+        logger.info('Sending SIGKILL to task {0}'.format(self.name))
         if hasattr(self, 'remote_client') and self.remote_client is not None:
             self.kill_sent = True
             self.remote_client.close()
@@ -929,7 +977,7 @@ class Task(object):
 
 
     def _timeout_check(self):
-        # timeout check
+        logger.debug('Running timeout check for task {0}'.format(self.name))
         if (self.soft_timeout != 0 and
             (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout
                 and not self.terminate_sent):
@@ -1024,6 +1072,7 @@ class Task(object):
 
     def _task_complete(self, **kwargs):
         """ Performs cleanup tasks and notifies Job that the Task finished. """
+        logger.debug('Running _task_complete for task {0}'.format(self.name))
         self.parent_job.completion_lock.acquire()
         self.completed_at = datetime.utcnow()
         self.successful = kwargs.get('success', None)
