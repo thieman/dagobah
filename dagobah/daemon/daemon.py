@@ -78,7 +78,7 @@ def get_config_file():
 
 
 def configure_app():
-
+    app.debug = get_conf(config, 'Dagobahd.debug', False)
     app.secret_key = get_conf(config, 'Dagobahd.app_secret', 'default_secret')
     app.config['LOGIN_DISABLED'] = get_conf(config,
                                             'Dagobahd.auth_disabled',

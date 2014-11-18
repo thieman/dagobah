@@ -1,5 +1,9 @@
 Dagobahd:
 
+  # Controls Flask's debug parameter, which will give you stacktraces in your
+  # browser and set Flask's request logger to the DEBUG level.
+  debug: False
+
   # host and port for the Flask app. set host to 0.0.0.0 to listen on all IPs
   host: 127.0.0.1
   port: 9000
@@ -53,7 +57,7 @@ Email:
   auth_required: True
   user: None
   password: None
-  
+
 
   # tls is required for some mail servers, specifically Gmail
   use_tls: True
