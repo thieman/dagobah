@@ -38,6 +38,7 @@ Logging:
 
     # specify a full path to the log file
     # alternatively, specify "default" to log to a file in the dagobahd directory
+    # You can also specify None to disable logging to a file
     logfile: default
 
     # if True, also log to stdout
@@ -53,6 +54,7 @@ Logging:
 
     # specify a full path to the log file
     # alternatively, specify "default" to log to a file in the dagobahd directory
+    # You can also specify None to disable logging to a file
     logfile: default
 
     # if True, also log to stdout

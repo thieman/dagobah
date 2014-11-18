@@ -20,6 +20,10 @@ login_manager.login_view = "login"
 location = os.path.realpath(os.path.join(os.getcwd(),
                                          os.path.dirname(__file__)))
 
+class NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
 def replace_nones(dict_or_list):
     """Update a dict or list in place to replace
     'none' string values with Python None."""
@@ -78,8 +82,31 @@ def get_config_file():
 
 
 def configure_requests_logger(config, app):
-    pass
+    logger = logging.getLogger('werkzeug')
+    logger.propagate = False
 
+    if get_conf(config, 'Logging.Requests.enabled', False) == False:
+        logger.addHandler(NullHandler())
+        return
+
+    level_string = get_conf(config, 'Logging.Requests.loglevel', 'info').upper()
+    numeric_level = getattr(logging, level_string, None)
+    logger.setLevel(numeric_level)
+
+    config_filepath = get_conf(config, 'Logging.Requests.logfile', False)
+    if config_filepath == 'default':
+        config_filepath = os.path.join(location, 'dagobah_requests.log')
+    config_filepath = os.path.expanduser(config_filepath) if config_filepath else None
+
+    if config_filepath:
+        file_logger = logging.FileHandler(config_filepath)
+        file_logger.setLevel(logging.INFO)
+        logger.addHandler(file_logger)
+
+    if get_conf(config, 'Logging.Requests.log_to_stdout'):
+        stdout_logger = logging.StreamHandler(sys.stdout)
+        stdout_logger.setLevel(logging.INFO)
+        logger.addHandler(stdout_logger)
 
 def configure_app():
 
@@ -172,24 +199,25 @@ def configure_event_hooks(config):
 def init_core_logger(location, config):
     """ Initialize the logger with settings from config. """
 
-    class NullHandler(logging.Handler):
-        def emit(self, record):
-            pass
-
     if get_conf(config, 'Logging.Core.enabled', False) == False:
         handler = NullHandler()
         logging.getLogger("dagobah").addHandler(handler)
         return
 
-    if get_conf(config, 'Logging.Core.logfile', 'default') == 'default':
-        path = os.path.join(location, 'dagobah.log')
-    else:
-        path = get_conf(config, 'Logging.Core.logfile')
+    config_filepath = get_conf(config, 'Logging.Core.logfile', 'default')
+    if config_filepath == 'default':
+        config_filepath = os.path.join(location, 'dagobah.log')
+    config_filepath = os.path.expanduser(config_filepath) if config_filepath else None
 
     level_string = get_conf(config, 'Logging.Core.loglevel', 'info').upper()
     numeric_level = getattr(logging, level_string, None)
 
-    logging.basicConfig(filename=path, level=numeric_level)
+    basic_config_kwargs = {'level': numeric_level}
+    if config_filepath:
+        basic_config_kwargs['filename'] = config_filepath
+    else:
+        basic_config_kwargs['stream'] = open(os.devnull, 'w')
+    logging.basicConfig(**basic_config_kwargs)
 
     if get_conf(config, 'Logging.Core.log_to_stdout'):
         root = logging.getLogger()
@@ -197,7 +225,8 @@ def init_core_logger(location, config):
         stdout_logger.setLevel(logging.INFO)
         root.addHandler(stdout_logger)
 
-    print 'Logging output to %s' % path
+    if config_filepath:
+        print 'Logging output to %s' % config_filepath
     logging.info('Core logger initialized at level %s' % level_string)
 
 
