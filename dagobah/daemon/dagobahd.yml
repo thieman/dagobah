@@ -31,16 +31,39 @@ Dagobahd:
 
 Logging:
 
-  # change to False to disable logging entirely
-  enabled: True
+  # Logging settings for everything other than Flask requests, e.g.
+  # jobs starting and stopping, database logging, SSH problems
+  Core:
+    enabled: True
 
-  # specify a full path to the log file
-  # alternatively, specify "default" to log to a file in the dagobahd directory
-  logfile: default
+    # specify a full path to the log file
+    # alternatively, specify "default" to log to a file in the dagobahd directory
+    # You can also specify None to disable logging to a file
+    logfile: default
 
-  # specify the log level to use
-  # choose one of [debug, info, warning, error, critical]
-  loglevel: info
+    # if True, also log to stdout
+    log_to_stdout: False
+
+    # specify the log level to use
+    # choose one of [debug, info, warning, error, critical]
+    loglevel: info
+
+  # Logging settings for web requests through the Flask app
+  Requests:
+    enabled: False
+
+    # specify a full path to the log file
+    # alternatively, specify "default" to log to a file in the dagobahd directory
+    # You can also specify None to disable logging to a file
+    logfile: default
+
+    # if True, also log to stdout
+    log_to_stdout: False
+
+    # specify the log level to use.
+    # choose one of [debug, info, warning, error, critical]
+    # If Dagobahd.debug is True, this will always be debug
+    loglevel: info
 
 Email:
 
@@ -53,7 +76,7 @@ Email:
   auth_required: True
   user: None
   password: None
-  
+
 
   # tls is required for some mail servers, specifically Gmail
   use_tls: True

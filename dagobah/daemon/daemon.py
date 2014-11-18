@@ -20,6 +20,10 @@ login_manager.login_view = "login"
 location = os.path.realpath(os.path.join(os.getcwd(),
                                          os.path.dirname(__file__)))
 
+class NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
 def replace_nones(dict_or_list):
     """Update a dict or list in place to replace
     'none' string values with Python None."""
@@ -77,6 +81,33 @@ def get_config_file():
     return config
 
 
+def configure_requests_logger(config, app):
+    logger = logging.getLogger('werkzeug')
+    logger.propagate = False
+
+    if get_conf(config, 'Logging.Requests.enabled', False) == False:
+        logger.addHandler(NullHandler())
+        return
+
+    level_string = get_conf(config, 'Logging.Requests.loglevel', 'info').upper()
+    numeric_level = getattr(logging, level_string, None)
+    logger.setLevel(numeric_level)
+
+    config_filepath = get_conf(config, 'Logging.Requests.logfile', False)
+    if config_filepath == 'default':
+        config_filepath = os.path.join(location, 'dagobah_requests.log')
+    config_filepath = os.path.expanduser(config_filepath) if config_filepath else None
+
+    if config_filepath:
+        file_logger = logging.FileHandler(config_filepath)
+        file_logger.setLevel(logging.DEBUG)
+        logger.addHandler(file_logger)
+
+    if get_conf(config, 'Logging.Requests.log_to_stdout'):
+        stdout_logger = logging.StreamHandler(sys.stdout)
+        stdout_logger.setLevel(logging.DEBUG)
+        logger.addHandler(stdout_logger)
+
 def configure_app():
 
     app.secret_key = get_conf(config, 'Dagobahd.app_secret', 'default_secret')
@@ -90,6 +121,8 @@ def configure_app():
     app.config['AUTH_ATTEMPTS'] = []
     app.config['APP_HOST'] = get_conf(config, 'Dagobahd.host', '127.0.0.1')
     app.config['APP_PORT'] = get_conf(config, 'Dagobahd.port', '9000')
+
+    configure_requests_logger(config, app)
 
     login_manager.init_app(app)
 
@@ -108,7 +141,7 @@ def get_conf(config, path, default=None):
 
 def init_dagobah(testing=False):
 
-    init_logger(location, config)
+    init_core_logger(location, config)
 
     backend = get_backend(config)
     event_handler = configure_event_hooks(config)
@@ -163,35 +196,38 @@ def configure_event_hooks(config):
     return handler
 
 
-def init_logger(location, config):
+def init_core_logger(location, config):
     """ Initialize the logger with settings from config. """
 
-    class NullHandler(logging.Handler):
-        def emit(self, record):
-            pass
-
-    if get_conf(config, 'Logging.enabled', False) == False:
+    if get_conf(config, 'Logging.Core.enabled', False) == False:
         handler = NullHandler()
         logging.getLogger("dagobah").addHandler(handler)
         return
 
-    if get_conf(config, 'Logging.logfile', 'default') == 'default':
-        path = os.path.join(location, 'dagobah.log')
-    else:
-        path = config['Logging']['logfile']
+    config_filepath = get_conf(config, 'Logging.Core.logfile', 'default')
+    if config_filepath == 'default':
+        config_filepath = os.path.join(location, 'dagobah.log')
+    config_filepath = os.path.expanduser(config_filepath) if config_filepath else None
 
-    level_string = get_conf(config, 'Logging.loglevel', 'info').upper()
+    level_string = get_conf(config, 'Logging.Core.loglevel', 'info').upper()
     numeric_level = getattr(logging, level_string, None)
 
-    logging.basicConfig(filename=path, level=numeric_level)
+    basic_config_kwargs = {'level': numeric_level}
+    if config_filepath:
+        basic_config_kwargs['filename'] = config_filepath
+    else:
+        basic_config_kwargs['stream'] = open(os.devnull, 'w')
+    logging.basicConfig(**basic_config_kwargs)
 
-    root = logging.getLogger()
-    stdout_logger = logging.StreamHandler(sys.stdout)
-    stdout_logger.setLevel(logging.INFO)
-    root.addHandler(stdout_logger)
+    if get_conf(config, 'Logging.Core.log_to_stdout'):
+        root = logging.getLogger()
+        stdout_logger = logging.StreamHandler(sys.stdout)
+        stdout_logger.setLevel(logging.DEBUG)
+        root.addHandler(stdout_logger)
 
-    print 'Logging output to %s' % path
-    logging.info('Logger initialized at level %s' % level_string)
+    if config_filepath:
+        print 'Logging output to %s' % config_filepath
+    logging.info('Core logger initialized at level %s' % level_string)
 
 
 def get_backend(config):
