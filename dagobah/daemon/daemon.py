@@ -100,12 +100,12 @@ def configure_requests_logger(config, app):
 
     if config_filepath:
         file_logger = logging.FileHandler(config_filepath)
-        file_logger.setLevel(logging.INFO)
+        file_logger.setLevel(logging.DEBUG)
         logger.addHandler(file_logger)
 
     if get_conf(config, 'Logging.Requests.log_to_stdout'):
         stdout_logger = logging.StreamHandler(sys.stdout)
-        stdout_logger.setLevel(logging.INFO)
+        stdout_logger.setLevel(logging.DEBUG)
         logger.addHandler(stdout_logger)
 
 def configure_app():
@@ -222,7 +222,7 @@ def init_core_logger(location, config):
     if get_conf(config, 'Logging.Core.log_to_stdout'):
         root = logging.getLogger()
         stdout_logger = logging.StreamHandler(sys.stdout)
-        stdout_logger.setLevel(logging.INFO)
+        stdout_logger.setLevel(logging.DEBUG)
         root.addHandler(stdout_logger)
 
     if config_filepath:
