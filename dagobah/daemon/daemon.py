@@ -199,9 +199,11 @@ def configure_event_hooks(config):
 def init_core_logger(location, config):
     """ Initialize the logger with settings from config. """
 
+    logger = logging.getLogger('dagobah')
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
     if get_conf(config, 'Logging.Core.enabled', False) == False:
-        handler = NullHandler()
-        logging.getLogger("dagobah").addHandler(handler)
+        logger.addHandler(NullHandler())
         return
 
     config_filepath = get_conf(config, 'Logging.Core.logfile', 'default')
@@ -212,7 +214,8 @@ def init_core_logger(location, config):
     level_string = get_conf(config, 'Logging.Core.loglevel', 'info').upper()
     numeric_level = getattr(logging, level_string, None)
 
-    basic_config_kwargs = {'level': numeric_level}
+    basic_config_kwargs = {'level': numeric_level,
+                           'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s'}
     if config_filepath:
         basic_config_kwargs['filename'] = config_filepath
     else:
@@ -223,11 +226,13 @@ def init_core_logger(location, config):
         root = logging.getLogger()
         stdout_logger = logging.StreamHandler(sys.stdout)
         stdout_logger.setLevel(logging.DEBUG)
+        stdout_logger.setFormatter(formatter)
         root.addHandler(stdout_logger)
 
     if config_filepath:
         print 'Logging output to %s' % config_filepath
     logging.info('Core logger initialized at level %s' % level_string)
+
 
 
 def get_backend(config):
