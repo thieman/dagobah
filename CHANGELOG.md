@@ -1,3 +1,7 @@
+### v0.3.2
+
+  * Added Dagobahd.debug key to config to enable Flask's debugging
+
 ### v0.3.1 (September 26, 2014)
 
   * Fixed critical bug [Issue #115](https://github.com/thieman/dagobah/issues/115)
