@@ -77,6 +77,10 @@ def get_config_file():
     return config
 
 
+def configure_requests_logger(config, app):
+    pass
+
+
 def configure_app():
 
     app.secret_key = get_conf(config, 'Dagobahd.app_secret', 'default_secret')
@@ -90,6 +94,8 @@ def configure_app():
     app.config['AUTH_ATTEMPTS'] = []
     app.config['APP_HOST'] = get_conf(config, 'Dagobahd.host', '127.0.0.1')
     app.config['APP_PORT'] = get_conf(config, 'Dagobahd.port', '9000')
+
+    configure_requests_logger(config, app)
 
     login_manager.init_app(app)
 
@@ -185,10 +191,11 @@ def init_core_logger(location, config):
 
     logging.basicConfig(filename=path, level=numeric_level)
 
-    root = logging.getLogger()
-    stdout_logger = logging.StreamHandler(sys.stdout)
-    stdout_logger.setLevel(logging.INFO)
-    root.addHandler(stdout_logger)
+    if get_conf(config, 'Logging.Core.log_to_stdout'):
+        root = logging.getLogger()
+        stdout_logger = logging.StreamHandler(sys.stdout)
+        stdout_logger.setLevel(logging.INFO)
+        root.addHandler(stdout_logger)
 
     print 'Logging output to %s' % path
     logging.info('Core logger initialized at level %s' % level_string)

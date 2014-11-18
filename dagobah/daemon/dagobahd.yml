@@ -40,6 +40,9 @@ Logging:
     # alternatively, specify "default" to log to a file in the dagobahd directory
     logfile: default
 
+    # if True, also log to stdout
+    log_to_stdout: False
+
     # specify the log level to use
     # choose one of [debug, info, warning, error, critical]
     loglevel: info
@@ -51,6 +54,9 @@ Logging:
     # specify a full path to the log file
     # alternatively, specify "default" to log to a file in the dagobahd directory
     logfile: default
+
+    # if True, also log to stdout
+    log_to_stdout: False
 
     # specify the log level to use.
     # choose one of [debug, info, warning, error, critical]
