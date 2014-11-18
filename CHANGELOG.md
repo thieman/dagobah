@@ -1,6 +1,7 @@
 ### v0.3.2
 
   * Added Dagobahd.debug key to config to enable Flask's debugging
+  * Significant improvements to logging. More options and more debug-level logging.
 
 ### v0.3.1 (September 26, 2014)
 
