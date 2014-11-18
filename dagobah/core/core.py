@@ -7,6 +7,7 @@ import threading
 import subprocess
 import json
 import paramiko
+import logging
 
 from croniter import croniter
 from copy import deepcopy
@@ -15,6 +16,7 @@ from dag import DAG
 from .components import Scheduler, JobState, StrictJSONEncoder
 from ..backend.base import BaseBackend
 
+logger = logging.getLogger('dagobah')
 
 class DagobahError(Exception):
     pass
@@ -65,6 +67,7 @@ class Dagobah(object):
 
     def from_backend(self, dagobah_id):
         """ Reconstruct this Dagobah instance from the backend. """
+        logger.debug('Reconstructing from backend with ID {}'.format(dagobah_id))
         rec = self.backend.get_dagobah_json(dagobah_id)
         if not rec:
             raise DagobahError('dagobah with id %s does not exist '
