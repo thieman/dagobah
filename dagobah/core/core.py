@@ -239,10 +239,10 @@ class Dagobah(object):
         else:
             job = self.get_job(job_or_job_name)
 
-        logger.debug('Adding task with command {0} to job {1}'.format(task_command, job.name))
-
         if not job:
             raise DagobahError('job %s does not exist' % job_or_job_name)
+
+        logger.debug('Adding task with command {0} to job {1}'.format(task_command, job.name))
 
         if not job.state.allow_change_graph:
             raise DagobahError("job's graph is immutable in its current " +
