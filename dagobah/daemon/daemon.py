@@ -108,7 +108,7 @@ def get_conf(config, path, default=None):
 
 def init_dagobah(testing=False):
 
-    init_logger(location, config)
+    init_core_logger(location, config)
 
     backend = get_backend(config)
     event_handler = configure_event_hooks(config)
@@ -163,24 +163,24 @@ def configure_event_hooks(config):
     return handler
 
 
-def init_logger(location, config):
+def init_core_logger(location, config):
     """ Initialize the logger with settings from config. """
 
     class NullHandler(logging.Handler):
         def emit(self, record):
             pass
 
-    if get_conf(config, 'Logging.enabled', False) == False:
+    if get_conf(config, 'Logging.Core.enabled', False) == False:
         handler = NullHandler()
         logging.getLogger("dagobah").addHandler(handler)
         return
 
-    if get_conf(config, 'Logging.logfile', 'default') == 'default':
+    if get_conf(config, 'Logging.Core.logfile', 'default') == 'default':
         path = os.path.join(location, 'dagobah.log')
     else:
-        path = config['Logging']['logfile']
+        path = get_conf(config, 'Logging.Core.logfile')
 
-    level_string = get_conf(config, 'Logging.loglevel', 'info').upper()
+    level_string = get_conf(config, 'Logging.Core.loglevel', 'info').upper()
     numeric_level = getattr(logging, level_string, None)
 
     logging.basicConfig(filename=path, level=numeric_level)
@@ -191,7 +191,7 @@ def init_logger(location, config):
     root.addHandler(stdout_logger)
 
     print 'Logging output to %s' % path
-    logging.info('Logger initialized at level %s' % level_string)
+    logging.info('Core logger initialized at level %s' % level_string)
 
 
 def get_backend(config):
