@@ -696,8 +696,8 @@ class Job(DAG):
         """ Copy the DAG and validate """
         logger.debug('Initializing DAG snapshot for job {0}'.format(self.name))
         if self.snapshot is not None:
-            raise DagobahError("Attempting to initialize DAG snapshot without "
-                               + "first destroying old snapshot.")
+            logging.warn("Attempting to initialize DAG snapshot without " +
+                         "first destroying old snapshot.")
 
         snapshot_to_validate = deepcopy(self.graph)
 
@@ -1073,10 +1073,10 @@ class Task(object):
     def _task_complete(self, **kwargs):
         """ Performs cleanup tasks and notifies Job that the Task finished. """
         logger.debug('Running _task_complete for task {0}'.format(self.name))
-        self.parent_job.completion_lock.acquire()
-        self.completed_at = datetime.utcnow()
-        self.successful = kwargs.get('success', None)
-        self.parent_job._complete_task(self.name, **kwargs)
+        with self.parent_job.completion_lock:
+            self.completed_at = datetime.utcnow()
+            self.successful = kwargs.get('success', None)
+            self.parent_job._complete_task(self.name, **kwargs)
 
 
     def _serialize(self, include_run_logs=False, strict_json=False):
