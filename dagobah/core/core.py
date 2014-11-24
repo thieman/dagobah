@@ -599,7 +599,6 @@ class Job(DAG):
 
         logger.debug('Job {0} running _on_completion check'.format(self.name))
         if self.state.status != 'running' or (not self._is_complete()):
-            self.completion_lock.release()
             return
 
         for job, results in self.run_log['tasks'].iteritems():
@@ -630,7 +629,6 @@ class Job(DAG):
                 self.backend.release_lock()
 
         self.destroy_snapshot()
-        self.completion_lock.release()
 
 
     def _start_if_ready(self, task_name):
