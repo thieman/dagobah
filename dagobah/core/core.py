@@ -559,8 +559,8 @@ class Job(DAG):
         try:
             self.backend.acquire_lock()
             self._commit_run_log()
-        except:
-            raise
+        except Exception as e:
+            logger.error(e)
         finally:
             self.backend.release_lock()
 
@@ -571,8 +571,8 @@ class Job(DAG):
                 if self.event_handler:
                     self.event_handler.emit('task_failed',
                                             task._serialize(include_run_logs=True))
-            except:
-                raise
+            except Exception as e:
+                logger.error(e)
             finally:
                 self.backend.release_lock()
 
@@ -609,8 +609,8 @@ class Job(DAG):
                     if self.event_handler:
                         self.event_handler.emit('job_failed',
                                                 self._serialize(include_run_logs=True))
-                except:
-                    raise
+                except Exception as e:
+                    logger.error(e)
                 finally:
                     self.backend.release_lock()
                 break
@@ -623,8 +623,8 @@ class Job(DAG):
                 if self.event_handler:
                     self.event_handler.emit('job_complete',
                                             self._serialize(include_run_logs=True))
-            except:
-                raise
+            except Exception as e:
+                logger.error(e)
             finally:
                 self.backend.release_lock()
 
