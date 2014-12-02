@@ -560,7 +560,7 @@ class Job(DAG):
             self.backend.acquire_lock()
             self._commit_run_log()
         except:
-            raise
+            logger.exception("Error in handling events.")
         finally:
             self.backend.release_lock()
 
@@ -572,7 +572,7 @@ class Job(DAG):
                     self.event_handler.emit('task_failed',
                                             task._serialize(include_run_logs=True))
             except:
-                raise
+                logger.exception("Error in handling events.")
             finally:
                 self.backend.release_lock()
 
@@ -610,7 +610,7 @@ class Job(DAG):
                         self.event_handler.emit('job_failed',
                                                 self._serialize(include_run_logs=True))
                 except:
-                    raise
+                    logger.exception("Error in handling events.")
                 finally:
                     self.backend.release_lock()
                 break
@@ -624,7 +624,7 @@ class Job(DAG):
                     self.event_handler.emit('job_complete',
                                             self._serialize(include_run_logs=True))
             except:
-                raise
+                logger.exception("Error in handling events.")
             finally:
                 self.backend.release_lock()
 
