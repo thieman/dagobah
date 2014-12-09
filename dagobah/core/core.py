@@ -388,7 +388,7 @@ class Job(DAG):
 
         else:
             if base_datetime is None:
-                base_datetime = datetime.utcnow()
+                base_datetime = datetime.now()
             self.cron_schedule = cron_schedule
             self.cron_iter = croniter(cron_schedule, base_datetime)
             self.next_run = self.cron_iter.get_next(datetime)
@@ -408,14 +408,14 @@ class Job(DAG):
         self.initialize_snapshot()
 
         # don't increment if the job was run manually
-        if self.cron_iter and datetime.utcnow() > self.next_run:
+        if self.cron_iter and datetime.now() > self.next_run:
             self.next_run = self.cron_iter.get_next(datetime)
 
         self.run_log = {'job_id': self.job_id,
                         'name': self.name,
                         'parent_id': self.parent.dagobah_id,
                         'log_id': self.backend.get_new_log_id(),
-                        'start_time': datetime.utcnow(),
+                        'start_time': datetime.now(),
                         'tasks': {}}
         self._set_status('running')
 
@@ -446,7 +446,7 @@ class Job(DAG):
             raise DagobahError('no failed tasks to retry')
 
         self._set_status('running')
-        self.run_log['last_retry_time'] = datetime.utcnow()
+        self.run_log['last_retry_time'] = datetime.now()
 
         logger.debug('Job {0} seeding run logs'.format(self.name))
         for task_name in failed_task_names:
@@ -582,7 +582,7 @@ class Job(DAG):
     def _put_task_in_run_log(self, task_name):
         """ Initializes the run log task entry for this task. """
         logger.debug('Job {0} initializing run log entry for task {1}'.format(self.name, task_name))
-        data = {'start_time': datetime.utcnow(),
+        data = {'start_time': datetime.now(),
                 'command': self.tasks[task_name].command}
         self.run_log['tasks'][task_name] = data
 
@@ -807,7 +807,7 @@ class Task(object):
                                             stdout=self.stdout_file,
                                             stderr=self.stderr_file)
 
-        self.started_at = datetime.utcnow()
+        self.started_at = datetime.now()
         self._start_check_timer()
 
     def remote_ssh(self, host):
@@ -868,7 +868,7 @@ class Task(object):
                             stdout=self.stdout,
                             stderr=self.stderr,
                             start_time=self.started_at,
-                            complete_time=datetime.utcnow())
+                            complete_time=datetime.now())
 
     def remote_not_complete(self):
         """
@@ -977,12 +977,12 @@ class Task(object):
     def _timeout_check(self):
         logger.debug('Running timeout check for task {0}'.format(self.name))
         if (self.soft_timeout != 0 and
-            (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout
+            (datetime.now() - self.started_at).seconds >= self.soft_timeout
                 and not self.terminate_sent):
             self.terminate()
 
         if (self.hard_timeout != 0 and
-            (datetime.utcnow() - self.started_at).seconds >= self.hard_timeout
+            (datetime.now() - self.started_at).seconds >= self.hard_timeout
                 and not self.kill_sent):
             self.kill()
 
@@ -1072,7 +1072,7 @@ class Task(object):
         """ Performs cleanup tasks and notifies Job that the Task finished. """
         logger.debug('Running _task_complete for task {0}'.format(self.name))
         with self.parent_job.completion_lock:
-            self.completed_at = datetime.utcnow()
+            self.completed_at = datetime.now()
             self.successful = kwargs.get('success', None)
             self.parent_job._complete_task(self.name, **kwargs)
 

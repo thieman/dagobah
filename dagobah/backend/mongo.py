@@ -90,7 +90,7 @@ class MongoBackend(BaseBackend):
 
     def commit_dagobah(self, dagobah_json):
         dagobah_json['_id'] = dagobah_json['dagobah_id']
-        append = {'save_date': datetime.utcnow()}
+        append = {'save_date': datetime.now()}
         self.dagobah_coll.save(dict(dagobah_json.items() + append.items()))
 
     def delete_dagobah(self, dagobah_id):
@@ -108,7 +108,7 @@ class MongoBackend(BaseBackend):
 
     def commit_job(self, job_json):
         job_json['_id'] = job_json['job_id']
-        append = {'save_date': datetime.utcnow()}
+        append = {'save_date': datetime.now()}
         self.job_coll.save(dict(job_json.items() + append.items()))
 
     def delete_job(self, job_id):
@@ -123,7 +123,7 @@ class MongoBackend(BaseBackend):
         """
 
         log_json['_id'] = log_json['log_id']
-        append = {'save_date': datetime.utcnow()}
+        append = {'save_date': datetime.now()}
 
         for task_name, values in log_json.get('tasks', {}).items():
             for key, size in TRUNCATE_LOG_SIZES_CHAR.iteritems():
