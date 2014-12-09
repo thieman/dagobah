@@ -68,4 +68,4 @@ class TextEmail(EmailTemplate):
     def _format_date(self, in_date):
         if (not in_date) or (not isinstance(in_date, datetime)):
             return in_date
-        return in_date.strftime('%Y-%m-%d %H:%M:%S UTC')
+        return in_date.strftime('%Y-%m-%d %H:%M:%S')

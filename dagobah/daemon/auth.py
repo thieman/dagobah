@@ -28,7 +28,7 @@ def login():
 def do_login():
     """ Attempt to auth using single login. Rate limited at the site level. """
 
-    dt_filter = lambda x: x >= datetime.utcnow() - timedelta(seconds=60)
+    dt_filter = lambda x: x >= datetime.now() - timedelta(seconds=60)
     app.config['AUTH_ATTEMPTS'] = filter(dt_filter, app.config['AUTH_ATTEMPTS'])
 
     if len(app.config['AUTH_ATTEMPTS']) > app.config['AUTH_RATE_LIMIT']:
@@ -39,7 +39,7 @@ def do_login():
         login_user(SingleAuthUser)
         return redirect('/')
 
-    app.config['AUTH_ATTEMPTS'].append(datetime.utcnow())
+    app.config['AUTH_ATTEMPTS'].append(datetime.now())
     return redirect(url_for('login', alert="Incorrect password."))
 
 
