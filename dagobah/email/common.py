@@ -68,7 +68,7 @@ class EmailTemplate(object):
             s.login(self.user, self.password)
 
         s.sendmail(self.message['From'],
-                   self.message['To'],
+                   self.recipients,
                    self.message.as_string())
 
 
