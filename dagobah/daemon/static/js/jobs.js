@@ -25,9 +25,19 @@ $('#import-job').click(function() {
 });
 
 function onJobDeleteClick() {
-    $(this).parents('[data-job]').each(function() {
-        deleteJob($(this).attr('data-job'));
-    });
+    var that = this;
+    var modalOpts = [{
+        "label": "Cancel"
+    }, {
+        "label": "Delete",
+        "class": "btn-danger",
+        "callback": function() {
+            $(that).parents('[data-job]').each(function() {
+                deleteJob($(this).attr('data-job'));
+            });
+        }
+    }];
+    bootbox.dialog("Are you sure you want to delete this job?", modalOpts);
 }
 
 function onEditJobClick() {
