@@ -394,7 +394,7 @@ def edit_task():
         abort(400)
 
     # validate host
-    if args.get('hostname') not in dagobah.get_hosts():
+    if 'hostname' in args and args.get('hostname') not in dagobah.get_hosts():
         # Check for empty host, if so then task is no longer remote
         if not args.get('hostname'):
             args['hostname'] = None
