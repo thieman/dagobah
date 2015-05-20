@@ -18,7 +18,7 @@ Dagobahd:
   # choose one of the available backends
   # None: Dagobah will not use a backend to permanently store data
   # mongo: store results in MongoDB. see the MongoBackend section in this file
-  backend: mongo
+  backend: None
 
   # choose one of the available email templates
   # None: Dagobah won't send you emails when a job finishes or fails
