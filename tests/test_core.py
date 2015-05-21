@@ -6,7 +6,7 @@ import signal
 from functools import wraps
 
 from nose import with_setup
-from nose.tools import nottest, raises
+from nose.tools import nottest, raises, assert_equal
 
 from dagobah.core.core import Dagobah, Job, Task, DagobahError
 from dagobah.backend.base import BaseBackend
@@ -235,7 +235,7 @@ def test_serialize_dagobah():
                              'notes': 'Here are some notes'}]}
     print dagobah._serialize()
     print test_result
-    assert dagobah._serialize() == test_result
+    assert_equal(dagobah._serialize(), test_result)
 
 
 @with_setup(blank_dagobah)
