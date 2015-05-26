@@ -1131,6 +1131,8 @@ class JobTask(object):
     def _serialize(self, include_run_logs=False, strict_json=False):
         """ Serialize a representation of this Task to a Python dict. """
 
-        result = {'job_name': self.job_name}
+        result = {
+            'name': self.task_name
+            'job_name': self.job_name}
 
         return result
