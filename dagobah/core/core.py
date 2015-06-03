@@ -117,12 +117,16 @@ class Dagobah(object):
             job.schedule(job_json['cron_schedule'])
 
         for task in job_json.get('tasks', []):
-            self.add_task_to_job(job,
-                                 str(task['command']),
-                                 str(task['name']),
-                                 soft_timeout=task.get('soft_timeout', 0),
-                                 hard_timeout=task.get('hard_timeout', 0),
-                                 hostname=task.get('hostname', None))
+            # If it is a jobtask, it will have a job_id
+            if task.get('job_id'):
+                self.add_jobtask_to_job(job, task['job_id'], str(task['name']))
+            else:
+                self.add_task_to_job(job,
+                                     str(task['command']),
+                                     str(task['name']),
+                                     soft_timeout=task.get('soft_timeout', 0),
+                                     hard_timeout=task.get('hard_timeout', 0),
+                                     hostname=task.get('hostname', None))
 
         dependencies = job_json.get('dependencies', {})
         for from_node, to_nodes in dependencies.iteritems():
@@ -252,6 +256,37 @@ class Dagobah(object):
         job.add_task(task_command, task_name, **kwargs)
         job.commit()
 
+
+    def add_jobtask_to_job(self, job_or_job_name, target_job, task_name=None,
+                        **kwargs):
+        """ Add a task to a job owned by the Dagobah instance. """
+
+        if isinstance(job_or_job_name, Job):
+            job = job_or_job_name
+        else:
+            job = self.get_job(job_or_job_name)
+
+        if isinstance(target_job, Job):
+            target_job = target_job
+        else:
+            target_job = self.get_job(target_job)
+
+        if not job:
+            raise DagobahError('job %s does not exist' % job_or_job_name)
+        if not target_job:
+            raise DagobahError('Target job %s does not exist' % target_job)
+
+        logger.debug('Adding JobTask with target job {0} to parent job {1}'.format(target_job.name, job.name))
+
+        if not job.state.allow_change_graph:
+            raise DagobahError("job's graph is immutable in its current " +
+                               "state: %s"
+                               % job.state.status)
+
+        job.add_jobtask(target_job.name, task_name)
+        job.commit()
+
+
     def _name_is_available(self, job_name):
         """ Returns Boolean of whether the specified name is already in use. """
         return (False
@@ -329,6 +364,20 @@ class Job(DAG):
             name = command
         new_task = Task(self, command, name, **kwargs)
         self.tasks[name] = new_task
+        self.add_node(name)
+        self.commit()
+
+
+    def add_jobtask(self, job_name, task_name=None):
+        logger.debug('Adding JobTask named {0}, referencing {1}'.format(task_name, job_name))
+        if not self.state.allow_change_graph:
+            raise DagobahError("job's graph is immutable in its current state: %s"
+                               % self.state.status)
+
+        if task_name is None:
+            task_name=job_name
+        new_jobtask = JobTask(task_name, job_name)
+        self.tasks[task_name] = new_jobtask
         self.add_node(name)
         self.commit()
 
@@ -1120,9 +1169,10 @@ class Task(object):
 
 class JobTask(object):
     """ Expandable Task that references a job """
-    def __init__(self, parent_job, job_name):
+    def __init__(self, parent_job, job_name, task_name):
         self.parent_job = parent_job
         self.job_name = job_name
+        self.name = task_name
 
     def expand(self):
         """ Expand this JobTask into a list of tasks """
@@ -1131,8 +1181,7 @@ class JobTask(object):
     def _serialize(self, include_run_logs=False, strict_json=False):
         """ Serialize a representation of this Task to a Python dict. """
 
-        result = {
-            'name': self.task_name
-            'job_name': self.job_name}
+        result = {'name': self.task_name,
+                  'job_name': self.job_name}
 
         return result
