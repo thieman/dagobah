@@ -257,8 +257,7 @@ class Dagobah(object):
         job.commit()
 
 
-    def add_jobtask_to_job(self, job_or_job_name, target_job, task_name=None,
-                        **kwargs):
+    def add_jobtask_to_job(self, job_or_job_name, target_job, task_name=None):
         """ Add a task to a job owned by the Dagobah instance. """
 
         if isinstance(job_or_job_name, Job):
