@@ -738,21 +738,25 @@ class Job(DAG):
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
 
-    def implements_expandable(obj):
-        """ Checks for methods required to expand a task """
-        for expected_method in ['expand']:
+
+    def _implements_function(obj, functions):
+        """ Checks for the existence of a method or list of methods """
+        for expected_method in functions:
             if not (hasattr(obj, expected_method) and
                     callable(getattr(obj, expected_method))):
                 return False
         return True
 
+
+    def implements_expandable(obj):
+        """ Checks for methods required to expand a task """
+        return self._implements_function(obj, 'expand')
+
+
     def implements_runnable(obj):
         """ Checks methods required to run a task. More methods to be added """
-        for expected_method in ['start']:
-            if not (hasattr(obj, expected_method) and
-                    callable(getattr(obj, expected_method))):
-                return False
-        return True
+        return self._implements_function(obj, 'start')
+
 
     def initialize_snapshot(self):
         """ Copy the DAG and validate """
