@@ -234,17 +234,24 @@ class Dagobah(object):
         raise DagobahError('no job with name %s exists' % job_name)
 
 
+    def _resolve_job(self, job):
+        """
+        Internal convenience class that will resolve a job id string to a Job
+        object if passed
+        """
+        if not isinstance(job, Job):
+            job = self.get_job(job)
+
+        if not job:
+            raise DagobahError('job %s does not exist' % job)
+
+        return job
+
+
     def add_task_to_job(self, job_or_job_name, task_command, task_name=None,
                         **kwargs):
         """ Add a task to a job owned by the Dagobah instance. """
-
-        if isinstance(job_or_job_name, Job):
-            job = job_or_job_name
-        else:
-            job = self.get_job(job_or_job_name)
-
-        if not job:
-            raise DagobahError('job %s does not exist' % job_or_job_name)
+        job = self._resolve_job(job_or_job_name)
 
         logger.debug('Adding task with command {0} to job {1}'.format(task_command, job.name))
 
@@ -260,20 +267,8 @@ class Dagobah(object):
     def add_jobtask_to_job(self, job_or_job_name, target_job, task_name=None):
         """ Add a task to a job owned by the Dagobah instance. """
 
-        if isinstance(job_or_job_name, Job):
-            job = job_or_job_name
-        else:
-            job = self.get_job(job_or_job_name)
-
-        if isinstance(target_job, Job):
-            target_job = target_job
-        else:
-            target_job = self.get_job(target_job)
-
-        if not job:
-            raise DagobahError('job %s does not exist' % job_or_job_name)
-        if not target_job:
-            raise DagobahError('Target job %s does not exist' % target_job)
+        job = self._resolve_job(job_or_job_name)
+        target_job = self._resolve_job(target_job)
 
         logger.debug('Adding JobTask with target job {0} to parent job {1}'.format(target_job.name, job.name))
 
@@ -748,12 +743,12 @@ class Job(DAG):
         return True
 
 
-    def implements_expandable(obj):
+    def implements_expandable(self, obj):
         """ Checks for methods required to expand a task """
         return self._implements_function(obj, 'expand')
 
 
-    def implements_runnable(obj):
+    def implements_runnable(self, obj):
         """ Checks methods required to run a task. More methods to be added """
         return self._implements_function(obj, 'start')
 
