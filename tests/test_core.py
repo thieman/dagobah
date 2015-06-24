@@ -8,7 +8,9 @@ from functools import wraps
 from nose import with_setup
 from nose.tools import nottest, raises, assert_equal
 
-from dagobah.core.core import Dagobah, Job, Task, DagobahError
+from dagobah.core.dagobah import Dagobah, DagobahError
+from dagobah.core.job import Job
+from dagobah.core.task import Task
 from dagobah.backend.base import BaseBackend
 
 import os

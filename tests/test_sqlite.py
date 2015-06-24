@@ -7,7 +7,7 @@ import yaml
 
 from nose.tools import nottest
 
-from dagobah.core.core import Dagobah
+from dagobah.core.dagobah import Dagobah
 from dagobah.core.components import StrictJSONEncoder
 from dagobah.backend.sqlite import SQLiteBackend
 
