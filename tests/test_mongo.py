@@ -13,7 +13,7 @@ try:
 except ImportError:
     from bson.objectid import ObjectId
 
-from dagobah.core.core import Dagobah
+from dagobah.core.dagobah import Dagobah
 from dagobah.core.components import StrictJSONEncoder
 from dagobah.backend.mongo import MongoBackend
 

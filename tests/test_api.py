@@ -7,7 +7,7 @@ from flask import Flask, json
 import requests
 from nose.tools import nottest
 
-from dagobah.core import Dagobah
+from dagobah.core.dagobah import Dagobah
 from dagobah.daemon.app import app
 from dagobah.backend.base import BaseBackend
 
