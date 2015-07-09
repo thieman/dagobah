@@ -474,3 +474,41 @@ class Job(DAG):
         """ Destroy active copy of the snapshot """
         logger.debug('Destroying DAG snapshot for job {0}'.format(self.name))
         self.snapshot = None
+
+    def verify(self, context=None):
+        """
+        Verify that the job has no cycles where a JobTask circularly
+        references another JobTask so that we know we can safely snapshot
+        the DAG.
+        Explanation:
+            1. If the current job is in the context, the job is not valid
+            2. Perform a topological sort without expanding tasks (current job
+               is acyclic)
+            3. Traverse nodes in topological order. For each node that is a
+               Job, run verify on that node, passing in the current context.
+        """
+        # Check if job is not in current context, then add it
+        if context is None:
+            context = set()
+        if self.name in context:
+            return False
+        print context
+        context.add(self.name)
+
+        # Topological sort verifies DAG is acyclic before digging deeper
+        topo_sorted = self.topological_sort()
+
+        # Traverse nodes and verify any JobTasks
+        for task in topo_sorted:
+            if self.implements_expandable(task):
+                current_job = self.parent._resolve_job(task.target_job_name)
+                if current_job.name in context:
+                    return False
+
+                # Verify this job has no internal cycles, or references to jobs
+                # in the current context
+                verified = current_job.verify(context)
+                if not verified:
+                    return False
+
+        return True
