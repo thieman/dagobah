@@ -12,6 +12,7 @@ from dagobah.core.dagobah import Dagobah
 from dagobah.core.dagobah_error import DagobahError
 from dagobah.core.job import Job
 from dagobah.core.task import Task
+from dagobah.core.jobtask import JobTask
 from dagobah.backend.base import BaseBackend
 
 import os
@@ -312,3 +313,116 @@ def test_retry_from_failure():
 
     wait_until_stopped(job)
     assert job.state.status != 'failed'
+
+@with_setup(blank_dagobah)
+def test_dagobah_add_jobtasks():
+    dagobah.add_job('test_job_a')
+    dagobah.add_job('test_job_b')
+    job_a = dagobah.get_job('test_job_a')
+    job_b = dagobah.get_job('test_job_b')
+    job_a.add_task('ls')
+    job_b.add_jobtask('test_job_a')
+    assert "test_job_a" in [task.target_job_name for task in job_b.tasks.values()]
+
+@with_setup(blank_dagobah)
+def test_verify_no_jobtasks():
+    dagobah.add_job('test_job')
+    job = dagobah.get_job('test_job')
+
+    job.add_task('ls')
+    job.add_task('pwd')
+    job.add_task('sleep 1')
+
+    job.add_edge('ls', 'pwd')
+    job.add_edge('pwd', 'sleep 1')
+    assert job.verify()
+
+@with_setup(blank_dagobah)
+def test_verify_with_jobtasks():
+    dagobah.add_job('A')
+    dagobah.add_job('B')
+    a = dagobah.get_job('A')
+    b = dagobah.get_job('B')
+
+    a.add_task('ls')
+    b.add_task('pwd')
+    b.add_jobtask('A')
+    b.add_edge('pwd', 'A')
+
+    assert a.verify()
+    assert b.verify()
+
+@with_setup(blank_dagobah)
+def test_verify_detect_cycle():
+    dagobah.add_job('A')
+    dagobah.add_job('B')
+    a = dagobah.get_job('A')
+    b = dagobah.get_job('B')
+
+    a.add_jobtask('A')
+    b.add_jobtask('B')
+
+    assert not a.verify()
+    assert not b.verify()
+
+@with_setup(blank_dagobah)
+def test_verify_detect_cycle_complex():
+    dagobah.add_job('A')
+    dagobah.add_job('B')
+    dagobah.add_job('C')
+    dagobah.add_job('D')
+    dagobah.add_job('E')
+
+    a = dagobah.get_job('A')
+    b = dagobah.get_job('B')
+    c = dagobah.get_job('C')
+    d = dagobah.get_job('D')
+    e = dagobah.get_job('E')
+
+    a.add_jobtask('B')
+    a.add_task('pwd')
+    a.add_task('ls')
+    a.add_edge('pwd', 'B')
+    a.add_edge('ls', 'B')
+    assert a.verify()
+
+    b.add_jobtask('C')
+    b.add_jobtask('D')
+    b.add_task('yes')
+    b.add_task('pwd')
+    b.add_task('ls -lahtr')
+    b.add_task('date')
+    b.add_edge('yes', 'ls -lahtr')
+    b.add_edge('pwd', 'ls -lahtr')
+    b.add_edge('ls -lahtr', 'C')
+    b.add_edge('ls -lahtr', 'D')
+    b.add_edge('D', 'date')
+    b.add_edge('C', 'date')
+    assert b.verify()
+
+    c.add_task('ls /home')
+    c.add_jobtask('D')
+    c.add_task('cd .')
+    c.add_edge('ls /home', 'D')
+    c.add_edge('D', 'cd .')
+    assert c.verify()
+
+    d.add_jobtask('E')
+    d.add_task('ls')
+    d.add_task('pwd')
+    d.add_task('cat')
+    d.add_edge('ls', 'E')
+    d.add_edge('pwd', 'E')
+    d.add_edge('pwd', 'cat')
+    d.add_edge('E', 'cat')
+    assert d.verify()
+
+    e.add_task('ls')
+    e.add_task('pwd')
+    e.add_jobtask('B')
+
+    assert not a.verify()
+    assert not b.verify()
+    assert not c.verify()
+    assert not d.verify()
+    assert not e.verify()
