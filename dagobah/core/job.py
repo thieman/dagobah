@@ -5,6 +5,7 @@ import json
 
 from croniter import croniter
 from copy import deepcopy
+from collections import default_dict
 
 from dag import DAG
 from .components import JobState, StrictJSONEncoder
@@ -459,7 +460,7 @@ class Job(DAG):
         return self._implements_function(obj, 'start')
 
     def initialize_snapshot(self):
-        """ Copy the DAG and validate """
+        """ Copy the DAG, validate, verify and expand """
         logger.debug('Initializing DAG snapshot for job {0}'.format(self.name))
         if self.snapshot is not None:
             logging.warn("Attempting to initialize DAG snapshot without " +
@@ -471,7 +472,78 @@ class Job(DAG):
         if not is_valid:
             raise DagobahError(reason)
 
-        self.snapshot = snapshot_to_validate
+        verified = self.verify()
+
+        if not verified:
+            raise DagobahError("Job has a cycle, possibly within another Job "
+                               + "reference")
+        expanded_snapshot = self.expand(snapshot_to_validate)
+
+        self.snapshot = expanded_snapshot
+
+    def expand(self, dag=None):
+        """
+        This method takes some DAG object, and expands all the underlying
+        tasks recursively:
+            * Starting with ind_nodes, traverse the graph
+            * If the node is expandable:
+                * Call expand on the JobTask, save expanded version "Expanded"
+                * Connect all parents of this JobTask to the ind_nodes of
+                  "Expanded"
+                * Get a list of all downstream nodes in "Expanded" that don't
+                  have a downstream node, and add edges to all downstream
+                  nodes of the JobTask.
+            * Delete JobTask from graph
+            * Continue traversing from the downstreams of the deleted JobTask
+        """
+        dag = dag.deepcopy()
+        traversal_queue = dag.ind_nodes()
+        expanded = []
+        while traversal_queue:
+            task = traversal_queue.pop()
+            if not self.implements_expandable(task) or task in expanded:
+                continue
+
+            expanded.append(task)
+            expanded = dag.tasks[task].expand()
+
+            # Empty Job expansion
+            if not expanded:
+                pred = dag.predecessors(task)
+                children = dag.downstream(task)
+                [dag.add_edge(p, c) for p in pred for c in children]
+                dag.delete_task(task)
+                continue
+
+            # Prepend all expanded task names with "<jobname>_" to prevent
+            # task name conflicts
+            [expanded.edit_task(t, {"name": "{0}_{1}".format(task, t)})
+             for t in expanded.tasks]
+
+            # Merge node and edge dictionaries (creating 2 unconnected DAGs,
+            # in one graph)
+            final_dict = default_dict(list)
+            for key, value in dag.graph:
+                final_dict[key] = value
+            for key, value in expanded.graph:
+                final_dict[key].expand(value)
+            dag.graph = final_dict
+
+            # Add edges between predecessors and start nodes
+            predecessors = dag.predecessors(task)
+            start_nodes = expanded.ind_nodes()
+            [dag.add_edge(p, s) for p in predecessors for s in start_nodes]
+
+            # Add edges between the final downstreams and the child nodes
+            final_tasks = expanded.end_nodes()
+            children = dag.downstream(task)
+            [dag.add_edge(f, c) for f in final_tasks for c in children]
+
+            # add children to traversal queue and delete old reference
+            traversal_queue.extend(children)
+            dag.delete_node(task)
+
+        return dag
 
     def destroy_snapshot(self):
         """ Destroy active copy of the snapshot """
