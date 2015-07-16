@@ -10,27 +10,28 @@ from nose.tools import nottest, raises, assert_equal
 
 from dagobah.core.dagobah import Dagobah
 from dagobah.core.dagobah_error import DagobahError
-from dagobah.core.job import Job
-from dagobah.core.task import Task
-from dagobah.core.jobtask import JobTask
 from dagobah.backend.base import BaseBackend
 
 import os
 
 dagobah = None
 
+
 class DagobahTestTimeoutException(Exception):
     pass
+
 
 @nottest
 def raise_timeout_exception(*args, **kwargs):
     raise DagobahTestTimeoutException()
+
 
 @nottest
 def wait_until_stopped(job):
     while job.state.status == 'running':
         sleep(0.1)
         continue
+
 
 @nottest
 def supports_timeouts(fn):
@@ -42,6 +43,7 @@ def supports_timeouts(fn):
         signal.signal(signal.SIGALRM, lambda signalnum, handler: None)
         return result
     return wrapped
+
 
 @nottest
 def blank_dagobah():
@@ -102,14 +104,14 @@ def test_dagobah_add_tasks():
 
 
 @with_setup(blank_dagobah)
-def test_dagobah_delete_job():
+def test_dagobah_delete_job2():
     dagobah.add_job('test_job')
     dagobah.delete_job('test_job')
 
 
 @with_setup(blank_dagobah)
 @raises(DagobahError)
-def test_dagobah_delete_job_does_not_exist():
+def test_dagobah_delete_job_does_not_exist2():
     dagobah.add_job('test_job')
     dagobah.delete_job('test_job_2')
 
@@ -230,7 +232,7 @@ def test_serialize_dagobah():
                                         'success': None,
                                         'soft_timeout': 0,
                                         'hard_timeout': 0,
-                                        'hostname': None},],
+                                        'hostname': None}, ],
                              'dependencies': {'list': ['grep'],
                                               'grep': []},
                              'status': 'waiting',
@@ -275,12 +277,14 @@ def test_construct_with_timeouts():
     assert job.tasks['From Job'].soft_timeout == 10
     assert job.tasks['From Job'].hard_timeout == 20
 
+
 @with_setup(blank_dagobah)
 def test_ssh_config_load():
     hosts = dagobah.get_hosts()
     assert "test_host" in hosts
     assert "*" not in hosts
     assert "nonexistant" not in hosts
+
 
 @with_setup(blank_dagobah)
 @supports_timeouts
@@ -314,6 +318,7 @@ def test_retry_from_failure():
     wait_until_stopped(job)
     assert job.state.status != 'failed'
 
+
 @with_setup(blank_dagobah)
 def test_dagobah_add_jobtasks():
     dagobah.add_job('test_job_a')
@@ -322,7 +327,8 @@ def test_dagobah_add_jobtasks():
     job_b = dagobah.get_job('test_job_b')
     job_a.add_task('ls')
     job_b.add_jobtask('test_job_a')
-    assert "test_job_a" in [task.target_job_name for task in job_b.tasks.values()]
+    assert "test_job_a" in [t.target_job_name for t in job_b.tasks.values()]
+
 
 @with_setup(blank_dagobah)
 def test_verify_no_jobtasks():
@@ -336,6 +342,7 @@ def test_verify_no_jobtasks():
     job.add_edge('ls', 'pwd')
     job.add_edge('pwd', 'sleep 1')
     assert job.verify()
+
 
 @with_setup(blank_dagobah)
 def test_verify_with_jobtasks():
@@ -352,6 +359,7 @@ def test_verify_with_jobtasks():
     assert a.verify()
     assert b.verify()
 
+
 @with_setup(blank_dagobah)
 def test_verify_detect_cycle():
     dagobah.add_job('A')
@@ -364,6 +372,7 @@ def test_verify_detect_cycle():
 
     assert not a.verify()
     assert not b.verify()
+
 
 @with_setup(blank_dagobah)
 def test_verify_detect_cycle_complex():
