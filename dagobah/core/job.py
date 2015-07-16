@@ -87,7 +87,7 @@ class Job(DAG):
 
         if task_name is None:
             task_name = job_name
-        new_jobtask = JobTask(task_name, job_name)
+        new_jobtask = JobTask(self, task_name, job_name)
         self.tasks[task_name] = new_jobtask
         self.add_node(task_name)
         self.commit()
@@ -439,8 +439,11 @@ class Job(DAG):
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
 
-    def _implements_function(obj, functions):
+    def _implements_function(self, obj, functions):
         """ Checks for the existence of a method or list of methods """
+        if isinstance(functions, str):
+            functions = [functions]
+        logger.debug("Checking if {0} implements {1}".format(obj, functions))
         for expected_method in functions:
             if not (hasattr(obj, expected_method) and
                     callable(getattr(obj, expected_method))):
@@ -488,27 +491,41 @@ class Job(DAG):
                Job, run verify on that node, passing in the current context.
         """
         # Check if job is not in current context, then add it
+        logger.info("Verifying DAG for {0}".format(self.name))
         if context is None:
+            logger.debug("No context set, using empty set")
             context = set()
         if self.name in context:
+            logger.warn("Cycle detected: Job {0} already in context: {1}"
+                        .format(self.name, str(context)))
             return False
-        print context
         context.add(self.name)
+        logger.debug("Context is now {0}".format(context))
 
         # Topological sort verifies DAG is acyclic before digging deeper
-        topo_sorted = self.topological_sort()
+        topo_sorted = [self.tasks[t] for t in self.topological_sort()]
 
         # Traverse nodes and verify any JobTasks
+        logger.debug("Traversing topologically sorted tasks.")
         for task in topo_sorted:
             if self.implements_expandable(task):
-                current_job = self.parent._resolve_job(task.target_job_name)
-                if current_job.name in context:
+                logger.debug("Found expandable task: {0}".format(task.name))
+                cur_job = self.parent._resolve_job(task.target_job_name)
+                if not cur_job:
+                    logging.warn("Job with name {0} doesn't exist."
+                                 .format(task.target_job_name))
+                    return False
+                if cur_job.name in context:
+                    logging.warn("Cycle detected in Job: {0}."
+                                 .format(task.target_job_name))
                     return False
 
                 # Verify this job has no internal cycles, or references to jobs
                 # in the current context
-                verified = current_job.verify(context)
+                verified = cur_job.verify(context)
                 if not verified:
+                    logger.warn("Cycle or error detected in sub-job: {0}"
+                                .format(cur_job))
                     return False
 
         return True
