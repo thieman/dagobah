@@ -17,9 +17,8 @@ Dagobahd:
 
   # choose one of the available backends
   # None: Dagobah will not use a backend to permanently store data
-  # sqlite: use a SQLite database. see the SQLite section in this file
   # mongo: store results in MongoDB. see the MongoBackend section in this file
-  backend: sqlite
+  backend: None
 
   # choose one of the available email templates
   # None: Dagobah won't send you emails when a job finishes or fails
@@ -98,12 +97,6 @@ Email:
 
   # sets whether Dagobah sends you emails on job and task failures
   send_on_failure: True
-
-SQLiteBackend:
-
-  # specify a full path to the sqlite database file
-  # alternatively, specify "default" to create a database file in the dagobahd directory
-  filepath: default
 
 MongoBackend:
 
