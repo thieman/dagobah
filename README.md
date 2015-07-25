@@ -29,6 +29,10 @@ To use a backend, you need to install the drivers using the commands below and t
 #### MongoDB
 
     pip install pymongo
+    
+#### Deprecated Backends
+
+ * **SQLite**: Deprecated following version 0.3.1.
 
 ## Features
 
