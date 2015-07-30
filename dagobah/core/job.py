@@ -439,15 +439,11 @@ class Job(DAG):
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
 
-    def _implements_function(self, obj, functions):
-        """ Checks for the existence of a method or list of methods """
-        if isinstance(functions, str):
-            functions = [functions]
-        logger.debug("Checking if {0} implements {1}".format(obj, functions))
-        for expected_method in functions:
-            if not (hasattr(obj, expected_method) and
-                    callable(getattr(obj, expected_method))):
-                return False
+    def _implements_function(self, obj, function):
+        """ Checks for the existence of a method """
+        if not (hasattr(obj, function) and
+                callable(getattr(obj, function))):
+            return False
         return True
 
     def implements_expandable(self, obj):
