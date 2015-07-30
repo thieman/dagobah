@@ -511,24 +511,25 @@ class Job(DAG):
         # Traverse nodes and verify any JobTasks
         logger.debug("Traversing topologically sorted tasks.")
         for task in topo_sorted:
-            if self.implements_expandable(task):
-                logger.debug("Found expandable task: {0}".format(task.name))
-                cur_job = self.parent._resolve_job(task.target_job_name)
-                if not cur_job:
-                    logging.warn("Job with name {0} doesn't exist."
-                                 .format(task.target_job_name))
-                    return False
-                if cur_job.name in context:
-                    logging.warn("Cycle detected in Job: {0}."
-                                 .format(task.target_job_name))
-                    return False
+            if not self.implements_expandable(task):
+                continue
 
-                # Verify this job has no internal cycles, or references to jobs
-                # in the current context
-                verified = cur_job.verify(context)
-                if not verified:
-                    logger.warn("Cycle or error detected in sub-job: {0}"
-                                .format(cur_job))
-                    return False
+            logger.debug("Found expandable task: {0}".format(task.name))
+            cur_job = self.parent._resolve_job(task.target_job_name)
+            if not cur_job:
+                raise DagobahError("Job with name {0} doesn't exist."
+                                   .format(task.target_job_name))
+            if cur_job.name in context:
+                logging.warn("Cycle detected in Job: {0}."
+                             .format(task.target_job_name))
+                return False
+
+            # Verify this job has no internal cycles, or references to jobs
+            # in the current context
+            verified = cur_job.verify(context)
+            if not verified:
+                logger.warn("Cycle or error detected in sub-job: {0}"
+                            .format(cur_job))
+                return False
 
         return True
