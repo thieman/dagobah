@@ -479,6 +479,13 @@ class Job(DAG):
         Verify that the job has no cycles where a JobTask circularly
         references another JobTask so that we know we can safely snapshot
         the DAG.
+
+        Returns:
+            bool -- indicating successful verification with True.
+
+        Raises:
+            DagobahException -- when a JobTask references a non-existent job.
+
         Explanation:
             1. If the current job is in the context, the job is not valid
             2. Perform a topological sort without expanding tasks (current job
@@ -487,7 +494,7 @@ class Job(DAG):
                Job, run verify on that node, passing in the current context.
         """
         # Check if job is not in current context, then add it
-        logger.info("Verifying DAG for {0}".format(self.name))
+        logger.debug("Verifying DAG for {0}".format(self.name))
         if context is None:
             logger.debug("No context set, using empty set")
             context = set()
