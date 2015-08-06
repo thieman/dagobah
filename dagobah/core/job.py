@@ -87,7 +87,7 @@ class Job(DAG):
 
         if task_name is None:
             task_name = job_name
-        new_jobtask = JobTask(task_name, job_name)
+        new_jobtask = JobTask(self, task_name, job_name)
         self.tasks[task_name] = new_jobtask
         self.add_node(task_name)
         self.commit()
@@ -439,12 +439,11 @@ class Job(DAG):
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
 
-    def _implements_function(obj, functions):
-        """ Checks for the existence of a method or list of methods """
-        for expected_method in functions:
-            if not (hasattr(obj, expected_method) and
-                    callable(getattr(obj, expected_method))):
-                return False
+    def _implements_function(self, obj, function):
+        """ Checks for the existence of a method """
+        if not (hasattr(obj, function) and
+                callable(getattr(obj, function))):
+            return False
         return True
 
     def implements_expandable(self, obj):
@@ -474,3 +473,63 @@ class Job(DAG):
         """ Destroy active copy of the snapshot """
         logger.debug('Destroying DAG snapshot for job {0}'.format(self.name))
         self.snapshot = None
+
+    def verify(self, context=None):
+        """
+        Verify that the job has no cycles where a JobTask circularly
+        references another JobTask so that we know we can safely snapshot
+        the DAG.
+
+        Returns:
+            bool -- indicating successful verification with True.
+
+        Raises:
+            DagobahException -- when a JobTask references a non-existent job.
+
+        Explanation:
+            1. If the current job is in the context, the job is not valid
+            2. Perform a topological sort without expanding tasks (current job
+               is acyclic)
+            3. Traverse nodes in topological order. For each node that is a
+               Job, run verify on that node, passing in the current context.
+        """
+        # Check if job is not in current context, then add it
+        logger.debug("Verifying DAG for {0}".format(self.name))
+        if context is None:
+            logger.debug("No context set, using empty set")
+            context = set()
+        if self.name in context:
+            logger.warn("Cycle detected: Job {0} already in context: {1}"
+                        .format(self.name, str(context)))
+            return False
+        context.add(self.name)
+        logger.debug("Context is now {0}".format(context))
+
+        # Topological sort verifies DAG is acyclic before digging deeper
+        topo_sorted = [self.tasks[t] for t in self.topological_sort()]
+
+        # Traverse nodes and verify any JobTasks
+        logger.debug("Traversing topologically sorted tasks.")
+        for task in topo_sorted:
+            if not self.implements_expandable(task):
+                continue
+
+            logger.debug("Found expandable task: {0}".format(task.name))
+            cur_job = self.parent._resolve_job(task.target_job_name)
+            if not cur_job:
+                raise DagobahError("Job with name {0} doesn't exist."
+                                   .format(task.target_job_name))
+            if cur_job.name in context:
+                logging.warn("Cycle detected in Job: {0}."
+                             .format(task.target_job_name))
+                return False
+
+            # Verify this job has no internal cycles, or references to jobs
+            # in the current context
+            verified = cur_job.verify(context)
+            if not verified:
+                logger.warn("Cycle or error detected in sub-job: {0}"
+                            .format(cur_job))
+                return False
+
+        return True
