@@ -48,7 +48,7 @@ setup(name='dagobah',
                         'flask-login==0.2.6',
                         'semantic_version==2.3.0',
                         'paramiko==1.11.0',
-                        'py-dag==2.0.0'],
+                        'py-dag==2.1.0'],
       test_suite='nose.collector',
       tests_require=['nose', 'pymongo'],
       entry_points={'console_scripts':
