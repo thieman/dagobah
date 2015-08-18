@@ -90,7 +90,7 @@ class Job(DAG):
 
         if task_name is None:
             task_name = job_name
-        new_jobtask = JobTask(self, task_name, job_name)
+        new_jobtask = JobTask(self, job_name, task_name)
         self.tasks[task_name] = new_jobtask
         self.add_node(task_name)
         self.commit()
@@ -175,13 +175,13 @@ class Job(DAG):
 
         logger.debug('Job {0} resetting all tasks prior to start'.
                      format(self.name))
-        for task in self.tasks.itervalues():
+        for task in self.tasks_snapshot.itervalues():
             task.reset()
 
         logger.debug('Job {0} seeding run logs'.format(self.name))
         for task_name in self.ind_nodes(self.snapshot):
             self._put_task_in_run_log(task_name)
-            self.tasks[task_name].start()
+            self.tasks_snapshot[task_name].start()
 
         self._commit_run_log()
 
@@ -446,7 +446,7 @@ class Job(DAG):
         """ Checks for the existence of a method or list of methods """
         if isinstance(functions, str):
             functions = [functions]
-        logger.debug("Checking if {0} implements {1}".format(obj, functions))
+        logger.debug("Checking if {0} implements {1}".format(obj.name, functions))
         for expected_method in functions:
             if not (hasattr(obj, expected_method) and
                     callable(getattr(obj, expected_method))):
@@ -462,14 +462,16 @@ class Job(DAG):
         return self._implements_function(obj, 'start')
 
     def initialize_snapshot(self):
-        """ Copy the DAG, validate, verify and expand """
+        """ Copy the DAG and task list, validate, verify and expand """
         logger.debug('Initializing DAG snapshot for job {0}'.format(self.name))
         if self.snapshot is not None or self.tasks_snapshot is not None:
             logging.warn("Attempting to initialize DAG snapshot without " +
                          "first destroying old snapshot.")
 
         snapshot_to_validate = deepcopy(self.graph)
+        logger.debug("Got to this point")
         tasks = deepcopy(self.tasks)
+        logger.debug("Got to this point 2")
 
         is_valid, reason = self.validate(snapshot_to_validate)
         if not is_valid:
@@ -481,8 +483,7 @@ class Job(DAG):
             raise DagobahError("Job has a cycle, possibly within another Job "
                                + "reference")
 
-        #self.snapshot, self.tasks_snapshot = self.expand(snapshot_to_validate, tasks)
-        self.snapshot = snapshot_to_validate
+        self.snapshot, self.tasks_snapshot = self.expand(snapshot_to_validate, tasks)
 
     def expand(self, graph, tasks):
         """
@@ -501,6 +502,7 @@ class Job(DAG):
             * Add the downstreams of the deleted JobTask to traversal queue
         """
         logger.debug("Starting job expansion")
+        logger.debug(pformat(graph))
 
         traversal_queue = self.ind_nodes(graph)
         already_expanded = []
@@ -534,7 +536,7 @@ class Job(DAG):
                 expanded_tasks[new_name].name = new_name
 
                 expanded_graph[new_name] = expanded_graph.pop(t)
-                for node, edges in self.graph.iteritems():
+                for node, edges in expanded_graph.iteritems():
                     if t in edges:
                         edges.remove(t)
                         edges.add(new_name)
@@ -542,30 +544,30 @@ class Job(DAG):
             # Merge node and edge dictionaries (creating 2 unconnected DAGs,
             # in one graph)
             logger.debug("Merging dicts")
-            final_dict = defaultdict(list)
-            for key, value in graph:
+            final_dict = defaultdict(set)
+            for key, value in graph.iteritems():
                 final_dict[key] = value
-            for key, value in expanded_graph:
-                final_dict[key].expand(value)
-            graph = final_dict
-            logger.debug(pformat(final_dict))
+            for key, value in expanded_graph.iteritems():
+                final_dict[key].update(value)
+            graph = dict(final_dict)
+            logger.debug(pformat(graph))
 
             # Add new tasks to task dictionary
-            for key, value in expanded_tasks:
+            for key, value in expanded_tasks.iteritems():
                 if key in tasks:
                     raise DagobahError("Naming conflict in job expansion")
                 tasks[key] = value
 
             # Add edges between predecessors and start nodes
             logger.debug("Adding edges 1")
-            predecessors = self.predecessors(graph)
+            predecessors = self.predecessors(task, graph)
             start_nodes = self.ind_nodes(expanded_graph)
             [self.add_edge(p, s, graph) for p in predecessors for s in start_nodes]
             logger.debug(pformat(graph))
 
             # Add edges between the final downstreams and the child nodes
             logger.debug("Adding edges 2")
-            final_tasks = self.end_nodes(expanded_graph)
+            final_tasks = self.all_leaves(expanded_graph)
             children = self.downstream(task, graph)
             [self.add_edge(f, c, graph) for f in final_tasks for c in children]
             logger.debug(pformat(graph))
