@@ -18,7 +18,7 @@ class JobTask(object):
     def expand(self):
         """ Expand this JobTask into a list of tasks """
         target_job = self.parent_job.parent._resolve_job(self.target_job_name)
-        return target_job.expand()
+        return target_job.expand(target_job.graph, target_job.tasks)
 
     def _serialize(self, include_run_logs=False, strict_json=False):
         """ Serialize a representation of this Task to a Python dict. """
