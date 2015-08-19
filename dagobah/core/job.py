@@ -470,7 +470,20 @@ class Job(DAG):
 
         snapshot_to_validate = deepcopy(self.graph)
         logger.debug("Got to this point")
-        tasks = deepcopy(self.tasks)
+
+        # Due to thread locks in underlying tasks, they must be manually copied
+        tasks_copy = {}
+        for name, task in self.tasks.iteritems():
+            if self.implements_runnable(task):
+                tasks_copy[name] = Task(self, task.command, task.name,
+                                 soft_timeout=task.soft_timeout,
+                                 hard_timeout=task.hard_timeout,
+                                 hostname=task.hostname)
+            elif self.implements_expandable(task):
+                tasks_copy[name] = JobTask(self, task.name, task.target_job_name)
+            else:
+                raise DagobahError("Malformed task neither a Task nor JobTask")
+
         logger.debug("Got to this point 2")
 
         is_valid, reason = self.validate(snapshot_to_validate)
@@ -483,7 +496,8 @@ class Job(DAG):
             raise DagobahError("Job has a cycle, possibly within another Job "
                                + "reference")
 
-        self.snapshot, self.tasks_snapshot = self.expand(snapshot_to_validate, tasks)
+        self.snapshot, self.tasks_snapshot = self.expand(snapshot_to_validate,
+                                                         tasks_copy)
 
     def expand(self, graph, tasks):
         """
