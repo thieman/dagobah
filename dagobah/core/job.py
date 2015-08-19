@@ -6,7 +6,6 @@ import json
 from croniter import croniter
 from copy import deepcopy
 from collections import defaultdict
-from pprint import pformat
 
 from dag import DAG
 from .components import JobState, StrictJSONEncoder
@@ -442,15 +441,11 @@ class Job(DAG):
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
 
-    def _implements_function(self, obj, functions):
-        """ Checks for the existence of a method or list of methods """
-        if isinstance(functions, str):
-            functions = [functions]
-        logger.debug("Checking if {0} implements {1}".format(obj.name, functions))
-        for expected_method in functions:
-            if not (hasattr(obj, expected_method) and
-                    callable(getattr(obj, expected_method))):
-                return False
+    def _implements_function(self, obj, function):
+        """ Checks for the existence of a method """
+        if not (hasattr(obj, function) and
+                callable(getattr(obj, function))):
+            return False
         return True
 
     def implements_expandable(self, obj):
@@ -485,11 +480,12 @@ class Job(DAG):
         for name, task in self.tasks.iteritems():
             if self.implements_runnable(task):
                 tasks_copy[name] = Task(self, task.command, task.name,
-                                 soft_timeout=task.soft_timeout,
-                                 hard_timeout=task.hard_timeout,
-                                 hostname=task.hostname)
+                                        soft_timeout=task.soft_timeout,
+                                        hard_timeout=task.hard_timeout,
+                                        hostname=task.hostname)
             elif self.implements_expandable(task):
-                tasks_copy[name] = JobTask(self, task.name, task.target_job_name)
+                tasks_copy[name] = JobTask(self, task.name,
+                                           task.target_job_name)
             else:
                 raise DagobahError("Malformed task neither a Task nor JobTask")
 
@@ -518,7 +514,8 @@ class Job(DAG):
         already_expanded = []
         while traversal_queue:
             task = traversal_queue.pop()
-            if not self.implements_expandable(tasks[task]) or task in already_expanded:
+            if (not self.implements_expandable(tasks[task]) or
+                    task in already_expanded):
                 traversal_queue.extend(self.downstream(task, graph))
                 continue
 
@@ -565,7 +562,8 @@ class Job(DAG):
             # Add edges between predecessors and start nodes
             predecessors = self.predecessors(task, graph)
             start_nodes = self.ind_nodes(expanded_graph)
-            [self.add_edge(p, s, graph) for p in predecessors for s in start_nodes]
+            [self.add_edge(p, s, graph) for p in predecessors
+             for s in start_nodes]
 
             # Add edges between the final downstreams and the child nodes
             final_tasks = self.all_leaves(expanded_graph)
@@ -590,6 +588,13 @@ class Job(DAG):
         Verify that the job has no cycles where a JobTask circularly
         references another JobTask so that we know we can safely snapshot
         the DAG.
+
+        Returns:
+            bool -- indicating successful verification with True.
+
+        Raises:
+            DagobahException -- when a JobTask references a non-existent job.
+
         Explanation:
             1. If the current job is in the context, the job is not valid
             2. Perform a topological sort without expanding tasks (current job
@@ -598,7 +603,7 @@ class Job(DAG):
                Job, run verify on that node, passing in the current context.
         """
         # Check if job is not in current context, then add it
-        logger.info("Verifying DAG for {0}".format(self.name))
+        logger.debug("Verifying DAG for {0}".format(self.name))
         if context is None:
             logger.debug("No context set, using empty set")
             context = set()
@@ -615,24 +620,25 @@ class Job(DAG):
         # Traverse nodes and verify any JobTasks
         logger.debug("Traversing topologically sorted tasks.")
         for task in topo_sorted:
-            if self.implements_expandable(task):
-                logger.debug("Found expandable task: {0}".format(task.name))
-                cur_job = self.parent._resolve_job(task.target_job_name)
-                if not cur_job:
-                    logging.warn("Job with name {0} doesn't exist."
-                                 .format(task.target_job_name))
-                    return False
-                if cur_job.name in context:
-                    logging.warn("Cycle detected in Job: {0}."
-                                 .format(task.target_job_name))
-                    return False
+            if not self.implements_expandable(task):
+                continue
 
-                # Verify this job has no internal cycles, or references to jobs
-                # in the current context
-                verified = cur_job.verify(context)
-                if not verified:
-                    logger.warn("Cycle or error detected in sub-job: {0}"
-                                .format(cur_job))
-                    return False
+            logger.debug("Found expandable task: {0}".format(task.name))
+            cur_job = self.parent._resolve_job(task.target_job_name)
+            if not cur_job:
+                raise DagobahError("Job with name {0} doesn't exist."
+                                   .format(task.target_job_name))
+            if cur_job.name in context:
+                logging.warn("Cycle detected in Job: {0}."
+                             .format(task.target_job_name))
+                return False
+
+            # Verify this job has no internal cycles, or references to jobs
+            # in the current context
+            verified = cur_job.verify(context)
+            if not verified:
+                logger.warn("Cycle or error detected in sub-job: {0}"
+                            .format(cur_job))
+                return False
 
         return True
