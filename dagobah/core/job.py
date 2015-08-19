@@ -469,7 +469,16 @@ class Job(DAG):
                          "first destroying old snapshot.")
 
         snapshot_to_validate = deepcopy(self.graph)
-        logger.debug("Got to this point")
+
+        is_valid, reason = self.validate(snapshot_to_validate)
+        if not is_valid:
+            raise DagobahError(reason)
+
+        verified = self.verify()
+
+        if not verified:
+            raise DagobahError("Job has a cycle, possibly within another Job "
+                               + "reference")
 
         # Due to thread locks in underlying tasks, they must be manually copied
         tasks_copy = {}
@@ -483,18 +492,6 @@ class Job(DAG):
                 tasks_copy[name] = JobTask(self, task.name, task.target_job_name)
             else:
                 raise DagobahError("Malformed task neither a Task nor JobTask")
-
-        logger.debug("Got to this point 2")
-
-        is_valid, reason = self.validate(snapshot_to_validate)
-        if not is_valid:
-            raise DagobahError(reason)
-
-        verified = self.verify()
-
-        if not verified:
-            raise DagobahError("Job has a cycle, possibly within another Job "
-                               + "reference")
 
         self.snapshot, self.tasks_snapshot = self.expand(snapshot_to_validate,
                                                          tasks_copy)
@@ -516,15 +513,12 @@ class Job(DAG):
             * Add the downstreams of the deleted JobTask to traversal queue
         """
         logger.debug("Starting job expansion")
-        logger.debug(pformat(graph))
 
         traversal_queue = self.ind_nodes(graph)
         already_expanded = []
         while traversal_queue:
             task = traversal_queue.pop()
-            logger.debug("Traversing {0}".format(task))
             if not self.implements_expandable(tasks[task]) or task in already_expanded:
-                logger.debug("Not expandable, moving on")
                 traversal_queue.extend(self.downstream(task, graph))
                 continue
 
@@ -533,7 +527,6 @@ class Job(DAG):
 
             # Empty Job expansion
             if not expanded_graph:
-                logger.debug("Empty job for {0}".format(task))
                 pred = self.predecessors(task, graph)
                 children = self.downstream(task, graph)
                 [self.add_edge(p, c, graph) for p in pred for c in children]
@@ -543,7 +536,6 @@ class Job(DAG):
 
             # Prepend all expanded task names with "<jobname>_" to mitigate
             # task name conflicts
-            logger.debug("Prepending jobnames with {0}".format(task))
             for t in expanded_tasks:
                 new_name = "{0}_{1}".format(task, t)
                 expanded_tasks[new_name] = expanded_tasks.pop(t)
@@ -557,14 +549,12 @@ class Job(DAG):
 
             # Merge node and edge dictionaries (creating 2 unconnected DAGs,
             # in one graph)
-            logger.debug("Merging dicts")
             final_dict = defaultdict(set)
             for key, value in graph.iteritems():
                 final_dict[key] = value
             for key, value in expanded_graph.iteritems():
                 final_dict[key].update(value)
             graph = dict(final_dict)
-            logger.debug(pformat(graph))
 
             # Add new tasks to task dictionary
             for key, value in expanded_tasks.iteritems():
@@ -573,25 +563,19 @@ class Job(DAG):
                 tasks[key] = value
 
             # Add edges between predecessors and start nodes
-            logger.debug("Adding edges 1")
             predecessors = self.predecessors(task, graph)
             start_nodes = self.ind_nodes(expanded_graph)
             [self.add_edge(p, s, graph) for p in predecessors for s in start_nodes]
-            logger.debug(pformat(graph))
 
             # Add edges between the final downstreams and the child nodes
-            logger.debug("Adding edges 2")
             final_tasks = self.all_leaves(expanded_graph)
             children = self.downstream(task, graph)
             [self.add_edge(f, c, graph) for f in final_tasks for c in children]
-            logger.debug(pformat(graph))
 
             # add children to traversal queue and delete old reference
             traversal_queue.extend(children)
-            logger.debug("deleting reference to {0}".format(task))
             self.delete_node(task, graph)
             tasks.pop(task)
-            logger.debug(pformat(graph))
 
         return graph, tasks
 
