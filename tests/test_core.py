@@ -462,7 +462,7 @@ def test_dagobah_expand_empty_job():
     graph, tasks = job_b.expand(job_b.graph, job_b.tasks)
     pprint(graph)
     pprint(tasks)
-    assert_equal(pformat(graph), "{'ls': set(['pwd']), 'pwd': set()}")
+    assert_equal(pformat(graph), "{'ls': set(['pwd']), 'pwd': set([])}")
 
 
 @with_setup(blank_dagobah)
@@ -480,7 +480,7 @@ def test_dagobah_expand_simple_job():
     graph, tasks = job_b.expand(job_b.graph, job_b.tasks)
     assert_equal(pformat(graph),
                  "{'ls': set(['test_job_a_yes']), " +
-                 "'pwd': set(), " +
+                 "'pwd': set([]), " +
                  "'test_job_a_yes': set(['pwd'])}")
 
 
@@ -505,7 +505,7 @@ def test_dagobah_expand_moderate_job():
     pprint(graph)
     assert_equal(pformat(graph),
                  "{'ls': set(['test_job_a_yes'])," +
-                 "\n 'pwd': set()," +
+                 "\n 'pwd': set([])," +
                  "\n 'test_job_a_cd .': set(['pwd'])," +
                  "\n 'test_job_a_ls': set(['test_job_a_cd .'])," +
                  "\n 'test_job_a_yes': set(['test_job_a_ls'])}")
@@ -559,5 +559,5 @@ def test_dagobah_expand_complex_job():
                  "\n 'C_C_B*_D**': set(['C_C_C*', 'C_C_D*'])," +
                  "\n 'C_C_C*': set(['C_C_D*'])," +
                  "\n 'C_C_D*': set(['D', 'E'])," +
-                 "\n 'D': set()," +
-                 "\n 'E': set()}")
+                 "\n 'D': set([])," +
+                 "\n 'E': set([])}")
