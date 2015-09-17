@@ -48,6 +48,27 @@ def supports_timeouts(fn):
 
 
 @nottest
+def assert_graph_equality(a, b):
+    """ This is a utility to do dictionary comparisons for DAG graphs """
+    # Empty Graph
+    if len(a) == 0 and len(b) == 0:
+        return True
+
+    # Verify the keys are the same
+    diff = set(b.keys()) - set(a.keys())
+    if len(diff) != 0:
+        return False
+
+    # Start to verify contents
+    for key, a_val in a.iteritems():
+        b_val = b[key]
+        edge_diff = a_val - b_val
+        if len(edge_diff) != 0:
+            return False
+    return True
+
+
+@nottest
 def blank_dagobah():
     global dagobah
     backend = BaseBackend()
@@ -445,8 +466,8 @@ def test_dagobah_expand_none():
     job_a = dagobah.get_job('test_job_a')
     job_a.add_task('ls')
     graph, tasks = job_a.expand(job_a.graph, job_a.tasks)
-    pprint(graph)
-    pprint(tasks)
+    ideal_result = {'ls': set([])}
+    assert assert_graph_equality(ideal_result, graph)
 
 
 @with_setup(blank_dagobah)
@@ -462,7 +483,8 @@ def test_dagobah_expand_empty_job():
     graph, tasks = job_b.expand(job_b.graph, job_b.tasks)
     pprint(graph)
     pprint(tasks)
-    assert_equal(pformat(graph), "{'ls': set(['pwd']), 'pwd': set([])}")
+    ideal_result = {'ls': set(['pwd']), 'pwd': set([])}
+    assert assert_graph_equality(ideal_result, graph)
 
 
 @with_setup(blank_dagobah)
@@ -478,10 +500,12 @@ def test_dagobah_expand_simple_job():
     job_b.add_edge('ls', 'test_job_a')
     job_b.add_edge('test_job_a', 'pwd')
     graph, tasks = job_b.expand(job_b.graph, job_b.tasks)
-    assert_equal(pformat(graph),
-                 "{'ls': set(['test_job_a_yes']), " +
-                 "'pwd': set([]), " +
-                 "'test_job_a_yes': set(['pwd'])}")
+    ideal_result = {
+        'ls': set(['test_job_a_yes']),
+        'pwd': set([]),
+        'test_job_a_yes': set(['pwd'])
+    }
+    assert assert_graph_equality(ideal_result, graph)
 
 
 @with_setup(blank_dagobah)
@@ -502,13 +526,14 @@ def test_dagobah_expand_moderate_job():
     job_b.add_edge('ls', 'test_job_a')
     job_b.add_edge('test_job_a', 'pwd')
     graph, tasks = job_b.expand(job_b.graph, job_b.tasks)
-    pprint(graph)
-    assert_equal(pformat(graph),
-                 "{'ls': set(['test_job_a_yes'])," +
-                 "\n 'pwd': set([])," +
-                 "\n 'test_job_a_cd .': set(['pwd'])," +
-                 "\n 'test_job_a_ls': set(['test_job_a_cd .'])," +
-                 "\n 'test_job_a_yes': set(['test_job_a_ls'])}")
+    ideal_result = {
+        'ls': set(['test_job_a_yes']),
+        'pwd': set([]),
+        'test_job_a_cd .': set(['pwd']),
+        'test_job_a_ls': set(['test_job_a_cd .']),
+        'test_job_a_yes': set(['test_job_a_ls'])
+    }
+    assert assert_graph_equality(ideal_result, graph)
 
 
 @with_setup(blank_dagobah)
@@ -549,15 +574,17 @@ def test_dagobah_expand_complex_job():
     job_3.add_edge('C**', 'D**')
 
     graph, tasks = job_1.expand(job_1.graph, job_1.tasks)
-    assert_equal(pformat(graph),
-                 "{'A': set(['C_A*'])," +
-                 "\n 'B': set(['C_A*'])," +
-                 "\n 'C_A*': set(['C_C_B*_A**', 'C_C_B*_B**', 'C_C_B*_C**', 'C_C_C*'])," +
-                 "\n 'C_C_B*_A**': set(['C_C_B*_D**'])," +
-                 "\n 'C_C_B*_B**': set(['C_C_B*_D**'])," +
-                 "\n 'C_C_B*_C**': set(['C_C_B*_D**'])," +
-                 "\n 'C_C_B*_D**': set(['C_C_C*', 'C_C_D*'])," +
-                 "\n 'C_C_C*': set(['C_C_D*'])," +
-                 "\n 'C_C_D*': set(['D', 'E'])," +
-                 "\n 'D': set([])," +
-                 "\n 'E': set([])}")
+    ideal_result = {
+        'A': set(['C_A*']),
+        'B': set(['C_A*']),
+        'C_A*': set(['C_C_B*_A**', 'C_C_B*_B**', 'C_C_B*_C**', 'C_C_C*']),
+        'C_C_B*_A**': set(['C_C_B*_D**']),
+        'C_C_B*_B**': set(['C_C_B*_D**']),
+        'C_C_B*_C**': set(['C_C_B*_D**']),
+        'C_C_B*_D**': set(['C_C_C*', 'C_C_D*']),
+        'C_C_C*': set(['C_C_D*']),
+        'C_C_D*': set(['D', 'E']),
+        'D': set([]),
+        'E': set([])
+    }
+    assert assert_graph_equality(ideal_result, graph)
