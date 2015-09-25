@@ -29,3 +29,7 @@ class JobTask(object):
         if strict_json:
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
+
+    def clone(self):
+        cloned_task = JobTask(self.parent_job, self.name, self.target_job_name)
+        return cloned_task

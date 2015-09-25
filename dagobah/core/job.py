@@ -475,19 +475,8 @@ class Job(DAG):
             raise DagobahError("Job has a cycle, possibly within another Job "
                                + "reference")
 
-        # Due to thread locks in underlying tasks, they must be manually copied
-        tasks_copy = {}
-        for name, task in self.tasks.iteritems():
-            if self.implements_runnable(task):
-                tasks_copy[name] = Task(self, task.command, task.name,
-                                        soft_timeout=task.soft_timeout,
-                                        hard_timeout=task.hard_timeout,
-                                        hostname=task.hostname)
-            elif self.implements_expandable(task):
-                tasks_copy[name] = JobTask(self, task.name,
-                                           task.target_job_name)
-            else:
-                raise DagobahError("Malformed task neither a Task nor JobTask")
+        # Due to thread locks in underlying tasks, they cannot be deepcopy'd
+        tasks_copy = dict((n, t.clone()) for (n, t) in self.tasks.iteritems())
 
         self.snapshot, self.tasks_snapshot = self.expand(snapshot_to_validate,
                                                          tasks_copy)

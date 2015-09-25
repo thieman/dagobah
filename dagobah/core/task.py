@@ -387,3 +387,10 @@ class Task(object):
         if strict_json:
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
+
+    def clone(self):
+        cloned_task = Task(self.parent_job, self.command, self.name,
+                           soft_timeout=self.soft_timeout,
+                           hard_timeout=self.hard_timeout,
+                           hostname=self.hostname)
+        return cloned_task
