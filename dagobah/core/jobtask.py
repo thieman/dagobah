@@ -2,7 +2,6 @@ import logging
 import json
 
 from .components import StrictJSONEncoder
-from .dagobah_error import DagobahError
 
 logger = logging.getLogger('dagobah')
 
@@ -18,8 +17,8 @@ class JobTask(object):
 
     def expand(self):
         """ Expand this JobTask into a list of tasks """
-        return self.parent_job.parent.get_job(
-            self.target_job_name).tasks.values()
+        target_job = self.parent_job.parent._resolve_job(self.target_job_name)
+        return target_job.expand(target_job.graph, target_job.tasks)
 
     def _serialize(self, include_run_logs=False, strict_json=False):
         """ Serialize a representation of this Task to a Python dict. """
@@ -30,3 +29,7 @@ class JobTask(object):
         if strict_json:
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
         return result
+
+    def clone(self):
+        cloned_task = JobTask(self.parent_job, self.name, self.target_job_name)
+        return cloned_task

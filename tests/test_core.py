@@ -12,6 +12,8 @@ from dagobah.core.dagobah import Dagobah
 from dagobah.core.dagobah_error import DagobahError
 from dagobah.backend.base import BaseBackend
 
+from pprint import pprint, pformat
+
 import os
 
 dagobah = None
@@ -43,6 +45,27 @@ def supports_timeouts(fn):
         signal.signal(signal.SIGALRM, lambda signalnum, handler: None)
         return result
     return wrapped
+
+
+@nottest
+def assert_graph_equality(a, b):
+    """ This is a utility to do dictionary comparisons for DAG graphs """
+    # Empty Graph
+    if len(a) == 0 and len(b) == 0:
+        return True
+
+    # Verify the keys are the same
+    diff = set(b.keys()) - set(a.keys())
+    if len(diff) != 0:
+        return False
+
+    # Start to verify contents
+    for key, a_val in a.iteritems():
+        b_val = b[key]
+        edge_diff = a_val - b_val
+        if len(edge_diff) != 0:
+            return False
+    return True
 
 
 @nottest
@@ -435,3 +458,133 @@ def test_verify_detect_cycle_complex():
     assert not c.verify()
     assert not d.verify()
     assert not e.verify()
+
+
+@with_setup(blank_dagobah)
+def test_dagobah_expand_none():
+    dagobah.add_job('test_job_a')
+    job_a = dagobah.get_job('test_job_a')
+    job_a.add_task('ls')
+    graph, tasks = job_a.expand(job_a.graph, job_a.tasks)
+    ideal_result = {'ls': set([])}
+    assert assert_graph_equality(ideal_result, graph)
+
+
+@with_setup(blank_dagobah)
+def test_dagobah_expand_empty_job():
+    dagobah.add_job('test_job_a')
+    dagobah.add_job('test_job_b')
+    job_b = dagobah.get_job('test_job_b')
+    job_b.add_task('ls')
+    job_b.add_task('pwd')
+    job_b.add_jobtask('test_job_a')
+    job_b.add_edge('ls', 'test_job_a')
+    job_b.add_edge('test_job_a', 'pwd')
+    graph, tasks = job_b.expand(job_b.graph, job_b.tasks)
+    pprint(graph)
+    pprint(tasks)
+    ideal_result = {'ls': set(['pwd']), 'pwd': set([])}
+    assert assert_graph_equality(ideal_result, graph)
+
+
+@with_setup(blank_dagobah)
+def test_dagobah_expand_simple_job():
+    dagobah.add_job('test_job_a')
+    dagobah.add_job('test_job_b')
+    job_a = dagobah.get_job('test_job_a')
+    job_a.add_task('yes')
+    job_b = dagobah.get_job('test_job_b')
+    job_b.add_task('ls')
+    job_b.add_task('pwd')
+    job_b.add_jobtask('test_job_a')
+    job_b.add_edge('ls', 'test_job_a')
+    job_b.add_edge('test_job_a', 'pwd')
+    graph, tasks = job_b.expand(job_b.graph, job_b.tasks)
+    ideal_result = {
+        'ls': set(['test_job_a_yes']),
+        'pwd': set([]),
+        'test_job_a_yes': set(['pwd'])
+    }
+    assert assert_graph_equality(ideal_result, graph)
+
+
+@with_setup(blank_dagobah)
+def test_dagobah_expand_moderate_job():
+    dagobah.add_job('test_job_a')
+    dagobah.add_job('test_job_b')
+    job_a = dagobah.get_job('test_job_a')
+    job_a.add_task('yes')
+    job_a.add_task('ls')
+    job_a.add_task('cd .')
+    job_a.add_edge('yes', 'ls')
+    job_a.add_edge('ls', 'cd .')
+
+    job_b = dagobah.get_job('test_job_b')
+    job_b.add_task('ls')
+    job_b.add_task('pwd')
+    job_b.add_jobtask('test_job_a')
+    job_b.add_edge('ls', 'test_job_a')
+    job_b.add_edge('test_job_a', 'pwd')
+    graph, tasks = job_b.expand(job_b.graph, job_b.tasks)
+    ideal_result = {
+        'ls': set(['test_job_a_yes']),
+        'pwd': set([]),
+        'test_job_a_cd .': set(['pwd']),
+        'test_job_a_ls': set(['test_job_a_cd .']),
+        'test_job_a_yes': set(['test_job_a_ls'])
+    }
+    assert assert_graph_equality(ideal_result, graph)
+
+
+@with_setup(blank_dagobah)
+def test_dagobah_expand_complex_job():
+    dagobah.add_job('JOB_1')
+    dagobah.add_job('JOB_2')
+    dagobah.add_job('JOB_3')
+
+    job_1 = dagobah.get_job('JOB_1')
+    job_1.add_task('yes', 'A')
+    job_1.add_task('ls', 'B')
+    job_1.add_jobtask('JOB_2', 'C')
+    job_1.add_task('time', 'D')
+    job_1.add_task('date', 'E')
+    job_1.add_edge('A', 'C')
+    job_1.add_edge('B', 'C')
+    job_1.add_edge('C', 'D')
+    job_1.add_edge('C', 'E')
+
+    job_2 = dagobah.get_job('JOB_2')
+    job_2.add_task('yes', 'A*')
+    job_2.add_jobtask('JOB_3', 'B*')
+    job_2.add_task('cd .', 'C*')
+    job_2.add_task('time', 'D*')
+    job_2.add_edge('A*', 'B*')
+    job_2.add_edge('A*', 'C*')
+    job_2.add_edge('B*', 'C*')
+    job_2.add_edge('B*', 'D*')
+    job_2.add_edge('C*', 'D*')
+
+    job_3 = dagobah.get_job('JOB_3')
+    job_3.add_task('yes', 'A**')
+    job_3.add_task('ls -lahtr', 'B**')
+    job_3.add_task('cd .', 'C**')
+    job_3.add_task('date', 'D**')
+    job_3.add_edge('A**', 'D**')
+    job_3.add_edge('B**', 'D**')
+    job_3.add_edge('C**', 'D**')
+
+    graph, tasks = job_1.expand(job_1.graph, job_1.tasks)
+    ideal_result = {
+        'A': set(['C_A*']),
+        'B': set(['C_A*']),
+        'C_A*': set(['C_C_B*_A**', 'C_C_B*_B**', 'C_C_B*_C**', 'C_C_C*']),
+        'C_C_B*_A**': set(['C_C_B*_D**']),
+        'C_C_B*_B**': set(['C_C_B*_D**']),
+        'C_C_B*_C**': set(['C_C_B*_D**']),
+        'C_C_B*_D**': set(['C_C_C*', 'C_C_D*']),
+        'C_C_C*': set(['C_C_D*']),
+        'C_C_D*': set(['D', 'E']),
+        'D': set([]),
+        'E': set([])
+    }
+    assert assert_graph_equality(ideal_result, graph)
