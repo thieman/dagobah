@@ -245,8 +245,7 @@ class Dagobah(object):
         job.add_task(task_command, task_name, **kwargs)
         job.commit()
 
-    def add_jobtask_to_job(self, job_or_job_name, target_job, task_name=None,
-                           **kwargs):
+    def add_jobtask_to_job(self, job_or_job_name, target_job, task_name=None):
         """ Add a task to a job owned by the Dagobah instance. """
 
         job = self._resolve_job(job_or_job_name)

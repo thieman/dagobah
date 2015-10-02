@@ -498,5 +498,4 @@ def add_jobtask_to_job():
 
     dagobah.add_jobtask_to_job(args['job_name'],
                                args['target_job'],
-                               args['task_name'],
-                               hostname=args.get("task_target", None))
+                               args['task_name'])
