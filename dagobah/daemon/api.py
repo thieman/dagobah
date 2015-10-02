@@ -492,8 +492,7 @@ def add_jobtask_to_job():
                          required=['job_name', 'target_job', 'task_name'],
                          job_name=str,
                          target_job=str,
-                         task_name=str,
-                         task_target=str):
+                         task_name=str):
         abort(400)
 
     dagobah.add_jobtask_to_job(args['job_name'],
