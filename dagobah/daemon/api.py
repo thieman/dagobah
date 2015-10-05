@@ -481,3 +481,20 @@ def import_job():
 @api_call
 def get_hosts():
     return dagobah.get_hosts()
+
+
+@app.route('/api/add_jobtask_to_job', methods=['POST'])
+@login_required
+@api_call
+def add_jobtask_to_job():
+    args = dict(request.form)
+    if not validate_dict(args,
+                         required=['job_name', 'target_job', 'task_name'],
+                         job_name=str,
+                         target_job=str,
+                         task_name=str):
+        abort(400)
+
+    dagobah.add_jobtask_to_job(args['job_name'],
+                               args['target_job'],
+                               args['task_name'])

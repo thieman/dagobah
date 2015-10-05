@@ -11,6 +11,8 @@ from dagobah.core.dagobah import Dagobah
 from dagobah.daemon.app import app
 from dagobah.backend.base import BaseBackend
 
+from pprint import pprint
+
 class TestAPI(object):
 
     @classmethod
@@ -45,7 +47,6 @@ class TestAPI(object):
         j = self.dagobah.get_job('Test Job')
         j.add_dependency('grep', 'list')
         j.schedule('0 0 3 0 0')
-
 
 
     @nottest
@@ -108,6 +109,41 @@ class TestAPI(object):
         d = self.validate_api_call(r)
         assert len(d['result']) == 1
         assert len(d['result'][0]['tasks']) == 3
+
+
+    def test_add_jobtask_to_job(self):
+        self.reset_dagobah()
+
+        # Add second job
+        self.dagobah.add_job('Test Job 2')
+        self.dagobah.add_task_to_job('Test Job 2', 'ls -lahtr')
+        self.dagobah.add_task_to_job('Test Job 2', 'pwd')
+        j2 = self.dagobah.get_job('Test Job 2')
+        j2.add_dependency('ls -lahtr', 'pwd')
+        j2.schedule('0 0 3 0 0')
+
+        # Add jobtask
+        p_args = {'job_name': 'Test Job',
+                  'target_job': 'Test Job 2',
+                  'task_name': 'test'}
+        r = self.app.post('/api/add_jobtask_to_job', data=p_args)
+        self.validate_api_call(r)
+
+        r = self.app.get('/api/jobs')
+        d = self.validate_api_call(r)
+        assert d['result'][0]['tasks'][0]['job_name'] == 'Test Job 2'
+
+        # Add Dependency
+        p_args = {'job_name': 'Test Job',
+                  'from_task_name': 'test',
+                  'to_task_name': 'grep'}
+        r = self.app.post('/api/add_dependency', data=p_args)
+        self.validate_api_call(r)
+
+        r = self.app.get('/api/jobs')
+        d = self.validate_api_call(r)
+        pprint(d)
+        assert d['result'][0]['dependencies']['test'] == ['grep']
 
 
     def test_add_dependency(self):
