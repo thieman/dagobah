@@ -55,6 +55,12 @@ textarea {
 	margin-top: 18px;
 }
 
+#command-toggle {
+	float: left;
+	margin-top: 18px;
+	margin-bottom: 18px;
+}
+
 td:last-child {
 	width: 17%;
 }

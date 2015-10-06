@@ -389,6 +389,10 @@ $('#table-toggle').children().click(function() {
     resetTasksTable($(this).val());
 });
 
+$('#command-toggle').children().click(function() {
+	console.log("Help me plz")
+})
+
 function updateTasksTable() {
 
     if (!job.loaded) {
