@@ -231,9 +231,11 @@
   <label>Name</label>
   <input id='new-task-name' class='input-xxlarge' type='text' placeholder='Task Name'></input>
 
+  <div id="remote-options">
   <label class="checkbox">
       <input type="checkbox" value="remote" id="remote_checkbox"> Remote
   </label>
+  </div>
   <div id="target_hosts" style="display: none;">
     <label>Target Hosts:</label>
         <select id="target-hosts-dropdown" name="target_hosts">
@@ -244,10 +246,18 @@
   </div>
 
   <div id='command-toggle' class='btn-group' data-toggle='buttons-radio'>
-    <button class='btn active' value='results'>Command</button>
-    <button class='btn' value='commands'>Job Reference</button>
+    <button class='btn active' value='command'>Command</button>
+    <button class='btn' value='job_reference'>Job Reference</button>
   </div>
   <textarea id='new-task-command' rows="3" placeholder='Task Command'></textarea>
+  <div id="target-jobs" style="display: none;">
+    <label>Target Jobs:</label>
+        <select id="target-jobs-dropdown" name="target-jobs">
+        {% for target_job in jobs %}
+            <option value="{{ target_job.name}}">{{ target_job.name }}</option>
+        {% endfor %}
+    </select>
+  </div>
 
   <br />
   <button id='add-task' class='btn btn-success' onclick='return false;'>Add Task</button>

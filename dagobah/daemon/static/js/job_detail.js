@@ -248,7 +248,9 @@ $('#add-task').click(function() {
 
     var newName = $('#new-task-name').val();
     var newCommand = $('#new-task-command').val();
-    if ($('#remote_checkbox').is(':checked')){
+	var taskType = $("#command-toggle > .btn.active").val()
+	var targetJob = $("#target-jobs-dropdown").val();
+    if ($('#remote_checkbox').is(':checked') && taskType == "command") {
         var newTargetHostId = $('#target-hosts-dropdown').val();
     }
 
@@ -256,12 +258,16 @@ $('#add-task').click(function() {
         showAlert('new-alert', 'error', 'Please enter a name for the new task.');
         return;
     }
-    if (newCommand === null || newCommand === '') {
+    if (taskType == "command" && (newCommand === null || newCommand === '')) {
         showAlert('new-alert', 'error', 'Please enter a command for the new task.');
         return;
     }
 
-    addNewTask(newName, newCommand, newTargetHostId);
+	if (taskType == "command") {
+		addNewTask(newName, newCommand, newTargetHostId);
+	} else {
+		addNewJobTask(newName, targetJob);
+	}
 
 });
 
@@ -300,6 +306,43 @@ function addNewTask(newName, newCommand, newTargetHostId) {
             $('#new-task-name').val('');
             $('#new-task-command').val('');
             $('#target-hosts-dropdown').val('');
+        },
+        error: function() {
+            showAlert('new-alert', 'error', 'There was an error adding the task to this job.');
+        },
+        async: true
+    });
+
+}
+
+function addNewJobTask(newName, targetJob) {
+	console.log(job.name);
+	console.log(targetJob);
+	console.log(newName);
+
+    if (!job.loaded) {
+        return;
+    }
+
+	data = {
+		job_name: job.name,
+		target_job: targetJob,
+		task_name: newName
+	};
+
+    $.ajax({
+        type: 'POST',
+        url: $SCRIPT_ROOT + '/api/add_jobtask_to_job',
+        data: data,
+        dataType: 'json',
+        success: function() {
+            showAlert('new-alert', 'success', 'Task added to job.');
+            job.update(function() {
+                job.addTaskToGraph(newName);
+                resetTasksTable();
+            });
+            $('#new-task-name').val('');
+            $('#target-jobs-dropdown').val('');
         },
         error: function() {
             showAlert('new-alert', 'error', 'There was an error adding the task to this job.');
@@ -389,9 +432,21 @@ $('#table-toggle').children().click(function() {
     resetTasksTable($(this).val());
 });
 
-$('#command-toggle').children().click(function() {
-	console.log("Help me plz")
+$('#command-toggle').children().click(function(e) {
+	// apparently because the buttons are in a form, clicking them starts a form
+	// submission. This prevents that.
+	e.preventDefault();
+	updateTaskChoice($(this).val());
 })
+
+function updateTaskChoice(choice) {
+	console.log("This is")
+	console.log(choice)
+	$("#remote_checkbox").attr("disabled", choice!="command");
+	$("#target-hosts-dropdown").attr("disabled", choice!="command");
+    $("#new-task-command").toggle(choice=="command");
+    $("#target-jobs").toggle(choice=="job_reference");
+}
 
 function updateTasksTable() {
 
