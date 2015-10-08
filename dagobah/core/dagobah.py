@@ -101,8 +101,8 @@ class Dagobah(object):
 
         for task in job_json.get('tasks', []):
             # If it is a jobtask, it will have a job_id
-            if task.get('job_id'):
-                self.add_jobtask_to_job(job, task['job_id'], str(task['name']))
+            if task.get('job_name'):
+                self.add_jobtask_to_job(job, task['job_name'], str(task['name']))
             else:
                 self.add_task_to_job(job,
                                      str(task['command']),

@@ -335,7 +335,7 @@ class Job(DAG):
         logger.debug('Job {0} initializing run log entry for task {1}'.
                      format(self.name, task_name))
         data = {'start_time': datetime.utcnow(),
-                'command': self.tasks[task_name].command}
+                'command': self.tasks_snapshot[task_name].command}
         self.run_log['tasks'][task_name] = data
 
     def _is_complete(self):
@@ -612,7 +612,8 @@ class Job(DAG):
             if not self.implements_expandable(task):
                 continue
 
-            logger.debug("Found expandable task: {0}".format(task.name))
+            logger.debug("Found expandable task: {0} with target job {1}"
+                         .format(task.name, task.target_job_name))
             cur_job = self.parent._resolve_job(task.target_job_name)
             if not cur_job:
                 raise DagobahError("Job with name {0} doesn't exist."
