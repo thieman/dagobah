@@ -9,8 +9,6 @@ from flask_login import login_required
 from .daemon import app
 from .util import validate_dict, api_call, allowed_file
 
-from pprint import pprint;
-
 dagobah = app.config['dagobah']
 
 @app.route('/api/jobs', methods=['GET'])
@@ -490,7 +488,6 @@ def get_hosts():
 @api_call
 def add_jobtask_to_job():
     args = dict(request.form)
-    pprint(args);
     if not validate_dict(args,
                          required=['job_name', 'target_job', 'task_name'],
                          job_name=str,
