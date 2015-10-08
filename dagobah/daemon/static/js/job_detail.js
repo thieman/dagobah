@@ -248,8 +248,8 @@ $('#add-task').click(function() {
 
     var newName = $('#new-task-name').val();
     var newCommand = $('#new-task-command').val();
-	var taskType = $("#command-toggle > .btn.active").val()
-	var targetJob = $("#target-jobs-dropdown").val();
+    var taskType = $("#command-toggle > .btn.active").val()
+    var targetJob = $("#target-jobs-dropdown").val();
     if ($('#remote_checkbox').is(':checked') && taskType == "command") {
         var newTargetHostId = $('#target-hosts-dropdown').val();
     }
@@ -263,11 +263,11 @@ $('#add-task').click(function() {
         return;
     }
 
-	if (taskType == "command") {
-		addNewTask(newName, newCommand, newTargetHostId);
-	} else {
-		addNewJobTask(newName, targetJob);
-	}
+    if (taskType == "command") {
+        addNewTask(newName, newCommand, newTargetHostId);
+    } else {
+        addNewJobTask(newName, targetJob);
+    }
 
 });
 
@@ -316,19 +316,19 @@ function addNewTask(newName, newCommand, newTargetHostId) {
 }
 
 function addNewJobTask(newName, targetJob) {
-	console.log(job.name);
-	console.log(targetJob);
-	console.log(newName);
+    console.log(job.name);
+    console.log(targetJob);
+    console.log(newName);
 
     if (!job.loaded) {
         return;
     }
 
-	data = {
-		job_name: job.name,
-		target_job: targetJob,
-		task_name: newName
-	};
+    data = {
+        job_name: job.name,
+        target_job: targetJob,
+        task_name: newName
+    };
 
     $.ajax({
         type: 'POST',
@@ -433,17 +433,17 @@ $('#table-toggle').children().click(function() {
 });
 
 $('#command-toggle').children().click(function(e) {
-	// apparently because the buttons are in a form, clicking them starts a form
-	// submission. This prevents that.
-	e.preventDefault();
-	updateTaskChoice($(this).val());
+    // apparently because the buttons are in a form, clicking them starts a form
+    // submission. This prevents that.
+    e.preventDefault();
+    updateTaskChoice($(this).val());
 })
 
 function updateTaskChoice(choice) {
-	console.log("This is")
-	console.log(choice)
-	$("#remote_checkbox").attr("disabled", choice!="command");
-	$("#target-hosts-dropdown").attr("disabled", choice!="command");
+    console.log("This is")
+    console.log(choice)
+    $("#remote_checkbox").attr("disabled", choice!="command");
+    $("#target-hosts-dropdown").attr("disabled", choice!="command");
     $("#new-task-command").toggle(choice=="command");
     $("#target-jobs").toggle(choice=="job_reference");
 }
