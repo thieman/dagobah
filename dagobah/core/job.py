@@ -409,22 +409,34 @@ class Job(DAG):
         logger.debug('Committing run log for job {0}'.format(self.name))
         self.backend.commit_log(self.run_log)
 
-    def _serialize(self, include_run_logs=False, strict_json=False):
-        """ Serialize a representation of this Job to a Python dict object. """
+    def _serialize(self, include_run_logs=False, strict_json=False, use_snapshot=False):
+        """
+        Serialize a representation of this Job to a Python dict object.
+
+        Optional Arguments:
+            include_run_logs -- Include run logs in JSON result
+            strict_json -- use strict_json encoder
+            use_snapshot -- If there is a snapshot, use it to display task info
+        """
+        tasks = self.tasks
+        graph = self.graph
+        if use_snapshot and self.snapshot and self.tasks_snapshot:
+            graph = self.snapshot
+            tasks = self.tasks_snapshot
 
         # return tasks in sorted order if graph is in a valid state
         try:
-            topo_sorted = self.topological_sort()
-            t = [self.tasks[task]._serialize(include_run_logs=include_run_logs,
+            topo_sorted = self.topological_sort(graph)
+            t = [tasks[task]._serialize(include_run_logs=include_run_logs,
                                              strict_json=strict_json)
                  for task in topo_sorted]
         except:
             t = [task._serialize(include_run_logs=include_run_logs,
                                  strict_json=strict_json)
-                 for task in self.tasks.itervalues()]
+                 for task in tasks.itervalues()]
 
         dependencies = {}
-        for k, v in self.graph.iteritems():
+        for k, v in graph.iteritems():
             dependencies[k] = list(v)
 
         result = {'job_id': self.job_id,
