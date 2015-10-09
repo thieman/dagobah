@@ -100,7 +100,7 @@ class Dagobah(object):
             job.schedule(job_json['cron_schedule'])
 
         for task in job_json.get('tasks', []):
-            # If it is a jobtask, it will have a job_id
+            # If it is a jobtask, it will have a job_name
             if task.get('job_name'):
                 self.add_jobtask_to_job(job, task['job_name'], str(task['name']))
             else:
