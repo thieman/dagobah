@@ -31,5 +31,5 @@ class JobTask(object):
         return result
 
     def clone(self):
-        cloned_task = JobTask(self.parent_job, self.target_job_name, self.name)
+        cloned_task = JobTask(self.parent_job, self.name, self.target_job_name)
         return cloned_task
