@@ -248,7 +248,7 @@ $('#add-task').click(function() {
 
     var newName = $('#new-task-name').val();
     var newCommand = $('#new-task-command').val();
-    var taskType = $("#command-toggle > .btn.active").val()
+    var taskType = $("#command-toggle > .btn.active").val();
     var targetJob = $("#target-jobs-dropdown").val();
     if ($('#remote_checkbox').is(':checked') && taskType == "command") {
         var newTargetHostId = $('#target-hosts-dropdown').val();
@@ -316,9 +316,6 @@ function addNewTask(newName, newCommand, newTargetHostId) {
 }
 
 function addNewJobTask(newName, targetJob) {
-    console.log(job.name);
-    console.log(targetJob);
-    console.log(newName);
 
     if (!job.loaded) {
         return;
@@ -440,8 +437,6 @@ $('#command-toggle').children().click(function(e) {
 })
 
 function updateTaskChoice(choice) {
-    console.log("This is")
-    console.log(choice)
     $("#remote_checkbox").attr("disabled", choice!="command");
     $("#target-hosts-dropdown").attr("disabled", choice!="command");
     $("#new-task-command").toggle(choice=="command");
