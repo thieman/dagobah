@@ -335,7 +335,7 @@ class Job(DAG):
         logger.debug('Job {0} initializing run log entry for task {1}'.
                      format(self.name, task_name))
         data = {'start_time': datetime.utcnow(),
-                'command': self.tasks[task_name].command}
+                'command': self.tasks_snapshot[task_name].command}
         self.run_log['tasks'][task_name] = data
 
     def _is_complete(self):
