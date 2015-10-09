@@ -32,7 +32,7 @@ def get_job():
     if not job:
         abort(400)
 
-    return job._serialize()
+    return job._serialize(use_snapshot='use_snapshot' in args)
 
 
 @app.route('/api/logs', methods=['GET'])
