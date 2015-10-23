@@ -300,8 +300,8 @@ class Job(DAG):
     def _complete_task(self, task_name, **kwargs):
         """ Marks this task as completed. Kwargs are stored in the run log. """
 
-        logger.debug('Job {0} marking task {1} as completed'.format(self.name,
-                                                                    task_name))
+        logger.debug('Job "{0}" marking task "{1}" as completed'
+                     .format(self.name, task_name))
         self.run_log['tasks'][task_name] = kwargs
 
         for node in self.downstream(task_name, self.snapshot):
@@ -366,6 +366,7 @@ class Job(DAG):
                 finally:
                     self.backend.release_lock()
                 break
+
 
         if self.state.status != 'failed':
             self._set_status('waiting')
@@ -489,9 +490,12 @@ class Job(DAG):
 
         # Due to thread locks in underlying tasks, they cannot be deepcopy'd
         tasks_copy = dict((n, t.clone()) for (n, t) in self.tasks.iteritems())
-
         self.snapshot, self.tasks_snapshot = self.expand(snapshot_to_validate,
                                                          tasks_copy)
+
+        # These expanded copies need to be pointed to this job as parent
+        for t in tasks_copy.itervalues():
+            t.parent_job = self
 
     def expand(self, graph, tasks):
         """
