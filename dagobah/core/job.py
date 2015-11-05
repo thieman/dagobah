@@ -612,7 +612,8 @@ class Job(DAG):
             if not self.implements_expandable(task):
                 continue
 
-            logger.debug("Found expandable task: {0}".format(task.name))
+            logger.debug("Found expandable task: {0} with target job {1}"
+                         .format(task.name, task.target_job_name))
             cur_job = self.parent._resolve_job(task.target_job_name)
             if not cur_job:
                 raise DagobahError("Job with name {0} doesn't exist."
