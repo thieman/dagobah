@@ -5,3 +5,4 @@ from .dagobah import Dagobah
 from .task import Task
 from .jobtask import JobTask
 from .job import Job
+from .delegator import CommitDelegator
