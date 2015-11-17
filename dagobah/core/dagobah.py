@@ -7,6 +7,7 @@ from .components import Scheduler, StrictJSONEncoder
 from ..backend.base import BaseBackend
 from .dagobah_error import DagobahError
 from .job import Job
+from .delegator import CommitDelegator
 
 logger = logging.getLogger('dagobah')
 
@@ -34,7 +35,8 @@ class Dagobah(object):
 
         self.scheduler.start()
 
-        self.commit()
+        self.delegator = CommitDelegator(backend)
+        self.delegator.commit_dagobah(self)
 
     def __repr__(self):
         return '<Dagobah with Backend %s>' % self.backend
@@ -50,7 +52,7 @@ class Dagobah(object):
             for task in job.tasks.values():
                 task.backend = backend
 
-        self.commit(cascade=True)
+        self.delegator.commit_dagobah(self, cascade=True)
 
     def from_backend(self, dagobah_id):
         """ Reconstruct this Dagobah instance from the backend. """
@@ -73,7 +75,7 @@ class Dagobah(object):
         for job_json in rec.get('jobs', []):
             self._add_job_from_spec(job_json)
 
-        self.commit(cascade=True)
+        self.delegator.commit_dagobah(self, cascade=True)
 
     def add_job_from_json(self, job_json, destructive=False):
         """ Construct a new Job from an imported JSON spec. """
@@ -86,7 +88,7 @@ class Dagobah(object):
                 pass
         self._add_job_from_spec(rec, use_job_id=False)
 
-        self.commit(cascade=True)
+        self.delegator.commit_dagobah(self, cascade=True)
 
     def _add_job_from_spec(self, job_json, use_job_id=True):
         """ Add a single job to the Dagobah from a spec. """
@@ -119,17 +121,6 @@ class Dagobah(object):
         if job_json.get('notes', None):
             job.update_job_notes(job_json['notes'])
 
-    def commit(self, cascade=False):
-        """ Commit this Dagobah instance to the backend.
-
-        If cascade is True, all child Jobs are commited as well.
-        """
-        logger.debug('Committing Dagobah instance with cascade={0}'.
-                     format(cascade))
-        self.backend.commit_dagobah(self._serialize())
-        if cascade:
-            [job.commit() for job in self.jobs]
-
     def delete(self):
         """ Delete this Dagobah instance from the Backend. """
         logger.debug('Deleting Dagobah instance with ID {0}'.
@@ -154,7 +145,7 @@ class Dagobah(object):
                              job_name))
 
         job = self.get_job(job_name)
-        job.commit()
+        self.delegator.commit_job(job)
 
     def load_ssh_conf(self):
         try:
@@ -212,7 +203,7 @@ class Dagobah(object):
             if job.name == job_name:
                 self.backend.delete_job(job.job_id)
                 del self.jobs[idx]
-                self.commit()
+                self.delegator.commit_dagobah(self)
                 return
         raise DagobahError('no job with name %s exists' % job_name)
 
@@ -243,7 +234,7 @@ class Dagobah(object):
                                % job.state.status)
 
         job.add_task(task_command, task_name, **kwargs)
-        job.commit()
+        self.delegator.commit_job(job)
 
     def add_jobtask_to_job(self, job_or_job_name, target_job, task_name=None):
         """ Add a task to a job owned by the Dagobah instance. """
@@ -260,7 +251,7 @@ class Dagobah(object):
                                % job.state.status)
 
         job.add_jobtask(target_job.name, task_name)
-        job.commit()
+        self.delegator.commit_job(job)
 
     def _name_is_available(self, job_name):
         """ Returns Boolean of whether the specified name is already in use."""

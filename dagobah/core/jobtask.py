@@ -2,6 +2,7 @@ import logging
 import json
 
 from .components import StrictJSONEncoder
+from .delegator import CommitDelegator
 
 logger = logging.getLogger('dagobah')
 
@@ -14,6 +15,9 @@ class JobTask(object):
         self.parent_job = parent_job
         self.target_job_name = target_job_name
         self.name = task_name
+
+        self.delegator = CommitDelegator(self.parent_job.backend)
+        self.delegator.commit_job(self.parent_job)
 
     def expand(self):
         """ Expand this JobTask into a list of tasks """

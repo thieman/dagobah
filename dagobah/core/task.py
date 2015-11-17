@@ -8,6 +8,7 @@ import logging
 
 from .components import StrictJSONEncoder
 from .dagobah_error import DagobahError
+from .delegator import CommitDelegator
 
 logger = logging.getLogger('dagobah')
 
@@ -31,6 +32,9 @@ class Task(object):
         self.name = name
         self.hostname = hostname
 
+        self.delegator = CommitDelegator(self.backend)
+        self.delegator.commit_job(self.parent_job)
+
         self.remote_channel = None
         self.process = None
         self.stdout = ""
@@ -51,26 +55,24 @@ class Task(object):
         self.set_soft_timeout(soft_timeout)
         self.set_hard_timeout(hard_timeout)
 
-        self.parent_job.commit()
-
     def set_soft_timeout(self, timeout):
         logger.debug('Task {0} setting soft timeout'.format(self.name))
         if not isinstance(timeout, (int, float)) or timeout < 0:
             raise ValueError('timeouts must be non-negative numbers')
         self.soft_timeout = timeout
-        self.parent_job.commit()
+        self.delegator.commit_job(self.parent_job)
 
     def set_hard_timeout(self, timeout):
         logger.debug('Task {0} setting hard timeout'.format(self.name))
         if not isinstance(timeout, (int, float)) or timeout < 0:
             raise ValueError('timeouts must be non-negative numbers')
         self.hard_timeout = timeout
-        self.parent_job.commit()
+        self.delegator.commit_job(self.parent_job)
 
     def set_hostname(self, hostname):
         logger.debug('Task {0} setting hostname'.format(self.name))
         self.hostname = hostname
-        self.parent_job.commit()
+        self.delegator.commit_job(self.parent_job)
 
     def reset(self):
         """ Reset this Task to a clean state prior to execution. """
