@@ -300,8 +300,8 @@ class Job(DAG):
     def _complete_task(self, task_name, **kwargs):
         """ Marks this task as completed. Kwargs are stored in the run log. """
 
-        logger.debug('Job {0} marking task {1} as completed'.format(self.name,
-                                                                    task_name))
+        logger.debug('Job "{0}" marking task "{1}" as completed'
+                     .format(self.name, task_name))
         self.run_log['tasks'][task_name] = kwargs
 
         for node in self.downstream(task_name, self.snapshot):
@@ -335,7 +335,7 @@ class Job(DAG):
         logger.debug('Job {0} initializing run log entry for task {1}'.
                      format(self.name, task_name))
         data = {'start_time': datetime.utcnow(),
-                'command': self.tasks[task_name].command}
+                'command': self.tasks_snapshot[task_name].command}
         self.run_log['tasks'][task_name] = data
 
     def _is_complete(self):
@@ -366,6 +366,7 @@ class Job(DAG):
                 finally:
                     self.backend.release_lock()
                 break
+
 
         if self.state.status != 'failed':
             self._set_status('waiting')
@@ -409,22 +410,34 @@ class Job(DAG):
         logger.debug('Committing run log for job {0}'.format(self.name))
         self.backend.commit_log(self.run_log)
 
-    def _serialize(self, include_run_logs=False, strict_json=False):
-        """ Serialize a representation of this Job to a Python dict object. """
+    def _serialize(self, include_run_logs=False, strict_json=False, use_snapshot=False):
+        """
+        Serialize a representation of this Job to a Python dict object.
+
+        Optional Arguments:
+            include_run_logs -- Include run logs in JSON result
+            strict_json -- use strict_json encoder
+            use_snapshot -- If there is a snapshot, use it to display task info
+        """
+        tasks = self.tasks
+        graph = self.graph
+        if use_snapshot and self.snapshot and self.tasks_snapshot:
+            graph = self.snapshot
+            tasks = self.tasks_snapshot
 
         # return tasks in sorted order if graph is in a valid state
         try:
-            topo_sorted = self.topological_sort()
-            t = [self.tasks[task]._serialize(include_run_logs=include_run_logs,
+            topo_sorted = self.topological_sort(graph)
+            t = [tasks[task]._serialize(include_run_logs=include_run_logs,
                                              strict_json=strict_json)
                  for task in topo_sorted]
         except:
             t = [task._serialize(include_run_logs=include_run_logs,
                                  strict_json=strict_json)
-                 for task in self.tasks.itervalues()]
+                 for task in tasks.itervalues()]
 
         dependencies = {}
-        for k, v in self.graph.iteritems():
+        for k, v in graph.iteritems():
             dependencies[k] = list(v)
 
         result = {'job_id': self.job_id,
@@ -477,9 +490,12 @@ class Job(DAG):
 
         # Due to thread locks in underlying tasks, they cannot be deepcopy'd
         tasks_copy = dict((n, t.clone()) for (n, t) in self.tasks.iteritems())
-
         self.snapshot, self.tasks_snapshot = self.expand(snapshot_to_validate,
                                                          tasks_copy)
+
+        # These expanded copies need to be pointed to this job as parent
+        for t in tasks_copy.itervalues():
+            t.parent_job = self
 
     def expand(self, graph, tasks):
         """

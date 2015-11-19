@@ -52,7 +52,7 @@ Job.prototype.update = function(callback) {
     $.ajax({
         type: 'GET',
         url: $SCRIPT_ROOT + '/api/job',
-        data: {job_name: parent.name},
+        data: {job_name: parent.name, use_snapshot: true},
         dataType: 'json',
         success: function(data) {
             parent.readFromJSON(data['result']);
