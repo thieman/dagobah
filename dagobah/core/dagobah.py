@@ -45,6 +45,7 @@ class Dagobah(object):
         """ Manually set backend after construction. """
 
         self.backend = backend
+        self.delegator.backend = backend
         self.dagobah_id = self.backend.get_new_dagobah_id()
 
         for job in self.jobs:
