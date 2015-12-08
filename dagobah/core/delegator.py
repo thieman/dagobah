@@ -33,7 +33,6 @@ class CommitDelegator(object):
         logger.debug('Committing job {0}'.format(job.name))
         self.backend.commit_job(job._serialize())
         self.commit_dagobah(job.parent)
-        return
 
     def commit_run_log(self, job):
         """" Commit the current run log to the backend. """
