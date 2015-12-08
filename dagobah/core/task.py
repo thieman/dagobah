@@ -8,7 +8,6 @@ import logging
 
 from .components import StrictJSONEncoder
 from .dagobah_error import DagobahError
-from .delegator import CommitDelegator
 
 logger = logging.getLogger('dagobah')
 
@@ -32,7 +31,7 @@ class Task(object):
         self.name = name
         self.hostname = hostname
 
-        self.delegator = CommitDelegator(self.backend)
+        self.delegator = parent_job.delegator
         self.delegator.commit_job(self.parent_job)
 
         self.remote_channel = None

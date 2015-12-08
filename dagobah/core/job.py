@@ -12,7 +12,6 @@ from .components import JobState, StrictJSONEncoder
 from .task import Task
 from .dagobah_error import DagobahError
 from .jobtask import JobTask
-from .delegator import CommitDelegator
 
 logger = logging.getLogger('dagobah')
 
@@ -55,7 +54,7 @@ class Job(DAG):
 
         self._set_status('waiting')
 
-        self.delegator = CommitDelegator(backend)
+        self.delegator = parent.delegator
         self.delegator.commit_job(self)
 
     def _check_mutability(self):
