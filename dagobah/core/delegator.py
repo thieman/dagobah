@@ -14,7 +14,7 @@ class CommitDelegator(object):
     processing.
     """
 
-    def __init__(self, backend=BaseBackend()):
+    def __init__(self, backend):
         self.backend = backend
 
     def commit_dagobah(self, dagobah, cascade=False):
