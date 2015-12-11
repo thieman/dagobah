@@ -24,15 +24,16 @@ class CommitDelegator(object):
         """
         logger.debug('Committing Dagobah instance with cascade={0}'.
                      format(cascade))
-        self.backend.commit_dagobah(dagobah._serialize())
         if cascade:
-            [self.commit_job(job) for job in dagobah.jobs]
+            [self.commit_job(job, False) for job in dagobah.jobs]
+        self.backend.commit_dagobah(dagobah._serialize())
 
-    def commit_job(self, job):
+    def commit_job(self, job, commit_dagobah=True):
         """ Store metadata on this Job to the backend. """
         logger.debug('Committing job {0}'.format(job.name))
         self.backend.commit_job(job._serialize())
-        self.commit_dagobah(job.parent)
+        if commit_dagobah:
+            self.commit_dagobah(job.parent)
 
     def commit_run_log(self, job):
         """" Commit the current run log to the backend. """
