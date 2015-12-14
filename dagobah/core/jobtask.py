@@ -15,6 +15,9 @@ class JobTask(object):
         self.target_job_name = target_job_name
         self.name = task_name
 
+        self.delegator = parent_job.delegator
+        self.delegator.commit_job(self.parent_job)
+
     def expand(self):
         """ Expand this JobTask into a list of tasks """
         target_job = self.parent_job.parent._resolve_job(self.target_job_name)

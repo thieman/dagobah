@@ -54,19 +54,14 @@ class Job(DAG):
 
         self._set_status('waiting')
 
-        self.commit()
+        self.delegator = parent.delegator
+        self.delegator.commit_job(self)
 
     def _check_mutability(self):
         """ Check if graph is immutable before running """
         if not self.state.allow_change_graph:
             raise DagobahError("job's graph is immutable in its current " +
                                "state: %s" % self.state.status)
-
-    def commit(self):
-        """ Store metadata on this Job to the backend. """
-        logger.debug('Committing job {0}'.format(self.name))
-        self.backend.commit_job(self._serialize())
-        self.parent.commit()
 
     def add_task(self, command, name=None, **kwargs):
         """ Adds a new Task to the graph with no edges. """
@@ -80,7 +75,7 @@ class Job(DAG):
         new_task = Task(self, command, name, **kwargs)
         self.tasks[name] = new_task
         self.add_node(name)
-        self.commit()
+        self.delegator.commit_job(self)
 
     def add_jobtask(self, job_name, task_name=None):
         logger.debug('Adding JobTask named {0}, referencing {1}'.
@@ -92,7 +87,7 @@ class Job(DAG):
         new_jobtask = JobTask(self, job_name, task_name)
         self.tasks[task_name] = new_jobtask
         self.add_node(task_name)
-        self.commit()
+        self.delegator.commit_job(self)
 
     def add_dependency(self, from_task_name, to_task_name):
         """ Add a dependency between two tasks. """
@@ -101,7 +96,7 @@ class Job(DAG):
                                                                 to_task_name))
         self._check_mutability()
         self.add_edge(from_task_name, to_task_name)
-        self.commit()
+        self.delegator.commit_job(self)
 
     def delete_task(self, task_name):
         """ Deletes the named Task in this Job. """
@@ -114,7 +109,7 @@ class Job(DAG):
 
         self.tasks.pop(task_name)
         self.delete_node(task_name)
-        self.commit()
+        self.delegator.commit_job(self)
 
     def delete_dependency(self, from_task_name, to_task_name):
         """ Delete a dependency between two tasks. """
@@ -123,7 +118,7 @@ class Job(DAG):
                      format(from_task_name, to_task_name))
         self._check_mutability()
         self.delete_edge(from_task_name, to_task_name)
-        self.commit()
+        self.delegator.commit_job(self)
 
     def schedule(self, cron_schedule, base_datetime=None):
         """ Schedules the job to run periodically using Cron syntax. """
@@ -148,7 +143,7 @@ class Job(DAG):
 
         logger.debug('Determined job {0} next run of {1}'.
                      format(self.name, self.next_run))
-        self.commit()
+        self.delegator.commit_job(self)
 
     def start(self):
         """ Begins the job by kicking off all tasks with no dependencies. """
@@ -182,7 +177,7 @@ class Job(DAG):
             self._put_task_in_run_log(task_name)
             self.tasks_snapshot[task_name].start()
 
-        self._commit_run_log()
+        self.delegator.commit_run_log(self)
 
     def retry(self):
         """ Restarts failed tasks of a job. """
@@ -206,7 +201,7 @@ class Job(DAG):
             self._put_task_in_run_log(task_name)
             self.tasks[task_name].start()
 
-        self._commit_run_log()
+        self.delegator.commit_run_log(self)
 
     def terminate_all(self):
         """ Terminate all currently running tasks. """
@@ -245,7 +240,7 @@ class Job(DAG):
             if key in kwargs and isinstance(kwargs[key], str):
                 setattr(self, key, kwargs[key])
 
-        self.parent.commit(cascade=True)
+        self.delegator.commit_dagobah(self.parent, cascade=True)
 
     def update_job_notes(self, notes):
         logger.debug('Job {0} updating notes'.format(self.name))
@@ -254,7 +249,7 @@ class Job(DAG):
 
         setattr(self, 'notes', notes)
 
-        self.parent.commit(cascade=True)
+        self.delegator.commit_dagobah(self.parent, cascade=True)
 
     def edit_task(self, task_name, **kwargs):
         """ Change the name of a Task owned by this Job.
@@ -295,7 +290,7 @@ class Job(DAG):
             self.tasks[kwargs['name']] = task
             del self.tasks[task_name]
 
-        self.parent.commit(cascade=True)
+        self.delegator.commit_dagobah(self.parent, cascade=True)
 
     def _complete_task(self, task_name, **kwargs):
         """ Marks this task as completed. Kwargs are stored in the run log. """
@@ -309,7 +304,7 @@ class Job(DAG):
 
         try:
             self.backend.acquire_lock()
-            self._commit_run_log()
+            self.delegator.commit_run_log(self)
         except:
             logger.exception("Error in handling events.")
         finally:
@@ -404,11 +399,6 @@ class Job(DAG):
             self.state.set_status(status)
         except:
             raise DagobahError('could not set status %s' % status)
-
-    def _commit_run_log(self):
-        """" Commit the current run log to the backend. """
-        logger.debug('Committing run log for job {0}'.format(self.name))
-        self.backend.commit_log(self.run_log)
 
     def _serialize(self, include_run_logs=False, strict_json=False, use_snapshot=False):
         """
