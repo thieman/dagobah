@@ -19,7 +19,6 @@ class BaseBackend(object):
     # this is a list of dicts describing the additional packages that
     # need to be installed to use this backend
     # Keys: pypi_name, module_name, version_key, spec_version
-    # See the SQLiteBackend for an example implementation
     required_packages = []
 
     def __init__(self):
@@ -41,12 +40,7 @@ class BaseBackend(object):
                                                                                                         spec['version']))
                 continue
 
-            # everyone has to be special
-            if spec['pypi_name'] == 'pysqlite':
-                module = __import__('pysqlite2._sqlite')
-                installed_version = getattr(module._sqlite, spec['version_key'])
-            else:
-                installed_version = getattr(module, spec['version_key'])
+            installed_version = getattr(module, spec['version_key'])
 
             if Version(installed_version, partial=True) < Version(spec['version'], partial=True):
                 msg = 'Package {0} requires at least version {1}, found version {2}.'.format(spec['pypi_name'],

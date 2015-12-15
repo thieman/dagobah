@@ -244,20 +244,6 @@ def get_backend(config):
         from ..backend.base import BaseBackend
         return BaseBackend()
 
-    elif backend_string.lower() == 'sqlite':
-        backend_kwargs = {}
-        for conf_kwarg in ['filepath']:
-            backend_kwargs[conf_kwarg] = get_conf(config,
-                                                  'SQLiteBackend.%s' % conf_kwarg)
-
-        try:
-            from ..backend.sqlite import SQLiteBackend
-        except:
-            raise ImportError('Could not initialize the SQLite Backend. Are you sure' +
-                              ' the optional drivers are installed? If not, try running ' +
-                              '"pip install pysqlite sqlalchemy alembic" to install them.')
-        return SQLiteBackend(**backend_kwargs)
-
     elif backend_string.lower() == 'mongo':
         backend_kwargs = {}
         for conf_kwarg in ['host', 'port', 'db',
