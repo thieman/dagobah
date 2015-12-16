@@ -26,13 +26,13 @@ Dagobah does not require a backend, but unless you specify one, your jobs and ta
 
 To use a backend, you need to install the drivers using the commands below and then tell Dagobah to use the backend in the config file (default location `~/.dagobahd.yml`).
 
-#### SQLite
-
-     pip install pysqlite sqlalchemy alembic
-
 #### MongoDB
 
     pip install pymongo
+    
+#### Deprecated Backends
+
+ * **SQLite**: Deprecated following version 0.3.1.
 
 ## Features
 
