@@ -45,7 +45,7 @@ def get_config_file():
     """ Return the loaded config file if one exists. """
 
     # config will be created here if we can't find one
-    new_config_path = os.path.expanduser('~/.dagobahd.yml')
+    new_config_path = os.path.expanduser('~/dagobahd.yml')
 
     config_dirs = ['/etc',
                    os.path.expanduser('~/dagobah/dagobah/daemon/')]
@@ -69,6 +69,7 @@ def get_config_file():
     # if we made it to here, need to create a config file
     # double up on notifications here to make sure first-time user sees it
     print 'Creating new config file in home directory'
+    print 'sometrhins'
     logging.info('Creating new config file in home directory')
     new_config = open(new_config_path, 'w')
     new_config.write(return_standard_conf())
