@@ -48,9 +48,7 @@ class EmailTemplate(object):
 
     def _address_message(self):
         email_addr = self.from_address if self.user is None else self.user
-
-        # self.message['From'] = email.utils.formataddr((self.from_address, email_addr))
-        self.message['From'] = 'dpuett@usertesting.com'
+        self.message['From'] = self.from_address
 	self.message['To'] = ','.join(self.recipients)
 
 
