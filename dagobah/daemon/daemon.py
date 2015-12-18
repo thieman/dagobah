@@ -63,6 +63,8 @@ def get_config_file():
                     to_load.close()
                     replace_nones(config)
                     return config
+                else:
+                    pass
             except:
                 pass
 
