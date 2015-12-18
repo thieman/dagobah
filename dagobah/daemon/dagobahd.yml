@@ -5,11 +5,11 @@ Dagobahd:
   debug: False
 
   # host and port for the Flask app. set host to 0.0.0.0 to listen on all IPs
-  host: 127.0.0.1
-  port: 9000
+  host: 0.0.0.0
+  port: 5000
 
   # the app's secret key, used for maintaining user sessions
-  app_secret: %(app_secret)s
+  app_secret: 7a1e1ba34b77ddedb367c22b0b587c20bb4665e7fc6b3620
 
   # credentials for single-user auth
   auth_disabled: False
@@ -18,7 +18,7 @@ Dagobahd:
   # choose one of the available backends
   # None: Dagobah will not use a backend to permanently store data
   # mongo: store results in MongoDB. see the MongoBackend section in this file
-  backend: None
+  backend: mongo
 
   # choose one of the available email templates
   # None: Dagobah won't send you emails when a job finishes or fails
@@ -72,13 +72,13 @@ Email:
 
   # set host and port of the SMTP server to use to send mail
   # e.g. host: smtp.gmail.com   port: 587
-  host: smtp.gmail.com
+  host: email-smtp.us-west-2.amazonaws.com
   port: 587
 
   # email server authentication
   auth_required: True
-  user: None
-  password: None
+  user: AKIAJGE76EO37IVLCH4Q
+  password: AkRFQyRj81vGnnFyrGNG0/AR8KBE43GVQhnHd034CD3n
 
 
   # tls is required for some mail servers, specifically Gmail
@@ -87,10 +87,10 @@ Email:
   # from address in the emails from Dagobah.
   # supports the following special variables within curly brackets {}
   # {HOSTNAME}: the machine's hostname
-  from_address: dagobah@{HOSTNAME}
+  from_address: dpuett@usertesting.com
 
   # list of email addresses to send reports to, e.g. ['myemail@gmail.com']
-  recipients: []
+  recipients: ['dpuett@usertesting.com']
 
   # sets whether Dagobah sends you emails on successful job completion
   send_on_success: True
