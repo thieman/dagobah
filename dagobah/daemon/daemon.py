@@ -48,7 +48,7 @@ def get_config_file():
     new_config_path = os.path.expanduser('~/.dagobahd.yml')
 
     config_dirs = ['/etc',
-                   os.path.expanduser('~/dagobah')]
+                   os.path.expanduser('~/dagobah/dagobah/daemon')]
     config_filenames = ['dagobahd.yml',
                         'dagobahd.yaml',
                         '.dagobahd.yml',
