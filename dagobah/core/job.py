@@ -38,6 +38,7 @@ class Job(DAG):
         self.job_id = job_id
         self.name = name
         self.state = JobState()
+        self.JIJ_DELIM = self.parent.JIJ_DELIM
 
         # tasks themselves aren't hashable, so we need a secondary lookup
         self.tasks = {}
@@ -526,10 +527,10 @@ class Job(DAG):
                 tasks.pop(task)
                 continue
 
-            # Prepend all expanded task names with "<jobname>_" to mitigate
-            # task name conflicts
+            # Prepend all expanded task names with "<jobname>" and delimiter to
+            # mitigate task name conflicts
             for t in expanded_tasks:
-                new_name = "{0}_{1}".format(task, t)
+                new_name = "{0}{1}{2}".format(task, self.JIJ_DELIM, t)
                 expanded_tasks[new_name] = expanded_tasks.pop(t)
                 expanded_tasks[new_name].name = new_name
 
