@@ -12,11 +12,12 @@ from dagobah.core.dagobah import Dagobah
 from dagobah.core.dagobah_error import DagobahError
 from dagobah.backend.base import BaseBackend
 
-from pprint import pprint, pformat
+from pprint import pprint
 
 import os
 
 dagobah = None
+JIJ_DELIM = None
 
 
 class DagobahTestTimeoutException(Exception):
@@ -76,6 +77,7 @@ def blank_dagobah():
                                              os.path.dirname(__file__)))
     dagobah = Dagobah(backend, ssh_config=os.path.join(location,
                                                        "test_ssh_config"))
+    dagobah.JIJ_DELIM = "|"
 
 
 @with_setup(blank_dagobah)
@@ -500,10 +502,12 @@ def test_dagobah_expand_simple_job():
     job_b.add_edge('ls', 'test_job_a')
     job_b.add_edge('test_job_a', 'pwd')
     graph, tasks = job_b.expand(job_b.graph, job_b.tasks)
+
+    d = dagobah.JIJ_DELIM
     ideal_result = {
-        'ls': set(['test_job_a_yes']),
+        'ls': set(['test_job_a{0}yes'.format(d)]),
         'pwd': set([]),
-        'test_job_a_yes': set(['pwd'])
+        'test_job_a{0}yes'.format(d): set(['pwd'])
     }
     assert assert_graph_equality(ideal_result, graph)
 
@@ -526,12 +530,14 @@ def test_dagobah_expand_moderate_job():
     job_b.add_edge('ls', 'test_job_a')
     job_b.add_edge('test_job_a', 'pwd')
     graph, tasks = job_b.expand(job_b.graph, job_b.tasks)
+
+    d = dagobah.JIJ_DELIM
     ideal_result = {
-        'ls': set(['test_job_a_yes']),
+        'ls': set(['test_job_a{0}yes'.format(d)]),
         'pwd': set([]),
-        'test_job_a_cd .': set(['pwd']),
-        'test_job_a_ls': set(['test_job_a_cd .']),
-        'test_job_a_yes': set(['test_job_a_ls'])
+        'test_job_a{0}cd .'.format(d): set(['pwd']),
+        'test_job_a{0}ls'.format(d): set(['test_job_a{0}cd .'.format(d)]),
+        'test_job_a{0}yes'.format(d): set(['test_job_a{0}ls'.format(d)])
     }
     assert assert_graph_equality(ideal_result, graph)
 
@@ -574,16 +580,21 @@ def test_dagobah_expand_complex_job():
     job_3.add_edge('C**', 'D**')
 
     graph, tasks = job_1.expand(job_1.graph, job_1.tasks)
+    d = dagobah.JIJ_DELIM
     ideal_result = {
-        'A': set(['C_A*']),
-        'B': set(['C_A*']),
-        'C_A*': set(['C_C_B*_A**', 'C_C_B*_B**', 'C_C_B*_C**', 'C_C_C*']),
-        'C_C_B*_A**': set(['C_C_B*_D**']),
-        'C_C_B*_B**': set(['C_C_B*_D**']),
-        'C_C_B*_C**': set(['C_C_B*_D**']),
-        'C_C_B*_D**': set(['C_C_C*', 'C_C_D*']),
-        'C_C_C*': set(['C_C_D*']),
-        'C_C_D*': set(['D', 'E']),
+        'A': set(['C{0}A*'.format(d)]),
+        'B': set(['C{0}A*'.format(d)]),
+        'C{0}A*'.format(d): set(['C{0}B*{0}A**'.format(d),
+                                 'C{0}B*{0}B**'.format(d),
+                                 'C{0}B*{0}C**'.format(d),
+                                 'C{0}C*'.format(d)]),
+        'C{0}B*{0}A**'.format(d): set(['C{0}B*{0}D**'.format(d)]),
+        'C{0}B*{0}B**'.format(d): set(['C{0}B*{0}D**'.format(d)]),
+        'C{0}B*{0}C**'.format(d): set(['C{0}B*{0}D**'.format(d)]),
+        'C{0}B*{0}D**'.format(d): set(['C{0}C*'.format(d),
+                                       'C{0}D*'.format(d)]),
+        'C{0}C*'.format(d): set(['C{0}D*'.format(d)]),
+        'C{0}D*'.format(d): set(['D', 'E']),
         'D': set([]),
         'E': set([])
     }
