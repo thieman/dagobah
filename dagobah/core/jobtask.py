@@ -20,7 +20,7 @@ class JobTask(object):
         self.delegator = parent_job.delegator
         self.delegator.commit_job(self.parent_job)
 
-    def expand(self, expanding_job=None):
+    def expand(self):
         """ Expand this JobTask into a list of cloned tasks """
         logger.debug("expanding {0}".format(self.target_job_name))
         target_job = self.parent_job.parent._resolve_job(self.target_job_name)
