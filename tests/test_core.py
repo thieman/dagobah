@@ -17,7 +17,6 @@ from pprint import pprint
 import os
 
 dagobah = None
-JIJ_DELIM = None
 
 
 class DagobahTestTimeoutException(Exception):
