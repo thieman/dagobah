@@ -1,6 +1,8 @@
 import logging
 import json
 
+from copy import deepcopy
+
 from .components import StrictJSONEncoder
 
 logger = logging.getLogger('dagobah')
@@ -18,10 +20,15 @@ class JobTask(object):
         self.delegator = parent_job.delegator
         self.delegator.commit_job(self.parent_job)
 
-    def expand(self):
-        """ Expand this JobTask into a list of tasks """
+    def expand(self, expanding_job=None):
+        """ Expand this JobTask into a list of cloned tasks """
+        logger.debug("expanding {0}".format(self.target_job_name))
         target_job = self.parent_job.parent._resolve_job(self.target_job_name)
-        return target_job.expand(target_job.graph, target_job.tasks)
+
+        graph_copy = deepcopy(target_job.graph)
+        tasks_copy = dict((n, t.clone()) for (n, t) in target_job.tasks.iteritems())
+
+        return target_job.expand(graph_copy, tasks_copy)
 
     def _serialize(self, include_run_logs=False, strict_json=False):
         """ Serialize a representation of this Task to a Python dict. """
