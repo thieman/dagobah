@@ -43,3 +43,7 @@ class JobTask(object):
     def clone(self):
         cloned_task = JobTask(self.parent_job, self.target_job_name, self.name)
         return cloned_task
+
+    def pname(self, delimiter='|'):
+        """ Pretty name swaps delimiters in the name for readability """
+        return self.name.replace(self.parent_job.parent.JIJ_DELIM, delimiter)
