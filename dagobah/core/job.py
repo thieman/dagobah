@@ -38,6 +38,7 @@ class Job(DAG):
         self.job_id = job_id
         self.name = name
         self.state = JobState()
+        self.JIJ_DELIM = self.parent.JIJ_DELIM
 
         # tasks themselves aren't hashable, so we need a secondary lookup
         self.tasks = {}
@@ -483,9 +484,6 @@ class Job(DAG):
         self.snapshot, self.tasks_snapshot = self.expand(snapshot_to_validate,
                                                          tasks_copy)
 
-        # These expanded copies need to be pointed to this job as parent
-        for t in tasks_copy.itervalues():
-            t.parent_job = self
 
     def expand(self, graph, tasks):
         """
@@ -503,7 +501,7 @@ class Job(DAG):
             * Delete JobTask from graph/task list
             * Add the downstreams of the deleted JobTask to traversal queue
         """
-        logger.debug("Starting job expansion")
+        logger.debug("Starting job expansion for {0}".format(self.name))
 
         traversal_queue = self.ind_nodes(graph)
         already_expanded = []
@@ -526,18 +524,20 @@ class Job(DAG):
                 tasks.pop(task)
                 continue
 
-            # Prepend all expanded task names with "<jobname>_" to mitigate
-            # task name conflicts
+            # Prepend all expanded task names with "<jobname>" and delimiter to
+            # mitigate task name conflicts
+            renamed_tasks = {}
             for t in expanded_tasks:
-                new_name = "{0}_{1}".format(task, t)
-                expanded_tasks[new_name] = expanded_tasks.pop(t)
-                expanded_tasks[new_name].name = new_name
+                new_name = "{0}{1}{2}".format(task, self.JIJ_DELIM, t)
+                renamed_tasks[new_name] = expanded_tasks[t]
+                renamed_tasks[new_name].name = new_name
 
                 expanded_graph[new_name] = expanded_graph.pop(t)
                 for node, edges in expanded_graph.iteritems():
                     if t in edges:
                         edges.remove(t)
                         edges.add(new_name)
+            expanded_tasks = renamed_tasks
 
             # Merge node and edge dictionaries (creating 2 unconnected DAGs,
             # in one graph)
@@ -569,6 +569,11 @@ class Job(DAG):
             traversal_queue.extend(children)
             self.delete_node(task, graph)
             tasks.pop(task)
+
+        # Always do parental reassignment to the most current job, this
+        # guarantees that the main/final job is every task's parent
+        for t in tasks.itervalues():
+            t.parent_job = self
 
         return graph, tasks
 
@@ -619,7 +624,7 @@ class Job(DAG):
                 continue
 
             logger.debug("Found expandable task: {0} with target job {1}"
-                         .format(task.name, task.target_job_name))
+                         .format(task.pname(), task.target_job_name))
             cur_job = self.parent._resolve_job(task.target_job_name)
             if not cur_job:
                 raise DagobahError("Job with name {0} doesn't exist."

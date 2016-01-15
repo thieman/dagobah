@@ -55,28 +55,28 @@ class Task(object):
         self.set_hard_timeout(hard_timeout)
 
     def set_soft_timeout(self, timeout):
-        logger.debug('Task {0} setting soft timeout'.format(self.name))
+        logger.debug('Task {0} setting soft timeout'.format(self.pname()))
         if not isinstance(timeout, (int, float)) or timeout < 0:
             raise ValueError('timeouts must be non-negative numbers')
         self.soft_timeout = timeout
         self.delegator.commit_job(self.parent_job)
 
     def set_hard_timeout(self, timeout):
-        logger.debug('Task {0} setting hard timeout'.format(self.name))
+        logger.debug('Task {0} setting hard timeout'.format(self.pname()))
         if not isinstance(timeout, (int, float)) or timeout < 0:
             raise ValueError('timeouts must be non-negative numbers')
         self.hard_timeout = timeout
         self.delegator.commit_job(self.parent_job)
 
     def set_hostname(self, hostname):
-        logger.debug('Task {0} setting hostname'.format(self.name))
+        logger.debug('Task {0} setting hostname'.format(self.pname()))
         self.hostname = hostname
         self.delegator.commit_job(self.parent_job)
 
     def reset(self):
         """ Reset this Task to a clean state prior to execution. """
 
-        logger.debug('Resetting task {0}'.format(self.name))
+        logger.debug('Resetting task {0}'.format(self.pname()))
 
         self.stdout_file = os.tmpfile()
         self.stderr_file = os.tmpfile()
@@ -94,7 +94,7 @@ class Task(object):
 
     def start(self):
         """ Begin execution of this task. """
-        logger.info('Starting task {0}'.format(self.name))
+        logger.info('Starting task {0}'.format(self.pname()))
         self.reset()
         if self.hostname:
             host = self.parent_job.parent.get_host(self.hostname)
@@ -115,7 +115,7 @@ class Task(object):
     def remote_ssh(self, host):
         """ Execute a command on SSH. Takes a paramiko host dict """
         logger.info('Starting remote execution of task {0} on host {1}'.
-                    format(self.name, host['hostname']))
+                    format(self.pname(), host['hostname']))
         try:
             self.remote_client = paramiko.SSHClient()
             self.remote_client.load_system_host_keys()
@@ -145,7 +145,7 @@ class Task(object):
 
     def check_complete(self):
         """ Runs completion flow for this task if it's finished. """
-        logger.debug('Running check_complete for task {0}'.format(self.name))
+        logger.debug('Running check_complete for task {0}'.format(self.pname()))
 
         # Tasks not completed
         if self.remote_not_complete() or self.local_not_complete():
@@ -215,7 +215,7 @@ class Task(object):
 
     def terminate(self):
         """ Send SIGTERM to the task's process. """
-        logger.info('Sending SIGTERM to task {0}'.format(self.name))
+        logger.info('Sending SIGTERM to task {0}'.format(self.pname()))
         if hasattr(self, 'remote_client') and self.remote_client is not None:
             self.terminate_sent = True
             self.remote_client.close()
@@ -227,7 +227,7 @@ class Task(object):
 
     def kill(self):
         """ Send SIGKILL to the task's process. """
-        logger.info('Sending SIGKILL to task {0}'.format(self.name))
+        logger.info('Sending SIGKILL to task {0}'.format(self.pname()))
         if hasattr(self, 'remote_client') and self.remote_client is not None:
             self.kill_sent = True
             self.remote_client.close()
@@ -272,7 +272,7 @@ class Task(object):
         return self._read_temp_file(self.stderr_file)
 
     def _timeout_check(self):
-        logger.debug('Running timeout check for task {0}'.format(self.name))
+        logger.debug('Running timeout check for task {0}'.format(self.pname()))
         if (self.soft_timeout != 0 and
             (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout
                 and not self.terminate_sent):
@@ -359,7 +359,7 @@ class Task(object):
 
     def _task_complete(self, **kwargs):
         """ Performs cleanup tasks and notifies Job that the Task finished. """
-        logger.debug('Running _task_complete for task {0}'.format(self.name))
+        logger.debug('Running _task_complete for task {0}'.format(self.pname()))
         with self.parent_job.completion_lock:
             self.completed_at = datetime.utcnow()
             self.successful = kwargs.get('success', None)
@@ -395,3 +395,7 @@ class Task(object):
                            hard_timeout=self.hard_timeout,
                            hostname=self.hostname)
         return cloned_task
+
+    def pname(self, delimiter='|'):
+        """ Pretty name swaps delimiters in the name for readability """
+        return self.name.replace(self.parent_job.parent.JIJ_DELIM, delimiter)

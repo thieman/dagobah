@@ -19,6 +19,7 @@ class Dagobah(object):
     instance, as well as top-level parameters such as the
     backend used for permanent storage.
     """
+    JIJ_DELIM = '%_|JIJ_DELIMITER|_%'
 
     def __init__(self, backend=BaseBackend(), event_handler=None,
                  ssh_config=None):
