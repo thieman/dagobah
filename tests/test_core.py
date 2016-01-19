@@ -512,6 +512,23 @@ def test_dagobah_expand_simple_job():
 
 
 @with_setup(blank_dagobah)
+def test_dagobah_expand_same_job_twice():
+    dagobah.add_job('test_job_a')
+    dagobah.add_job('test_job_b')
+
+    job_a = dagobah.get_job('test_job_a')
+    job_a.add_task('yes')
+
+    job_b = dagobah.get_job('test_job_b')
+    job_b.add_jobtask('test_job_a', 'a1')
+    job_b.add_jobtask('test_job_a', 'a2')
+    job_b.add_edge('a1', 'a2')
+
+    assert job_a.verify()
+    assert job_b.verify()
+
+
+@with_setup(blank_dagobah)
 def test_dagobah_expand_moderate_job():
     dagobah.add_job('test_job_a')
     dagobah.add_job('test_job_b')
