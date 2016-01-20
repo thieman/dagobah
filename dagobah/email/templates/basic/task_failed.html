@@ -1,7 +1,7 @@
 <body>
   {% set new_delim = "<br \>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8627;" -%}
 
-  <h1 class='email-heading'>Task Failed: {{ task.name|replace(task.delimiter," -> ") }}</h1>
+  <h1 class='email-heading'>Task Failed: {{ task.name|replace(task.delimiter," &#10230 ") }}</h1>
 
   <h2 class='section-heading'>Run Results</h2>
 

@@ -1,3 +1,5 @@
+# coding: utf-8
+
 """ Basic HTML email template for sending out Dagobah communications. """
 
 from datetime import datetime
@@ -80,6 +82,6 @@ class BasicEmail(EmailTemplate):
         name = data.get('name', None)
         delimiter = data.get('delimiter', None)
         if delimiter and name:
-            name = name.replace(delimiter, '" -> "')
+            name = name.replace(delimiter, u'" ⟶ "')
             name = '"' + name + '"'
         return name
