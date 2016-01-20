@@ -312,13 +312,13 @@ class Job(DAG):
             self.backend.release_lock()
 
         if kwargs.get('success', None) is False:
-            task = self.tasks[task_name]
+            task = self.tasks_snapshot[task_name]
             try:
                 self.backend.acquire_lock()
                 if self.event_handler:
-                    self.event_handler.emit('task_failed',
-                                            task._serialize(
-                                                include_run_logs=True))
+                    task_data = task._serialize(include_run_logs=True)
+                    task_data['delimiter'] = self.JIJ_DELIM
+                    self.event_handler.emit('task_failed', task_data)
             except:
                 logger.exception("Error in handling events.")
             finally:
