@@ -618,7 +618,8 @@ class Job(DAG):
         topo_sorted = [self.tasks[t] for t in self.topological_sort()]
 
         # Traverse nodes and verify any JobTasks
-        logger.debug("Traversing topologically sorted tasks.")
+        logger.debug("Job '{0}': Traversing topologically sorted tasks."
+                     .format(self.name))
         for task in topo_sorted:
             if not self.implements_expandable(task):
                 continue
@@ -630,8 +631,10 @@ class Job(DAG):
                 raise DagobahError("Job with name {0} doesn't exist."
                                    .format(task.target_job_name))
             if cur_job.name in context:
-                logging.warn("Cycle detected in Job: {0}."
-                             .format(task.target_job_name))
+                logging.warn("Cycle detected in Job {0}:, "
+                             .format(task.target_job_name) +
+                             "found {0} in context {1}."
+                             .format(cur_job.name, context))
                 return False
 
             # Verify this job has no internal cycles, or references to jobs
@@ -639,7 +642,8 @@ class Job(DAG):
             verified = cur_job.verify(context)
             if not verified:
                 logger.warn("Cycle or error detected in sub-job: {0}"
-                            .format(cur_job))
+                            .format(cur_job.name))
                 return False
 
+        context.discard(self.name)
         return True
