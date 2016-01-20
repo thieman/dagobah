@@ -354,9 +354,10 @@ class Job(DAG):
                 try:
                     self.backend.acquire_lock()
                     if self.event_handler:
-                        self.event_handler.emit('job_failed',
-                                                self._serialize(
-                                                    include_run_logs=True))
+                        job_data = self._serialize(include_run_logs=True,
+                                                   use_snapshot=True)
+                        job_data['delimiter'] = self.JIJ_DELIM
+                        self.event_handler.emit('job_failed', job_data)
                 except:
                     logger.exception("Error in handling events.")
                 finally:
@@ -370,9 +371,10 @@ class Job(DAG):
             try:
                 self.backend.acquire_lock()
                 if self.event_handler:
-                    self.event_handler.emit('job_complete',
-                                            self._serialize(
-                                                include_run_logs=True))
+                    job_data = self._serialize(include_run_logs=True,
+                                               use_snapshot=True)
+                    job_data['delimiter'] = self.JIJ_DELIM
+                    self.event_handler.emit('job_complete', job_data)
             except:
                 logger.exception("Error in handling events.")
             finally:
