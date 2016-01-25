@@ -1,6 +1,7 @@
 <body>
+  {% set new_delim = "<br \>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8627;" -%}
 
-  <h1 class='email-heading'>Task Failed: {{ task.name }}</h1>
+  <h1 class='email-heading'>Task Failed: {{ task.name|replace(task.delimiter," &#10230 ") }}</h1>
 
   <h2 class='section-heading'>Run Results</h2>
 
@@ -13,7 +14,7 @@
     </thead>
     <tbody>
       <tr>
-        <td>{{ task.name }}</td>
+        <td>{{ task.name|replace(task.delimiter,new_delim) }}</td>
         <td>{{ task.command }}</td>
         <td>{{ task.success }}</td>
         <td>{{ task.run_log.return_code }}</td>
@@ -31,7 +32,7 @@
     </thead>
     <tbody>
       <tr>
-        <td>{{ task.name }}</td>
+        <td>{{ task.name|replace(task.delimiter,new_delim) }}</td>
         <td>{{ task.started_at }}</td>
         <td>{{ task.completed_at }}</td>
       </tr>
@@ -47,7 +48,7 @@
     </thead>
     <tbody>
       <tr>
-        <td>{{ task.name }}</td>
+        <td>{{ task.name|replace(task.delimiter,new_delim) }}</td>
         <td><pre>{{ task.run_log.stdout }}</pre></td>
       </tr>
     </tbody>
@@ -62,7 +63,7 @@
     </thead>
     <tbody>
       <tr>
-        <td>{{ task.name }}</td>
+        <td>{{ task.name|replace(task.delimiter,new_delim) }}</td>
         <td><pre>{{ task.run_log.stderr }}</pre></td>
       </tr>
     </tbody>

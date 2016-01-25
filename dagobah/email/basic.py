@@ -1,3 +1,5 @@
+# coding: utf-8
+
 """ Basic HTML email template for sending out Dagobah communications. """
 
 from datetime import datetime
@@ -47,7 +49,7 @@ class BasicEmail(EmailTemplate):
         css = self._get_template('basic', 'task_failed.css').render()
 
         self.message = self._merge_templates(template, css)
-        self._construct_and_send('Task Failed: %s' % data.get('name', None))
+        self._construct_and_send('Task Failed: %s' % self._format_name(data))
 
 
     def _format_job_dict(self, job):
@@ -74,3 +76,12 @@ class BasicEmail(EmailTemplate):
         if (not in_date) or (not isinstance(in_date, datetime)):
             return in_date
         return in_date.strftime('%Y-%m-%d %H:%M:%S UTC')
+
+
+    def _format_name(self, data):
+        name = data.get('name', None)
+        delimiter = data.get('delimiter', None)
+        if delimiter and name:
+            name = name.replace(delimiter, u'" ⟶ "')
+            name = '"' + name + '"'
+        return name

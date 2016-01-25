@@ -19,7 +19,8 @@ class TextEmail(EmailTemplate):
 
     def send_task_failed(self, data):
         self.message = MIMEText(self._task_to_text(data))
-        self._construct_and_send('Task Failed: %s' % data.get('name', None))
+
+        self._construct_and_send('Task Failed: %s' % self._format_name(data))
 
 
     def _task_to_text(self, task):
@@ -32,8 +33,10 @@ class TextEmail(EmailTemplate):
         success_lu = {None: 'Not executed', True: 'Success',
                       False: 'Failed'}
 
+        name = self._format_name(task)
+
         run_log = task.get('run_log', {})
-        return '\n'.join(['Task: %s' % task.get('name', None),
+        return '\n'.join(['Task: %s' % name,
                           'Command: %s' % task.get('command', None),
                           'Result: %s' % success_lu[success],
                           'Started at: %s' % started,
@@ -50,8 +53,10 @@ class TextEmail(EmailTemplate):
 
         tasks = ''
         for task in job.get('tasks', []):
+            task['delimiter'] = job.get('delimiter', None)
             tasks += self._task_to_text(task)
             tasks += '\n\n'
+
 
         return '\n'.join(['Job name: %s' % job.get('name', None),
                           'Cron schedule: %s' % job.get('cron_schedule', None),
@@ -69,3 +74,11 @@ class TextEmail(EmailTemplate):
         if (not in_date) or (not isinstance(in_date, datetime)):
             return in_date
         return in_date.strftime('%Y-%m-%d %H:%M:%S UTC')
+
+    def _format_name(self, data):
+        name = data.get('name', None)
+        delimiter = data.get('delimiter', None)
+        if delimiter and name:
+            name = name.replace(delimiter, '" -> "')
+            name = '"' + name + '"'
+        return name
