@@ -18,13 +18,13 @@ Dagobahd:
   # choose one of the available backends
   # None: Dagobah will not use a backend to permanently store data
   # mongo: store results in MongoDB. see the MongoBackend section in this file
-  backend: None
+  backend: mongo
 
   # choose one of the available email templates
   # None: Dagobah won't send you emails when a job finishes or fails
   # text: Simple text format
   # basic: Simple, tabular HTML email
-  email: basic
+  email: None
 
   # SSH config file for remote host authentication.
   # If you don't plan on executing tasks on remote servers, leaving this
