@@ -1,17 +1,13 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(name='dagobah',
-      version='0.3.1',
-      description='Simple DAG-based job scheduler',
-      url='http://github.com/tthieman/dagobah',
-      author='Travis Thieman',
-      author_email='travis.thieman@gmail.com',
+      version='0.3.2',
+      description='Simple DAG-based job scheduler, expanded batch mode by xuanxuan',
+      url='http://github.com/littlegump/dagobah',
+      author='Travis Thieman & a little bit with xuanxuan',
+      author_email='travis.thieman@gmail.com; 13060404095@163.com',
       license='WTFPL',
-      packages=['dagobah',
-                'dagobah.backend',
-                'dagobah.core',
-                'dagobah.daemon',
-                'dagobah.email'],
+      packages=find_packages(),
       package_data={'dagobah': ['email/templates/basic/*',
                                 'daemon/static/css/*',
                                 'daemon/static/js/*',
@@ -48,8 +44,11 @@ setup(name='dagobah',
                         'py-dag==1.0.0'],
       test_suite='nose.collector',
       tests_require=['nose', 'pymongo'],
-      entry_points={'console_scripts':
-                    ['dagobahd = dagobah.daemon.app:daemon_entrypoint',
-                     'echo_dagobah_conf = dagobah:print_standard_conf']
-                    },
+      entry_points={
+          'console_scripts': [
+              'dagobahd = dagobah.daemon.app:daemon_entrypoint',
+              'echo_dagobah_conf = dagobah:print_standard_conf',
+              'nagobah = dagobah.nagobah:main',
+              ],
+          },
       zip_safe=False)
