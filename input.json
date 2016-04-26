@@ -21,7 +21,7 @@
     }
   ],
   "notes": "splist3",
-  "name": "asdf",
+  "name": "r",
   "dependencies": {
     "copy":[
       "print"
