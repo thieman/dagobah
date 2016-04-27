@@ -20,9 +20,9 @@ def check_job_name_overwrite(data_module):
 
         print "Warning: Your Job name is conflict with server's job_name_list, Sure to overwrite？(Y/n)"
 
-        choice = raw_input("\"Y\" to keep go,\"n\" to stop and quit:")
 
         try:
+            choice = raw_input("\"Y\" to keep go,\"n\" to stop and quit:")
             while choice.lower() != "y" and choice.lower() != "n":
                 choice = raw_input("\"Y\" to keep go,\"n\" to stop and quit:")
         except KeyboardInterrupt, err:
