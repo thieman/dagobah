@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
-setup(name='dagobah',
-      version='0.3.2',
+setup(name='nagobah',
+      version='0.1.5',
       description='Simple DAG-based job scheduler, expanded batch mode by xuanxuan',
-      url='http://github.com/littlegump/dagobah',
+      url='https://github.com/littlegump/dagobah',
       author='Travis Thieman & a little bit with xuanxuan',
       author_email='travis.thieman@gmail.com; 13060404095@163.com',
       license='WTFPL',

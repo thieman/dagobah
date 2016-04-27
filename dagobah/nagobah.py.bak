@@ -57,13 +57,18 @@ def check_validation(
     check_schedule_syntax(data_module)
 
     # 进入tasks，开始检查tasks的name和command的存在性
-    # tasks中的name，command不为空，为str
     check_tasks_required_key(data_module, module_tasks_iter)
 
     # 检查tasks的name们的重复性
     check_tasks_name_repeat(data_module,module_tasks_iter)
 
     module_task_list = [data_module[u'tasks'][i][u'name'] for i in module_tasks_iter]
+
+    # tasks中的name，command不为空，为str
+    for id_ in module_tasks_iter:
+        check_tasks_item_if_null(data_module['tasks'][id_],['name','command'])
+        check_tasks_item_if_str(data_module['tasks'][id_],['name','command'])
+
 
     # 将要修改的task和模板中的task_name做比较，如果要修改的task不是模板中的子集就报错
     check_if_t_name_in_tasks(task_list,module_task_list)
@@ -208,6 +213,3 @@ def main():
 
     # init session and post data to server
     jsonalize(data_real)
-
-if __name__ == "__main__":
-    main()
