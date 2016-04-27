@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-setup(name='nagobah',
+setup(name='dagobah',
       version='0.1.8',
       description='Simple DAG-based job scheduler, expanded batch mode by xuanxuan',
       url='https://github.com/littlegump/dagobah',
