@@ -1,10 +1,10 @@
 from setuptools import setup, find_packages
 
 setup(name='nagobah',
-      version='0.1.6',
+      version='0.1.8',
       description='Simple DAG-based job scheduler, expanded batch mode by xuanxuan',
       url='https://github.com/littlegump/dagobah',
-      download_url="https://github.com/littlegump/dagobah/tarball/0.1.5",
+      download_url="https://github.com/littlegump/dagobah/tarball/0.1.8",
       author='Travis Thieman & a little bit with xuanxuan',
       author_email='travis.thieman@gmail.com; 13060404095@163.com',
       license='WTFPL',

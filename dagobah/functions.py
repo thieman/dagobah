@@ -43,59 +43,64 @@ def check_dependencies_valid(data_module,input_file,module_task_list):
     # 2、值不能依赖键，就是说不能自我依赖
     # 3、键名列表必须是已经存在的task_name
     # 4、循环依赖还没有搞定
+    # 5、添加检查schedule
     """
-    module_key_list = data_module.keys()
+    #module_key_list = data_module.keys()
+    #print module_key_list
 
-    if "dependencies" in module_key_list:
-        module_depend_key_list = data_module[u'dependencies'].keys()
+    #if "dependencies" in module_key_list:
+    module_depend_key_list = data_module[u'dependencies'].keys()
 
-        check_repeat(input_file + u'中dependencies中的name', module_depend_key_list)
+    check_repeat(input_file + u'中dependencies中的name', module_depend_key_list)
 
-        if not check_issub(module_depend_key_list, module_task_list):
-            print input_file, "模板中task_name列表：", module_task_list
-            print input_file, "模板中dependencies键名列表：", module_depend_key_list
-            print "键名必须是已存在的task_name"
-            s1 = set(module_depend_key_list).difference(set(module_task_list))
-            print "Error: 未知键：",
-            for i in list(s1):
+    if not check_issub(module_depend_key_list, module_task_list):
+        print input_file, "模板中task_name列表：", module_task_list
+        print input_file, "模板中dependencies键名列表：", module_depend_key_list
+        print "键名必须是已存在的task_name"
+        s1 = set(module_depend_key_list).difference(set(module_task_list))
+        print "Error: 未知键：",
+        for i in list(s1):
+            print u"u'" + i + u"' ",
+        sys.exit(1)
+
+    for i in module_depend_key_list:
+        check_repeat(u"dependencies字段有问题: \"" + i + u"\": " + str(data_module['dependencies'][i]), data_module['dependencies'][i])
+
+        for j in data_module['dependencies'][i]:
+            if j == i:
+                print u"dependencies错误点: u'" + i + u"': ", data_module['dependencies'][i]
+                print "Error: 任务不能依赖自己"
+                sys.exit(1)
+
+        if not check_issub(data_module['dependencies'][i], module_task_list):
+            print "模板中task_name列表: ", module_task_list
+            print u"dependencies错误点: u'" + i + u"': ", data_module['dependencies'][i]
+            set_1 = set(data_module['dependencies'][i]).difference(set(module_task_list))
+            print u"Error: 未知字段: ",
+            for i in set_1:
                 print u"u'" + i + u"' ",
             sys.exit(1)
+    try:
+        session_check = requests.session()
+        try_to_login(session_check)
+        job_tmpname = randomword(10)
+        try_to_modulate_job_tasks(session_check, module_task_list, job_tmpname)
+        # 用于检测schedule语法的正确性"""
+        try_to_modulate_job_schedule(data_module, session_check, job_tmpname)
 
         for i in module_depend_key_list:
-            check_repeat(u"dependencies字段有问题: \"" + i + u"\": " + str(data_module['dependencies'][i]), data_module['dependencies'][i])
-
+            import_dep = "http://localhost:9000/api/add_dependency"
             for j in data_module['dependencies'][i]:
-                if j == i:
-                    print u"dependencies错误点: u'" + i + u"': ", data_module['dependencies'][i]
-                    print "Error: 任务不能依赖自己"
+
+                res = session_check.post(import_dep,
+                                         {"job_name": job_tmpname,
+                                          "from_task_name": i,
+                                          "to_task_name": j})
+                if res.status_code != 200:
+                    print "Error: dependencies中存在循环依赖, 请检查依赖性"
                     sys.exit(1)
-
-            if not check_issub(data_module['dependencies'][i], module_task_list):
-                print "模板中task_name列表: ", module_task_list
-                print u"dependencies错误点: u'" + i + u"': ", data_module['dependencies'][i]
-                set_1 = set(data_module['dependencies'][i]).difference(set(module_task_list))
-                print u"Error: 未知字段: ",
-                for i in set_1:
-                    print u"u'" + i + u"' ",
-                sys.exit(1)
-        try:
-            session_check = requests.session()
-            try_to_login(session_check)
-            job_tmpname = randomword(10)
-            try_to_modulate_job_tasks(session_check, module_task_list, job_tmpname)
-            for i in module_depend_key_list:
-                import_dep = "http://localhost:9000/api/add_dependency"
-                for j in data_module['dependencies'][i]:
-
-                    res = session_check.post(import_dep,
-                                             {"job_name": job_tmpname,
-                                              "from_task_name": i,
-                                              "to_task_name": j})
-                    if res.status_code != 200:
-                        print "Error: dependencies中存在循环依赖, 请检查依赖性"
-                        sys.exit(1)
-        finally:
-            try_to_recycle_job(session_check, job_tmpname)
+    finally:
+        try_to_recycle_job(session_check, job_tmpname)
 
 
 def randomword(length):
@@ -120,6 +125,17 @@ def try_to_modulate_job_tasks(sess, module_task_list, job_tmpname):
                           "task_name": i,
                           "task_command": "echo 1"})
 
+
+def try_to_modulate_job_schedule(data_module, session_check, job_tmpname):
+    """用于检测schedule语法的正确性"""
+    import_sche_url = "http://localhost:9000/api/schedule_job"
+    schedule = data_module['cron_schedule']
+    res = session_check.post(import_sche_url, {"job_name": job_tmpname, "cron_schedule": schedule})
+
+    if res.status_code != 200:
+        print u"cron_schedule: \"" + schedule + u"\""
+        print "Error: cron_schedule语法错误！导入失败！！！"
+        sys.exit(1)
 
 
 def get_server_host_list():
@@ -312,40 +328,6 @@ def check_tasks_required_key(data_module, module_tasks_iter):
             sys.exit(1)
         check_tasks_item_if_null(data_module['tasks'][i],['name','command'])
         check_tasks_item_if_str(data_module['tasks'][i],['name','command'])
-
-def check_schedule_syntax(data_module):
-    """check if the item is matching cron syntax"""
-
-    string_ = data_module['cron_schedule']
-    list_each_char = ' '.join(string_).split()
-    list_schedule = data_module['cron_schedule'].split()
-
-    for i in list_each_char:
-        if i not in ['*',',','/','-','0','1','2','3','4','5','6','7','8','9']:
-            print "\"cron_schedule\": \"", string_, "\""
-            print "Error: cron_schedule非法字符：", i
-            sys.exit(1)
-
-    if not len(list_schedule) == 5:
-        print "\"cron_schedule\": \"", string_, "\""
-        print "Error: schedule的格式有误，应该有5个字段"
-        sys.exit(1)
-
-
-def check_input_file(data_module):
-    """检查inputfile中的所有的字段是否合法：
-    1、name不能为空
-    2、schedule可以为空
-    3、必须有name和dependencies,notes,tasks,cron_schedule
-    4.name不能含有中文字符。name不能为null，或者""，name和job上面的任务冲突就报警。
-    5、notes也不能含有中文字符
-    3、tasks的每个字段至少包含hostname，name，command，soft和hard可选
-    7、dep可以有也可以没有，没有代表无，
-    8、cron_schedule可以有也可以无，但是不能出错。
-    9、hostname要在服务端存在。
-    10,没有在-t指定的task必须要有hostname，并且hostname必须存在于服务器中
-    """
-    pass
 
 
 def integration(module_tasks_iter,data_module):

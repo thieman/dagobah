@@ -53,9 +53,6 @@ def check_validation(
     # 检查tasks类型是否为列表,并且列表内的每个元素必须是字典"""
     check_if_list_dict(data_module,['tasks'])
 
-    # check cron_syntax
-    check_schedule_syntax(data_module)
-
     # 进入tasks，开始检查tasks的name和command的存在性
     # tasks中的name，command不为空，为str
     check_tasks_required_key(data_module, module_tasks_iter)
