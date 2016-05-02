@@ -43,6 +43,7 @@ def check_validation(
 
     # 检查job必备的四个键和一个可选键 "dependencies"
     check_job_required_key(data_module, flag_dep)
+    check_job_name_not_start_with_digit(data_module, input_file)
 
     # 四键('name', 'cron_schedule', 'tasks', 'notes') 不为空检查， 为str检查,也不能为字典
     # 但是这里只检查tasks不能为[]和None
