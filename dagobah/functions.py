@@ -487,7 +487,7 @@ def update_data_real(data_module, data_real,
 
     old_name = data_module['tasks'][task_id]['name']
 
-    dict_['name'] = old_name + u'_at_' + hostname
+    dict_['name'] = old_name + u'_in_' + hostname
 
     dict_['hostname'] = hostname
 
@@ -504,12 +504,12 @@ def update_data_real(data_module, data_real,
         for i in data_module['dependencies'][old_name]:
 
             if i in task_list:
-                new = i + u'_at_' + hostname
+                new = i + u'_in_' + hostname
                 list_.append(new)
                 data_real['dependencies'][dict_['name']] = [].append(new)
             else:
                 i_id = get_id_by_name(data_module, module_tasks_iter, i)
-                new = i + u'_at_' + data_module['tasks'][i_id]['hostname']
+                new = i + u'_in_' + data_module['tasks'][i_id]['hostname']
                 list_.append(new)
                 data_real['dependencies'][dict_['name']] = [].append(new)
 
@@ -533,7 +533,7 @@ def update_data_real2(data_module, data_real,
     dict_['command'] = data_module['tasks'][task_id]['command']
     old_name = data_module['tasks'][task_id]['name']
     dict_['hostname'] = data_module['tasks'][task_id]['hostname']
-    dict_['name'] = old_name + u'_at_' + dict_['hostname']
+    dict_['name'] = old_name + u'_in_' + dict_['hostname']
     data_real['tasks'].append(dict_)
     list_1 = []
     update_data_real3(data_module, data_real,
@@ -558,11 +558,11 @@ def update_data_real3(data_module, data_real,
     for i in data_module['dependencies'][name]:
         if i in task_list:
             for host in host_iter:
-                new = i + u'_at_' + host_list[host]
+                new = i + u'_in_' + host_list[host]
                 list_1.append(new)
         else:
             i_id = get_id_by_name(data_module, module_tasks_iter, i)
-            new = i + u'_at_' + data_module['tasks'][i_id]['hostname']
+            new = i + u'_in_' + data_module['tasks'][i_id]['hostname']
             list_1.append(new)
     data_real['dependencies'][name1] = list_1
 
@@ -638,10 +638,10 @@ def try_to_login(session):
 
 
 def usage():
-    print """python dagopost.py <options> <args>
-        -i | --input-file = <jsonfile>
-        -H | --host-file = <hostfile>
-        -t | --task-to-distribute = <tasks>
+    print """nagobah <options>
+        -i | --input-file = <jsonfile>          (必备)指定要导入的json模板
+        -H | --host-file = <hostfile>           (必备)指定任务要分配到的User(主机)
+        -t | --task-to-distribute = [tasks]     (可选)指定要做分布式的任务name,逗号隔开
         -h | --help to get help """
 
 
