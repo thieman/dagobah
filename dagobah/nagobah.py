@@ -94,7 +94,7 @@ def main():
             [
                 'input-file=',
                 'task-to-distribute=',
-                'host-file='
+                'host-file=',
                 'help'
                 ])
     except GetoptError as err:
