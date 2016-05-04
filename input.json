@@ -21,7 +21,7 @@
     }
   ],
   "notes": "splist3",
-  "name": "r",
+  "name": "this is test job",
   "dependencies": {
     "copy":[
       "print"
