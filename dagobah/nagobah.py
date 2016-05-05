@@ -5,11 +5,11 @@ u"""this script is used to create distribute tasks on remote host"""
 
 import sys
 import requests
-import os
 import re
 from json import dump, load, loads
 from getopt import getopt, GetoptError
-from functions import *
+from backend.functions import *
+
 
 
 def check_validation(

@@ -51,6 +51,7 @@ setup(name='dagobah',
               'dagobahd = dagobah.daemon.app:daemon_entrypoint',
               'echo_dagobah_conf = dagobah:print_standard_conf',
               'nagobah = dagobah.nagobah:main',
+              'nagobah_control = dagobah.nagobah_control:main',
               ],
           },
       zip_safe=False)
