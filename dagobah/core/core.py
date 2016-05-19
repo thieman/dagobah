@@ -8,6 +8,7 @@ import subprocess
 import json
 import paramiko
 import logging
+import pymongo
 
 from croniter import croniter
 from copy import deepcopy
@@ -411,10 +412,17 @@ class Job(DAG):
         if self.cron_iter and datetime.utcnow() > self.next_run:
             self.next_run = self.cron_iter.get_next(datetime)
 
+        try:
+            log_id = self.backend.get_new_log_id()
+        except pymongo.errors.AutoReconnect, err:
+            print "zhe TM mei lianshang "
+            return False
+
         self.run_log = {'job_id': self.job_id,
                         'name': self.name,
                         'parent_id': self.parent.dagobah_id,
-                        'log_id': self.backend.get_new_log_id(),
+                        #'log_id': self.backend.get_new_log_id(),
+                        'log_id': log_id,
                         'start_time': datetime.utcnow(),
                         'tasks': {}}
         self._set_status('running')
@@ -429,6 +437,7 @@ class Job(DAG):
             self.tasks[task_name].start()
 
         self._commit_run_log()
+        return True
 
 
     def retry(self):
@@ -820,7 +829,7 @@ class Task(object):
                 paramiko.AutoAddPolicy())
             self.remote_client.connect(host['hostname'], username=host['user'],
                                        key_filename=host['identityfile'][0],
-                                       timeout=82800)
+                                       timeout=8)
             transport = self.remote_client.get_transport()
             transport.set_keepalive(10)
 
