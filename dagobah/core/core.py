@@ -9,6 +9,7 @@ import json
 import paramiko
 import logging
 import pymongo
+import pytz
 
 from croniter import croniter
 from copy import deepcopy
@@ -48,7 +49,6 @@ class Dagobah(object):
         self.scheduler.start()
 
         self.commit()
-
 
     def __repr__(self):
         return '<Dagobah with Backend %s>' % self.backend
@@ -112,10 +112,12 @@ class Dagobah(object):
         job_id = (job_json['job_id']
                   if use_job_id
                   else self.backend.get_new_job_id())
-        self.add_job(str(job_json['name']), job_id)
+        self.add_job(str(job_json['name']), str(job_json['timezone']), job_id)
+        #  self.add_job(str(job_json['name']), job_id)
         job = self.get_job(job_json['name'])
         if job_json.get('cron_schedule', None):
-            job.schedule(job_json['cron_schedule'])
+            job.schedule(job_json['cron_schedule'], job_json['timezone'])
+            #  job.schedule(job_json['cron_schedule'])
 
         for task in job_json.get('tasks', []):
             self.add_task_to_job(job,
@@ -154,7 +156,8 @@ class Dagobah(object):
         self.backend.delete_dagobah(self.dagobah_id)
 
 
-    def add_job(self, job_name, job_id=None):
+    #  def add_job(self, job_name, job_id=None, timezone='Asia/Shanghai'):
+    def add_job(self, job_name, timezone, job_id=None):
         """ Create a new, empty Job. """
         logger.debug('Creating a new job named {0}'.format(job_name))
         if not self._name_is_available(job_name):
@@ -167,7 +170,8 @@ class Dagobah(object):
         self.jobs.append(Job(self,
                              self.backend,
                              job_id,
-                             job_name))
+                             job_name,
+                             timezone))
 
         job = self.get_job(job_name)
         job.commit()
@@ -283,7 +287,8 @@ class Job(DAG):
     the current serialization of the job with run logs.
     """
 
-    def __init__(self, parent, backend, job_id, name):
+    #  def __init__(self, parent, backend, job_id, name, timezone):
+    def __init__(self, parent, backend, job_id, name, timezone):
         logger.debug('Starting Job instance constructor with name {0}'.format(name))
         super(Job, self).__init__()
 
@@ -299,6 +304,7 @@ class Job(DAG):
 
         self.next_run = None
         self.cron_schedule = None
+        self.timezone = timezone
         self.cron_iter = None
         self.run_log = None
         self.completion_lock = threading.Lock()
@@ -374,7 +380,7 @@ class Job(DAG):
         self.commit()
 
 
-    def schedule(self, cron_schedule, base_datetime=None):
+    def schedule(self, cron_schedule, timezone, base_datetime=None):
         """ Schedules the job to run periodically using Cron syntax. """
 
         logger.debug('Scheduling job {0} with cron schedule {1}'.format(self.name, cron_schedule))
@@ -389,10 +395,23 @@ class Job(DAG):
 
         else:
             if base_datetime is None:
-                base_datetime = datetime.utcnow()
+                #  tz = pytz.timezone(self.timezone)
+                tz = pytz.timezone(timezone)
+                #tz = pytz.utc
+                #this two sentence can not be splited
+                utc_time = datetime.utcnow()
+                base_datetime = pytz.utc.localize(utc_time, is_dst=None).astimezone(tz)
+                #base_datetime = pytz.utc.localize(datetime.utcnow(), is_dst=None).astimezone(tz)
+                #utc = pytz.utc
+                print utc_time
+                #base_datetime = datetime.utcnow().replace(tzinfo=pytz.utc).astimezone(tz)
+                #base_datetime = datetime.utcnow().replace(tzinfo=pytz.utc).astimezone(tz)
+                print base_datetime
             self.cron_schedule = cron_schedule
             self.cron_iter = croniter(cron_schedule, base_datetime)
             self.next_run = self.cron_iter.get_next(datetime)
+            self.next_run = tz.localize(self.next_run, is_dst=None).astimezone(pytz.utc).replace(tzinfo=None)
+            print self.next_run
 
         logger.debug('Determined job {0} next run of {1}'.format(self.name, self.next_run))
         self.commit()
@@ -410,7 +429,10 @@ class Job(DAG):
 
         # don't increment if the job was run manually
         if self.cron_iter and datetime.utcnow() > self.next_run:
+            tz = pytz.timezone(self.timezone)
             self.next_run = self.cron_iter.get_next(datetime)
+            self.next_run = tz.localize(self.next_run, is_dst=None).astimezone(pytz.utc).replace(tzinfo=None)
+            print self.next_run
 
         try:
             log_id = self.backend.get_new_log_id()
@@ -693,7 +715,8 @@ class Job(DAG):
                   'status': self.state.status,
                   'cron_schedule': self.cron_schedule,
                   'next_run': self.next_run,
-                  'notes': self.notes}
+                  'notes': self.notes,
+                  'timezone': self.timezone}
 
         if strict_json:
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
