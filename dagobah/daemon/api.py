@@ -132,7 +132,7 @@ def add_job():
                          job_name=str):
         abort(400)
 
-    dagobah.add_job(args['job_name'])
+    dagobah.add_job(args['job_name'], 'Asia/Shanghai')
 
 
 @app.route('/api/delete_job', methods=['POST'])
@@ -260,7 +260,7 @@ def schedule_job():
         args['cron_schedule'] = None
 
     job = dagobah.get_job(args['job_name'])
-    job.schedule(args['cron_schedule'])
+    job.schedule(args['cron_schedule'], 'Asia/Shanghai')
 
 
 @app.route('/api/stop_scheduler', methods=['POST'])

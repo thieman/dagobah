@@ -7,6 +7,7 @@ from collections import defaultdict
 import time
 import threading
 import json
+import gpost
 
 
 class MyException(Exception):
@@ -136,3 +137,4 @@ class StrictJSONEncoder(json.JSONEncoder):
         if isinstance(o, datetime):
             return o.isoformat()
         return json.JSONEncoder.default(self, o)
+
