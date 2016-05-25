@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 # _*_ coding: utf-8
 
+import yaml
 import sys
 import requests
 import os
 import pymongo
 import random
 import string
+import sre_constants
 from json import dump, load, loads
-import re
-
+from re import search
+from termcolor import colored
+from pprint import PrettyPrinter
+import pytz
 
 def check_job_name_overwrite(data_module):
     """如果name在job_name_list中就做覆盖判断"""
@@ -19,16 +23,14 @@ def check_job_name_overwrite(data_module):
 
     if data_module['name'] in job_name_list:
 
-        print "Warning: Your Job name is conflict with server's job_name_list, Sure to overwrite？(Y/n)"
-
-        choice = raw_input("\"Y\" to keep go,\"n\" to stop and quit:")
+        print colored("Warning: Your Job name is conflict with server's job_name_list, Sure to overwrite？(Y/n)", 'red')
 
         try:
+            choice = raw_input("\"Y\" to keep go,\"n\" to stop and quit:")
             while choice.lower() != "y" and choice.lower() != "n":
                 choice = raw_input("\"Y\" to keep go,\"n\" to stop and quit:")
-        except KeyboardInterrupt, err:
-            print str(err)
-            sys.exit(0)
+        except KeyboardInterrupt:
+            sys.exit(1)
 
         if choice.lower() == "n":
             print "quiting..."
@@ -37,6 +39,34 @@ def check_job_name_overwrite(data_module):
         elif choice.lower() == "y":
             pass
 
+
+def filter_hosts_by_repr(hosts, distri_repr):
+    host_list = []
+    for host in hosts:
+        try:
+            if search(distri_repr, host) != None:
+                host_list.append(host)
+        except sre_constants.error, err:
+            print "输入的正则表达式语法有误"
+            print str(err)
+            sys.exit(1)
+    print colored('指定要分布的主机列表为:', 'blue')
+    pp = PrettyPrinter(indent=4)
+    pp.pprint(host_list)
+    if host_list == []:
+        print colored("要分布的主机列表不能为空!!!", 'red')
+        sys.exit(1)
+    try:
+        choice =  raw_input(colored("这是筛选出来的将要分布的主机，请确认(Y/n)", 'red'))
+        while choice.lower() != 'y':
+            if choice.lower() == 'n':
+                sys.exit(0)
+            else:
+                choice = raw_input("Y确认，n退出重新筛选(Y/n):")
+    except KeyboardInterrupt:
+            sys.exit(1)
+
+    return host_list
 
 def check_dependencies_valid(data_module,input_file,module_task_list):
     """
@@ -81,13 +111,14 @@ def check_dependencies_valid(data_module,input_file,module_task_list):
             for i in set_1:
                 print u"u'" + i + u"' ",
             sys.exit(1)
+
     try:
         session_check = requests.session()
         try_to_login(session_check)
         job_tmpname = randomword(10)
         try_to_modulate_job_tasks(session_check, module_task_list, job_tmpname)
         # 用于检测schedule语法的正确性"""
-        try_to_modulate_job_schedule(data_module, session_check, job_tmpname)
+        # try_to_modulate_job_schedule(data_module, session_check, job_tmpname)
 
         for i in module_depend_key_list:
             import_dep = "http://localhost:9000/api/add_dependency"
@@ -159,16 +190,18 @@ def check_host_exist_in_server(hosts, host_list, distri_file):
             sys.exit(1)
 
 
-def check_job_required_key(data_module, flag_dep):
-    """ 检查job必备的四个键和一个可选键 dependencies"""
+def check_job_required_key(data_module, flag_dep, flag_tz):
+    """ 检查job必备的四个键和两个可选键 dependencies, timezone"""
 
     module_key_list = data_module.keys()
-    list_ = [u"name",u"tasks",u"cron_schedule",u"dependencies",u"notes"]
+    list_ = [u"name", u"tasks", u"cron_schedule", u"dependencies", u"notes", u"timezone"]
 
     if not check_issub(module_key_list,list_):
-        print "模板必备字段: ", list_, " ,其中'dependencies'字段可选"
+        print "模板必备字段: ", list_, " ,其中'dependencies','timezone'字段可选"
         if flag_dep == 0:
             module_key_list.remove(u'dependencies')
+        if flag_tz == 0:
+            module_key_list.remove(u"timezone")
         print "你的字段列表： ", module_key_list
         s1 = set(module_key_list).difference(set(list_))
         print "Error: 未知字段： ",
@@ -190,7 +223,7 @@ def check_job_required_key(data_module, flag_dep):
 
 def check_job_name_not_start_with_digit(data_module, input_file):
     name = data_module['name']
-    re_flag = re.search('^[a-zA-Z_]', name)
+    re_flag = search('^[a-zA-Z_]', name)
     if re_flag is None:
         print u"\'name\': " + u"\'" + data_module['name'] + u"\'"
         print "Error: ", input_file, "的name字段只接受字母和下划线开头"
@@ -201,7 +234,16 @@ def check_job_name_not_start_with_digit(data_module, input_file):
 def get_server_job_name():
     """ 获取dagobah服务端的job_name列表"""
 
-    client = pymongo.MongoClient('mongodb://localhost', 27017)
+    stream = file('/root/.dagobahd.yml', 'rb')
+    data = yaml.load(stream)
+    host = data['MongoBackend']['host']
+    port = data['MongoBackend']['port']
+    try:
+        client = pymongo.MongoClient('mongodb://'+host, port)
+    except pymongo.errors.ConnectionFailure, err:
+        print "mongodb连接不上: "
+        print str(err)
+        sys.exit(1)
     db = client['dagobah']
     collect = db['dagobah']
     l1 = []
@@ -468,6 +510,8 @@ def init_data_real(data_module):
 
     data_real["cron_schedule"] = data_module['cron_schedule']
 
+    data_real['timezone'] = data_module['timezone']
+
     return data_real
 
 
@@ -593,7 +637,7 @@ def add_empty_job():
     return dict_
 
 
-def jsonalize(data_real):
+def post_to_server(data_real):
     '''创建连接dagobah的回话，然后开始导入数据'''
     filename = 'jiushizheige.json'
 
@@ -640,7 +684,8 @@ def try_to_login(session):
 def usage():
     print """nagobah <options>
         -i | --input-file = <jsonfile>          (必备)指定要导入的json模板
-        -H | --host-file = <hostfile>           (必备)指定任务要分配到的User(主机)
+        -H | --fname = <hostfile>           (必备)指定任务要分配到的User(主机)
+             --repr = <repr>                (要么用-H --fname=, 要么用-H --repr=)
         -t | --task-to-distribute = [tasks]     (可选)指定要做分布式的任务name,逗号隔开
         -h | --help to get help """
 
@@ -651,9 +696,20 @@ def trans_file_to_list(filename):
         file_ = open(filename, 'rb')
         list_ = [line[:-1] for line in file_]
         list_ = [str(i).strip() for i in list_]
+        list_ = [i for i in list_ if i != '']
     except IOError, err:
         print "打开文件失败" + str(err)
     finally:
         file_.close()
 
+    if list_ == []:
+        print filename,"不能为空"
+        sys.exit(1)
+
     return list_
+
+def check_if_in_all_tzs(data_module):
+    if data_module[u'timezone'] not in pytz.all_timezones:
+        print colored("Error: timezone error!!!", 'red')
+        print u"Your timezone: \"" + data_module[u'timezone'] + u"\" is not an valid timezone."
+        sys.exit(1)

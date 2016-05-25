@@ -646,15 +646,22 @@ class Job(DAG):
                         rslt = self._serialize(include_run_logs=True)
                         self.event_handler.emit('job_failed',rslt)
                                                 #self._serialize(include_run_logs=True))
-                        msg_new = '\nErrType: ' + "ExecutedFailure!" + "\nJobName: " + rslt['name'] + '\nTimeZone: ' + rslt['timezone'] + '\nCronSyntax: ' + rslt['cron_schedule'] + '\nErrTime: ' + str(datetime.now()) + '\nErrTasks: '
+                        msg_new = '\nErrType: ' + "ExecutedFailure!"
+                        msg_new = msg_new + "\nJobName: " + rslt['name']
+                        msg_new = msg_new + "\nMoreAboutJob: " + rslt['notes']
+                        msg_new = msg_new + '\nTimeZone: ' + rslt['timezone']
+                        msg_new = msg_new + '\nCronSyntax: ' + rslt['cron_schedule']
+                        msg_new = msg_new + '\nErrTime: ' + str(datetime.now())
+                        msg_new = msg_new + '\nDependencies: ' + str(rslt['dependencies'])
+                        msg_new = msg_new + '\nErrTasks: '
                         for i in rslt['tasks']:
                             msg_new = msg_new + "\n\t**\t" + "name: " + i['name']
                             msg_new = msg_new + "\n\t\t" + "command: " + i['command']
                             msg_new = msg_new + "\n\t\t" + "success: " + str(i['success'])
-                            msg_new = msg_new + "\n\t\t" + "return_code: " + str(i['run_log']['return_code'])
-                            msg_new = msg_new + "\n\t\t" + "stdout: " + i['run_log']['stdout']
-                            msg_new = msg_new + "\n\t\t" + "stderr: " + i['run_log']['stderr']
-                        
+                            if 'run_log' in i:
+                                for k in ["return_code","stdout","stderr"]:
+                                    if k in i['run_log']:
+                                        msg_new = msg_new + "\n\t\t" + "\"" + k + "\": " + str(i['run_log'][k])
                         self.gpost_(msg_new.encode('utf-8'))
 
                 except:

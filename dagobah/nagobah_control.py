@@ -2,12 +2,19 @@
 # _*_ coding: utf-8 _*_
 
 '''list(delete, modify) the jobname, tasks,'''
+import os
 import sys
 import subprocess
 from getopt import getopt, GetoptError
 from backend.mongoHelper import MongoDBHelper
 from termcolor import colored
 
+
+
+def check_exist(job_name,*args):
+    for i in args:
+        task_name = i
+    pass
 
 def usage():
     print """
@@ -22,8 +29,6 @@ Options:
         --jobname=JOBNAME     define a JOBNAME to Operate
         --taskname=TASK       define a TASK to Operate(JOBNAME is mandatory needed!)
     """
-    return
-
 
 def main():
     try:
@@ -31,6 +36,7 @@ def main():
         # print "Height = ", GetSystemMetrics(1)
         flag_l = 0
         flag_d = 0
+        flag_e = 0
         flag_j = 0
         flag_t = 0
         try:
@@ -42,8 +48,7 @@ def main():
                     'delete',
                     'taskname=',
                     'help'
-                ]
-            )
+                ])
         except GetoptError as err:
             print str(err)
             usage()
@@ -61,6 +66,8 @@ def main():
                 flag_t = 1
             elif opt in ('--delete', '-d'):
                 flag_d = 1
+            elif opt in ('--edit', '-e'):
+                flag_e = 1
             elif opt in ('--help', '-h'):
                 usage()
                 sys.exit(0)
@@ -68,38 +75,51 @@ def main():
                 assert False, "Unhandled option"
 
         cur = MongoDBHelper()
-        if flag_l == 1 and flag_d == 0:
+        if flag_l == 1 and flag_d == 0 and flag_e == 0:
+            # 可以简化
+            #type_ = "list"
+            #execute(flag_j, flag_t, type_)
+            # 可以考虑使用* args了
             if flag_j == 1 and flag_t == 1:
+                check_exist(job_name, task_name)
                 cur.present_a_task(job_name, task_name)
             elif flag_j == 1 and flag_t == 0:
+                check_exist(job_name)
                 cur.present_a_job(job_name)
             elif flag_j == 0 and flag_t == 1:
-                print colored("Error: 必须指定所属的job", 'red')
+                print "必须指定所属的job"
                 sys.exit(1)
             else:
                 cur.present_all_job()
 
-        elif flag_l == 0 and flag_d == 1:
+        elif flag_l == 0 and flag_d == 1 and flag_e == 0:
 
             if flag_j == 1 and flag_t == 1:
                 cur.delete_a_task(job_name, task_name)
             elif flag_j == 1 and flag_t == 0:
                 cur.delete_a_job(job_name)
             elif flag_j == 0 and flag_t == 1:
-                print colored("必须指定所属的job", 'red')
+                print "必须指定所属的job"
                 sys.exit(1)
             else:
-                print colored("不支持全局删除，请指定一个删除单位", 'red')
-                usage()
-                sys.exit(1)
+                print "要不要删除所有的job"
+                cur.delete_all_job()
 
-        elif flag_l == 0 and flag_d == 0:
-                print colored("请务必指定一个操作单位(list, delete)", 'red')
-                usage()
+        elif flag_l == 0 and flag_d == 0 and flag_e == 1:
+
+            if flag_j == 1 and flag_t == 1:
+                edit_a_task(job_name, task_name)
+            elif flag_j == 1 and flag_t == 0:
+                edit_a_job(job_name)
+            elif flag_j == 0 and flag_t == 1:
+                print "必须指定所属的job"
+                sys.exit(1)
+            else:
+                print "请务必指定一个操作单位"
                 sys.exit(1)
 
         else:
-            print colored("必须且只能指定一种操作方式，list or delete", 'red')
+            print "必须且只能指定一种操作方式，list, delete, edit, help"
             usage()
             sys.exit(1)
 
