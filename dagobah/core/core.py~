@@ -247,7 +247,7 @@ class Dagobah(object):
         if not job.state.allow_change_graph:
             raise DagobahError("job's graph is immutable in its current " +
                                "state: %s"
-                               % job.get_status())
+                               % job.state.status)
 
         job.add_task(task_command, task_name, **kwargs)
         job.commit()
