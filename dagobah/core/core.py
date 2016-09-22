@@ -247,7 +247,7 @@ class Dagobah(object):
         if not job.state.allow_change_graph:
             raise DagobahError("job's graph is immutable in its current " +
                                "state: %s"
-                               % job.state.status)
+                               % job.get_status())
 
         job.add_task(task_command, task_name, **kwargs)
         job.commit()
@@ -323,7 +323,7 @@ class Job(DAG):
         logger.debug('Adding task with command {0} to job {1}'.format(command, self.name))
         if not self.state.allow_change_graph:
             raise DagobahError("job's graph is immutable in its current state: %s"
-                               % self.state.status)
+                               % self.get_status())
 
         if name is None:
             name = command
@@ -339,7 +339,7 @@ class Job(DAG):
         logger.debug('Adding dependency from {0} to {1}'.format(from_task_name, to_task_name))
         if not self.state.allow_change_graph:
             raise DagobahError("job's graph is immutable in its current state: %s"
-                               % self.state.status)
+                               % self.get_status())
 
         self.add_edge(from_task_name, to_task_name)
         self.commit()
@@ -351,7 +351,7 @@ class Job(DAG):
         logger.debug('Deleting task {0}'.format(task_name))
         if not self.state.allow_change_graph:
             raise DagobahError("job's graph is immutable in its current state: %s"
-                               % self.state.status)
+                               % self.get_status())
 
         if task_name not in self.tasks:
             raise DagobahError('task %s does not exist' % task_name)
@@ -367,7 +367,7 @@ class Job(DAG):
         logger.debug('Deleting dependency from {0} to {1}'.format(from_task_name, to_task_name))
         if not self.state.allow_change_graph:
             raise DagobahError("job's graph is immutable in its current state: %s"
-                               % self.state.status)
+                               % self.get_status())
 
         self.delete_edge(from_task_name, to_task_name)
         self.commit()
@@ -379,7 +379,7 @@ class Job(DAG):
         logger.debug('Scheduling job {0} with cron schedule {1}'.format(self.name, cron_schedule))
         if not self.state.allow_change_schedule:
             raise DagobahError("job's schedule cannot be changed in state: %s"
-                               % self.state.status)
+                               % self.get_status())
 
         if cron_schedule is None:
             self.cron_schedule = None
@@ -598,7 +598,7 @@ class Job(DAG):
         """ Checks to see if the Job has completed, and cleans up if it has. """
 
         logger.debug('Job {0} running _on_completion check'.format(self.name))
-        if self.state.status != 'running' or (not self._is_complete()):
+        if self.get_status() != 'running' or (not self._is_complete()):
             return
 
         for job, results in self.run_log['tasks'].iteritems():
@@ -615,7 +615,7 @@ class Job(DAG):
                     self.backend.release_lock()
                 break
 
-        if self.state.status != 'failed':
+        if self.get_status() != 'failed':
             self._set_status('waiting')
             self.run_log = {}
             try:
@@ -681,7 +681,7 @@ class Job(DAG):
                   'parent_id': self.parent.dagobah_id,
                   'tasks': t,
                   'dependencies': dependencies,
-                  'status': self.state.status,
+                  'status': self.get_status(),
                   'cron_schedule': self.cron_schedule,
                   'next_run': self.next_run,
                   'notes': self.notes}
@@ -709,6 +709,10 @@ class Job(DAG):
         """ Destroy active copy of the snapshot """
         logger.debug('Destroying DAG snapshot for job {0}'.format(self.name))
         self.snapshot = None
+
+    def get_status(self):
+        """ Get the current state of the job. One of three values: 'running', 'failed', or 'waiting'. """
+        return self.state.status
 
 
 class Task(object):

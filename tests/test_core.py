@@ -24,7 +24,7 @@ def raise_timeout_exception(*args, **kwargs):
 
 @nottest
 def wait_until_stopped(job):
-    while job.state.status == 'running':
+    while job.get_status() == 'running':
         sleep(0.1)
         continue
 
@@ -116,6 +116,7 @@ def test_job_states():
     job = dagobah.get_job('test_job')
     for valid_status in ['waiting', 'running', 'failed']:
         job._set_status(valid_status)
+        assert valid_status == job.get_status()
 
 
 @with_setup(blank_dagobah)
@@ -182,7 +183,7 @@ def test_run_job():
     job.start()
 
     wait_until_stopped(job)
-    assert job.state.status != 'failed'
+    assert job.get_status() != 'failed'
 
 
 @with_setup(blank_dagobah)
@@ -250,7 +251,7 @@ def test_scheduler_monitoring():
     job.schedule('%d * * * *' % ((curr_minute + 1) % 60))
 
     for i in range(65):
-        if job.state.status == 'running':
+        if job.get_status() == 'running':
             for task in job.tasks.values():
                 task.terminate()
             return
@@ -301,11 +302,13 @@ def test_retry_from_failure():
     job.start()
 
     wait_until_stopped(job)
-    assert job.state.status == 'failed'
+    assert job.get_status() == 'failed'
 
     signal.alarm(10)
     job.edit_task("b", command="true")
     job.retry()
 
     wait_until_stopped(job)
-    assert job.state.status != 'failed'
+    assert job.get_status() != 'failed'
+
+    
