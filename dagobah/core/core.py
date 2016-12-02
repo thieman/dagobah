@@ -388,10 +388,10 @@ class Job(DAG):
 
         else:
             if base_datetime is None:
-                base_datetime = datetime.utcnow()
+                base_datetime = datetime.now()
             self.cron_schedule = cron_schedule
             self.cron_iter = croniter(cron_schedule, base_datetime)
-            self.next_run = self.cron_iter.get_next(datetime)
+            self.next_run = datetime.utcfromtimestamp(self.cron_iter.get_next())
 
         logger.debug('Determined job {0} next run of {1}'.format(self.name, self.next_run))
         self.commit()
