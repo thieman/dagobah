@@ -87,10 +87,10 @@ Email:
   # from address in the emails from Dagobah.
   # supports the following special variables within curly brackets {}
   # {HOSTNAME}: the machine's hostname
-  from_address: dpuett@usertesting.com
+  from_address: data_systems@usertesting.com
 
   # list of email addresses to send reports to, e.g. ['myemail@gmail.com']
-  recipients: ['dpuett@usertesting.com']
+  recipients: ['data_systems@usertesting.com']
 
   # sets whether Dagobah sends you emails on successful job completion
   send_on_success: True
