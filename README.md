@@ -20,6 +20,9 @@ Dagobah works with Python 2.6 or 2.7.
 
 On first start, `dagobahd` will create a [config file](dagobah/daemon/dagobahd.yml) at `~/.dagobahd.yml`. You'll probably want to check that out to get your backend and email options set up before you start using Dagobah.
 
+> can't find dagobah/daemon/dagobahd.yml? copy it!
+
+
 Dagobah does not require a backend, but unless you specify one, your jobs and tasks will be lost when the daemon exits. Each backend requires its own set of drivers. Once you've installed the drivers, you then need to specify any backend-specific options in the config. [See the config file for details.](dagobah/daemon/dagobahd.yml)
 
 ### Available Backends
