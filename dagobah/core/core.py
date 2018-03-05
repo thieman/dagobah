@@ -8,6 +8,9 @@ import subprocess
 import json
 import paramiko
 import logging
+import pymongo
+import pytz
+import gpost
 
 from croniter import croniter
 from copy import deepcopy
@@ -47,7 +50,6 @@ class Dagobah(object):
         self.scheduler.start()
 
         self.commit()
-
 
     def __repr__(self):
         return '<Dagobah with Backend %s>' % self.backend
@@ -111,10 +113,12 @@ class Dagobah(object):
         job_id = (job_json['job_id']
                   if use_job_id
                   else self.backend.get_new_job_id())
-        self.add_job(str(job_json['name']), job_id)
+        self.add_job(str(job_json['name']), str(job_json['timezone']), job_id)
+        #  self.add_job(str(job_json['name']), job_id)
         job = self.get_job(job_json['name'])
         if job_json.get('cron_schedule', None):
-            job.schedule(job_json['cron_schedule'])
+            job.schedule(job_json['cron_schedule'], job_json['timezone'])
+            #  job.schedule(job_json['cron_schedule'])
 
         for task in job_json.get('tasks', []):
             self.add_task_to_job(job,
@@ -153,7 +157,8 @@ class Dagobah(object):
         self.backend.delete_dagobah(self.dagobah_id)
 
 
-    def add_job(self, job_name, job_id=None):
+    #  def add_job(self, job_name, job_id=None, timezone='Asia/Shanghai'):
+    def add_job(self, job_name, timezone, job_id=None):
         """ Create a new, empty Job. """
         logger.debug('Creating a new job named {0}'.format(job_name))
         if not self._name_is_available(job_name):
@@ -166,7 +171,8 @@ class Dagobah(object):
         self.jobs.append(Job(self,
                              self.backend,
                              job_id,
-                             job_name))
+                             job_name,
+                             timezone))
 
         job = self.get_job(job_name)
         job.commit()
@@ -282,7 +288,8 @@ class Job(DAG):
     the current serialization of the job with run logs.
     """
 
-    def __init__(self, parent, backend, job_id, name):
+    #  def __init__(self, parent, backend, job_id, name, timezone):
+    def __init__(self, parent, backend, job_id, name, timezone):
         logger.debug('Starting Job instance constructor with name {0}'.format(name))
         super(Job, self).__init__()
 
@@ -298,6 +305,7 @@ class Job(DAG):
 
         self.next_run = None
         self.cron_schedule = None
+        self.timezone = timezone
         self.cron_iter = None
         self.run_log = None
         self.completion_lock = threading.Lock()
@@ -373,7 +381,7 @@ class Job(DAG):
         self.commit()
 
 
-    def schedule(self, cron_schedule, base_datetime=None):
+    def schedule(self, cron_schedule, timezone, base_datetime=None):
         """ Schedules the job to run periodically using Cron syntax. """
 
         logger.debug('Scheduling job {0} with cron schedule {1}'.format(self.name, cron_schedule))
@@ -388,10 +396,13 @@ class Job(DAG):
 
         else:
             if base_datetime is None:
-                base_datetime = datetime.utcnow()
+                tz = pytz.timezone(timezone)
+                utc_time = datetime.utcnow()
+                base_datetime = pytz.utc.localize(utc_time, is_dst=None).astimezone(tz)
             self.cron_schedule = cron_schedule
             self.cron_iter = croniter(cron_schedule, base_datetime)
             self.next_run = self.cron_iter.get_next(datetime)
+            self.next_run = tz.localize(self.next_run, is_dst=None).astimezone(pytz.utc).replace(tzinfo=None)
 
         logger.debug('Determined job {0} next run of {1}'.format(self.name, self.next_run))
         self.commit()
@@ -408,14 +419,25 @@ class Job(DAG):
         self.initialize_snapshot()
 
         # don't increment if the job was run manually
-        if self.cron_iter and datetime.utcnow() > self.next_run:
+        # if self.cron_iter and datetime.utcnow() > self.next_run:
+        if self.cron_iter and datetime.now() > self.next_run:
+            tz = pytz.timezone(self.timezone)
             self.next_run = self.cron_iter.get_next(datetime)
+            self.next_run = tz.localize(self.next_run, is_dst=None).astimezone(pytz.utc).replace(tzinfo=None)
+
+        try:
+            log_id = self.backend.get_new_log_id()
+        except pymongo.errors.AutoReconnect, err:
+            msg_new = '\nErrType: ' + "MongoConnectionFailure!" + "\nJobName: " + self.name + '\nErrTime: ' + str(datetime.now()) + '\nErrMsg: ' + "\n\t Mongo can not be connected!, this job is not executed!!!"
+            self.gpost_(msg_new)
+            return False
 
         self.run_log = {'job_id': self.job_id,
                         'name': self.name,
                         'parent_id': self.parent.dagobah_id,
-                        'log_id': self.backend.get_new_log_id(),
-                        'start_time': datetime.utcnow(),
+                        #'log_id': self.backend.get_new_log_id(),
+                        'log_id': log_id,
+                        'start_time': datetime.now(),
                         'tasks': {}}
         self._set_status('running')
 
@@ -424,11 +446,24 @@ class Job(DAG):
             task.reset()
 
         logger.debug('Job {0} seeding run logs'.format(self.name))
+        # msg_new = {}
         for task_name in self.ind_nodes(self.snapshot):
             self._put_task_in_run_log(task_name)
             self.tasks[task_name].start()
+            # msg_dict = self.tasks[task_name].start()
+            # if msg_dict != True:
+                # msg_new[task_name] = msg_dict
+                
 
         self._commit_run_log()
+
+        return True
+
+
+    def gpost_(self, str):
+        gpostd_data = {"type":"dagobah"}
+        host = "10.63.17.18"
+        gpost.blackhole(data=gpostd_data, project="g11", msg=str, host=host)
 
 
     def retry(self):
@@ -582,7 +617,8 @@ class Job(DAG):
     def _put_task_in_run_log(self, task_name):
         """ Initializes the run log task entry for this task. """
         logger.debug('Job {0} initializing run log entry for task {1}'.format(self.name, task_name))
-        data = {'start_time': datetime.utcnow(),
+        # data = {'start_time': datetime.utcnow(),
+        data = {'start_time': datetime.now(),
                 'command': self.tasks[task_name].command}
         self.run_log['tasks'][task_name] = data
 
@@ -607,8 +643,33 @@ class Job(DAG):
                 try:
                     self.backend.acquire_lock()
                     if self.event_handler:
-                        self.event_handler.emit('job_failed',
-                                                self._serialize(include_run_logs=True))
+                        rslt = self._serialize(include_run_logs=True)
+                        self.event_handler.emit('job_failed',rslt)
+                                                #self._serialize(include_run_logs=True))
+                        msg_new = u'\nErrType: ' + u"ExecutedFailure!"
+                        msg_new = msg_new + u"\nJobName: " + unicode(rslt['name'],"utf-8")
+                        msg_new = msg_new + u"\nMoreAboutJob: " + rslt['notes']
+                        msg_new = msg_new + u'\nTimeZone: ' + unicode(rslt['timezone'], 'utf-8')
+                        msg_new = msg_new + u'\nCronSyntax: ' + rslt['cron_schedule']
+                        msg_new = msg_new + u'\nErrTime: ' + unicode(str(datetime.now()), 'utf-8')
+                        msg_new = msg_new + u'\nDependencies: ' + unicode(str(rslt['dependencies']), 'utf-8')
+                        msg_new = msg_new + u'\nErrTasks: '
+
+                        for i in rslt['tasks']:
+                            msg_new = msg_new + u"\n\t**  " + u"name: " + unicode(i['name'], 'utf-8')
+                            msg_new = msg_new + u"\n\t\t" + "command: " + i['command']
+                            msg_new = msg_new + u"\n\t\t" + "success: " + str(i['success'])
+                            if str(i['success']) == "None":
+                                continue
+                            elif 'run_log' in i:
+                                for k in [u"return_code",u"stdout",u"stderr"]:
+                                    if k in i['run_log']:
+                                        if k == u"return_code":
+                                            msg_new = msg_new + u"\n\t\t" + k + u": " + str(i['run_log'][k]).encode('utf-8')
+                                        else:
+                                            msg_new = msg_new + u"\n\t\t" + k + u": " + i['run_log'][k]
+                        self.gpost_(msg_new.encode('utf-8'))
+
                 except:
                     logger.exception("Error in handling events.")
                 finally:
@@ -684,7 +745,8 @@ class Job(DAG):
                   'status': self.state.status,
                   'cron_schedule': self.cron_schedule,
                   'next_run': self.next_run,
-                  'notes': self.notes}
+                  'notes': self.notes,
+                  'timezone': self.timezone}
 
         if strict_json:
             result = json.loads(json.dumps(result, cls=StrictJSONEncoder))
@@ -728,6 +790,7 @@ class Task(object):
         self.command = command
         self.name = name
         self.hostname = hostname
+        # self.msg_dict = None
 
         self.remote_channel = None
         self.process = None
@@ -807,7 +870,9 @@ class Task(object):
                                             stdout=self.stdout_file,
                                             stderr=self.stderr_file)
 
-        self.started_at = datetime.utcnow()
+        # self.started_at = datetime.utcnow()
+        self.started_at = datetime.now()
+        # self._start_check_timer()
         self._start_check_timer()
 
     def remote_ssh(self, host):
@@ -820,7 +885,7 @@ class Task(object):
                 paramiko.AutoAddPolicy())
             self.remote_client.connect(host['hostname'], username=host['user'],
                                        key_filename=host['identityfile'][0],
-                                       timeout=82800)
+                                       timeout=8)
             transport = self.remote_client.get_transport()
             transport.set_keepalive(10)
 
@@ -851,6 +916,15 @@ class Task(object):
 
         return_code = self.completed_task()
 
+        # add gpost string if err
+        # if return_code != "0":
+        #    self.msg_dict = {"name": self.name,
+        #                     "start_time": self.started_at,
+        #                     "return_code":return_code,
+        #                     "stderr": self.stderr.decode('utf-8'),
+        #                     "stdout": self.stdout.decode('utf-8')}
+        #    print self.msg_dict
+
         # Handle task errors
         if self.terminate_sent:
             self.stderr += '\nDAGOBAH SENT SIGTERM TO THIS PROCESS\n'
@@ -868,7 +942,8 @@ class Task(object):
                             stdout=self.stdout,
                             stderr=self.stderr,
                             start_time=self.started_at,
-                            complete_time=datetime.utcnow())
+                            # complete_time=datetime.utcnow())
+                            complete_time=datetime.now())
 
     def remote_not_complete(self):
         """
@@ -977,12 +1052,14 @@ class Task(object):
     def _timeout_check(self):
         logger.debug('Running timeout check for task {0}'.format(self.name))
         if (self.soft_timeout != 0 and
-            (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout
+            # (datetime.utcnow() - self.started_at).seconds >= self.soft_timeout
+            (datetime.now() - self.started_at).seconds >= self.soft_timeout
                 and not self.terminate_sent):
             self.terminate()
 
         if (self.hard_timeout != 0 and
-            (datetime.utcnow() - self.started_at).seconds >= self.hard_timeout
+            # (datetime.utcnow() - self.started_at).seconds >= self.hard_timeout
+            (datetime.now() - self.started_at).seconds >= self.hard_timeout
                 and not self.kill_sent):
             self.kill()
 
@@ -1005,9 +1082,11 @@ class Task(object):
         """ Periodically checks to see if the task has completed. """
         if self.timer:
             self.timer.cancel()
+        # self.msg_dict = None
         self.timer = threading.Timer(2.5, self.check_complete)
         self.timer.daemon = True
         self.timer.start()
+        # return self.msg_dict
 
 
     def _read_temp_file(self, temp_file):
@@ -1072,7 +1151,8 @@ class Task(object):
         """ Performs cleanup tasks and notifies Job that the Task finished. """
         logger.debug('Running _task_complete for task {0}'.format(self.name))
         with self.parent_job.completion_lock:
-            self.completed_at = datetime.utcnow()
+            # self.completed_at = datetime.utcnow()
+            self.completed_at = datetime.now()
             self.successful = kwargs.get('success', None)
             self.parent_job._complete_task(self.name, **kwargs)
 

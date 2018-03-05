@@ -7,7 +7,11 @@ from collections import defaultdict
 import time
 import threading
 import json
+import gpost
 
+
+class MyException(Exception):
+    pass
 
 class EventHandler(object):
     """ Provides an event model for Dagobah methods.
@@ -106,12 +110,16 @@ class Scheduler(threading.Thread):
         """ Continually monitors Jobs of the parent Dagobah. """
         while not self.stopped:
             now = datetime.utcnow()
+
             for job in self.parent.jobs:
                 if not job.next_run:
                     continue
                 if job.next_run >= self.last_check and job.next_run <= now:
+                    #  if job.state.allow_start:
+                    #       job.start()
                     if job.state.allow_start:
-                        job.start()
+                        if not job.start():
+                            continue
                     else:
                         job.next_run = job.cron_iter.get_next(datetime)
             self.last_checked = now
@@ -129,3 +137,4 @@ class StrictJSONEncoder(json.JSONEncoder):
         if isinstance(o, datetime):
             return o.isoformat()
         return json.JSONEncoder.default(self, o)
+

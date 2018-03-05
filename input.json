@@ -1,0 +1,35 @@
+{
+  "tasks": [
+    {
+      "soft_timeout": 1,
+      "name": "copy",
+      "hard_timeout": 2,
+      "hostname": "slave1",
+      "command": "echo 'task1.txt'"
+    },
+    {
+      "soft_timeout": 1,
+      "hard_timeout": 2,
+      "name": "print",
+      "command": "echo 1",
+      "hostname": "slave1"
+    },
+    {
+      "name": "end",
+      "hostname": "slave3",
+      "command": "echo \"nothing\""
+    }
+  ],
+  "notes": "splist3",
+  "name": "this is test job",
+  "dependencies": {
+    "copy":[
+      "print"
+    ],
+    "print":[
+      "end"
+    ],
+    "end":[]
+  },
+  "cron_schedule": "* * * * *"
+}

@@ -130,6 +130,7 @@ class BaseBackend(object):
             return dct
 
         return json.loads(json_doc, object_hook=custom_decoder)
+        # return json.loads(json_doc)
 
 
     def commit_dagobah(self, dagobah_json):
