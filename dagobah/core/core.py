@@ -8,6 +8,7 @@ import subprocess
 import json
 import paramiko
 import logging
+import signal
 
 from croniter import croniter
 from copy import deepcopy
@@ -801,7 +802,11 @@ class Task(object):
             else:
                 self.remote_failure = True
         else:
+	# https://stackoverflow.com/questions/4789837/how-to-terminate-a-python-subprocess-launched-with-shell-true
+            #self.process = subprocess.Popen("exec " + self.command,
             self.process = subprocess.Popen(self.command,
+	# https://stackoverflow.com/questions/2638909/killing-a-subprocess-including-its-children-from-python
+                                            preexec_fn=os.setsid, # setsid will run the program in a new session, thus assigning a new process group to it and its children. calling os.killpg on it thus won't bring down your own python process also
                                             shell=True,
                                             env=os.environ.copy(),
                                             stdout=self.stdout_file,
@@ -933,7 +938,9 @@ class Task(object):
         if not self.process:
             raise DagobahError('task does not have a running process')
         self.kill_sent = True
-        self.process.kill()
+        #self.process.kill()
+	# calling os.killpg to kill with child process
+        os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
 
 
     def head(self, stream='stdout', num_lines=10):
