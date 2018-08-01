@@ -8,6 +8,8 @@ Dagobahd:
   host: 127.0.0.1
   port: 9000
 
+  threaded: False
+
   # the app's secret key, used for maintaining user sessions
   app_secret: %(app_secret)s
 

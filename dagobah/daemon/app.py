@@ -9,7 +9,7 @@ def daemon_entrypoint():
     print 'Starting app on %s:%s' % (app.config['APP_HOST'],
                                      app.config['APP_PORT'])
     app.run(host=app.config['APP_HOST'], port=app.config['APP_PORT'],
-            use_reloader=False)
+            use_reloader=False, threaded=app.config['APP_THREADED'])
 
 if __name__ == '__main__':
     daemon_entrypoint()
