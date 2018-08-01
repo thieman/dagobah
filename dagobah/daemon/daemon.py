@@ -121,6 +121,7 @@ def configure_app():
     app.config['AUTH_ATTEMPTS'] = []
     app.config['APP_HOST'] = get_conf(config, 'Dagobahd.host', '127.0.0.1')
     app.config['APP_PORT'] = get_conf(config, 'Dagobahd.port', '9000')
+    app.config['APP_THREADED'] = get_conf(config, 'Dagobahd.threaded', False)
 
     configure_requests_logger(config, app)
 

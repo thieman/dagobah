@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='dagobah',
-      version='0.3.1',
+      version='0.4.0',
       description='Simple DAG-based job scheduler',
       url='http://github.com/tthieman/dagobah',
       author='Travis Thieman',
