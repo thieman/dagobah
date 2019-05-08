@@ -248,11 +248,12 @@ def get_backend(config):
         backend_kwargs = {}
         for conf_kwarg in ['host', 'port', 'db',
                            'dagobah_collection', 'job_collection',
-                           'log_collection']:
+                           'log_collection', 'auth_required', 'user', 'password']:
             backend_kwargs[conf_kwarg] = get_conf(config,
                                                   'MongoBackend.%s' % conf_kwarg)
         backend_kwargs['port'] = int(backend_kwargs['port'])
-
+        if backend_kwargs['auth_required'] and backend_kwargs['user'] is None:
+            raise ValueError('MongoBackend.auth_required is True but MongoBackend.user is None')
         try:
             from ..backend.mongo import MongoBackend
         except:

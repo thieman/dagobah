@@ -104,6 +104,9 @@ MongoBackend:
   host: localhost
   port: 27017
   db: dagobah
+  auth_required: False
+  user: None
+  password: None
 
   # names of collections within the db specified above
   dagobah_collection: dagobah

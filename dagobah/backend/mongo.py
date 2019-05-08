@@ -30,7 +30,8 @@ class MongoBackend(BaseBackend):
                           'version': '2.5'}]
 
     def __init__(self, host, port, db, dagobah_collection='dagobah',
-                 job_collection='dagobah_job', log_collection='dagobah_log'):
+                 job_collection='dagobah_job', log_collection='dagobah_log', auth_required=False, user=None,
+                 password=None):
         super(MongoBackend, self).__init__()
 
         self.host = host
@@ -42,6 +43,8 @@ class MongoBackend(BaseBackend):
         except NameError:
             self.client = Connection(self.host, self.port)
 
+        if auth_required:
+            self.client[self.db_name].authenticate(user, password)
         self.db = self.client[self.db_name]
 
         self.dagobah_coll = self.db[dagobah_collection]
