@@ -93,8 +93,7 @@ def test_dagobah_add_tasks():
     job = dagobah.get_job('test_job')
     job.add_task('python /etc/do_stuff.py')
     job.add_task('python /var/log/do_other_stuff.py', 'job two')
-    assert set(job.tasks.keys()) == set(['python /etc/do_stuff.py',
-                                         'job two'])
+    assert set(job.tasks.keys()) == {'python /etc/do_stuff.py', 'job two'}
 
 
 @with_setup(blank_dagobah)
@@ -161,7 +160,7 @@ def test_add_task_to_job():
     dagobah.add_task_to_job(job, 'cat', 'concat')
     dagobah.add_task_to_job('test_job', 'wc')
     dagobah.add_task_to_job(job, 'sed')
-    assert set(job.tasks.keys()) == set(['list', 'concat', 'wc', 'sed'])
+    assert set(job.tasks.keys()) == {'list', 'concat', 'wc', 'sed'}
 
 
 @with_setup(blank_dagobah)

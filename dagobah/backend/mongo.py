@@ -83,9 +83,9 @@ class MongoBackend(BaseBackend):
     def get_dagobah_json(self, dagobah_id):
         return self.dagobah_coll.find_one({'_id': dagobah_id})
 
-    def decode_import_json(self, json_doc):
+    def decode_import_json(self, json_doc, transformers=None):
         def is_object_id(o):
-            return (re.match(re.compile('^[0-9a-fA-f]{24}$'), o) is not None)
+            return re.match(re.compile('^[0-9a-fA-f]{24}$'), o) is not None
         transformers = [([is_object_id], ObjectId),
                         ([], parser.parse)]
         return super(MongoBackend, self).decode_import_json(json_doc,
