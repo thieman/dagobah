@@ -710,6 +710,16 @@ class Job(DAG):
         logger.debug('Destroying DAG snapshot for job {0}'.format(self.name))
         self.snapshot = None
 
+    def _dependencies(self, target_node, graph):
+        """ Returns a list of all nodes from incoming edges. """
+        if graph is None:
+            raise Exception("Graph given is None")
+        result = set()
+        for node, outgoing_nodes in graph.iteritems():
+            if target_node in outgoing_nodes:
+                result.add(node)
+        return list(result)
+
 
 class Task(object):
     """ Handles execution and reporting for an individual process.
