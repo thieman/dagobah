@@ -1,3 +1,0 @@
-Root goodies are neato files that make your website work better. You can drag them into the root of your site or just let the build script do that for you.
-
-Because these are "set and forget", Kickstrap keeps them here so you can focus on your project. However, they must be in your root to work on your site.
