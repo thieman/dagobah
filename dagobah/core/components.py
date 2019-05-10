@@ -25,7 +25,7 @@ class EventHandler(object):
             methods = self.handlers.get(event, [])
             for method, args, kwargs in methods:
                 argspec = inspect.getargspec(method)
-                if ('event_params' in argspec.args or argspec.keywords is not None):
+                if 'event_params' in argspec.args or argspec.keywords is not None:
                     kwargs = dict(kwargs.items() +
                                   {'event_params': event_params}.items())
                 method.__call__(*args, **kwargs)
@@ -109,7 +109,7 @@ class Scheduler(threading.Thread):
             for job in self.parent.jobs:
                 if not job.next_run:
                     continue
-                if job.next_run >= self.last_check and job.next_run <= now:
+                if self.last_check <= job.next_run <= now:
                     if job.state.allow_start:
                         job.start()
                     else:

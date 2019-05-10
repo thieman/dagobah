@@ -472,7 +472,7 @@ def export_job():
 @api_call
 def import_job():
     file = request.files['file']
-    if (file and allowed_file(file.filename, ['json'])):
+    if file and allowed_file(file.filename, ['json']):
         dagobah.add_job_from_json(file.read(), destructive=True)
 
 

@@ -439,7 +439,7 @@ class Job(DAG):
 
         failed_task_names = []
         for task_name, log in self.run_log['tasks'].items():
-            if log.get('success', True) == False:
+            if not log.get('success', True):
                 failed_task_names.append(task_name)
 
         if len(failed_task_names) == 0:
@@ -564,7 +564,7 @@ class Job(DAG):
         finally:
             self.backend.release_lock()
 
-        if kwargs.get('success', None) == False:
+        if not kwargs.get('success', None):
             task = self.tasks[task_name]
             try:
                 self.backend.acquire_lock()
@@ -602,7 +602,7 @@ class Job(DAG):
             return
 
         for job, results in self.run_log['tasks'].iteritems():
-            if results.get('success', False) == False:
+            if not results.get('success', False):
                 self._set_status('failed')
                 try:
                     self.backend.acquire_lock()
@@ -637,7 +637,7 @@ class Job(DAG):
         task = self.tasks[task_name]
         dependencies = self._dependencies(task_name, self.snapshot)
         for dependency in dependencies:
-            if self.run_log['tasks'].get(dependency, {}).get('success', False) == True:
+            if self.run_log['tasks'].get(dependency, {}).get('success', False):
                 continue
             return
         self._put_task_in_run_log(task_name)
@@ -709,6 +709,16 @@ class Job(DAG):
         """ Destroy active copy of the snapshot """
         logger.debug('Destroying DAG snapshot for job {0}'.format(self.name))
         self.snapshot = None
+
+    def _dependencies(self, target_node, graph):
+        """ Returns a list of all nodes from incoming edges. """
+        if graph is None:
+            raise Exception("Graph given is None")
+        result = set()
+        for node, outgoing_nodes in graph.iteritems():
+            if target_node in outgoing_nodes:
+                result.add(node)
+        return list(result)
 
 
 class Task(object):

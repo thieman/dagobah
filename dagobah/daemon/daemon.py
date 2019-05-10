@@ -85,7 +85,7 @@ def configure_requests_logger(config, app):
     logger = logging.getLogger('werkzeug')
     logger.propagate = False
 
-    if get_conf(config, 'Logging.Requests.enabled', False) == False:
+    if not get_conf(config, 'Logging.Requests.enabled', False):
         logger.addHandler(NullHandler())
         return
 
@@ -202,7 +202,7 @@ def init_core_logger(location, config):
     logger = logging.getLogger('dagobah')
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    if get_conf(config, 'Logging.Core.enabled', False) == False:
+    if not get_conf(config, 'Logging.Core.enabled', False):
         logger.addHandler(NullHandler())
         return
 

@@ -48,10 +48,8 @@ class TestMongo(object):
             raise e
 
         self.db_name = 'dagobah_mongobackend_test'
-        if self.db_name in self.client.database_names():
-            raise ValueError('test database %s already exists, ' +
-                             'please drop it before running the tests'
-                             % self.db_name)
+        if self.db_name in self.client.list_database_names():
+            raise ValueError('test database %s already exists, please drop it before running the tests' % self.db_name)
 
         self.db = self.client[self.db_name]
         self.dagobah = None
