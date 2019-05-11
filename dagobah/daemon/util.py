@@ -16,6 +16,7 @@ except ImportError:
 
 from ..core import DagobahError, DAGValidationError
 
+
 class DagobahEncoder(json.JSONEncoder):
     def default(self, obj):
 
@@ -105,8 +106,8 @@ def validate_dict(in_dict, **kwargs):
         else:
 
             if (isinstance(in_dict[key], list) and
-                len(in_dict[key]) == 1 and
-                value != list):
+                    len(in_dict[key]) == 1 and
+                    value != list):
                 in_dict[key] = in_dict[key][0]
 
             try:

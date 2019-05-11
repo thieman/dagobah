@@ -7,6 +7,7 @@ import email.utils
 
 import jinja2
 
+
 class EmailTemplate(object):
 
     def __init__(self, **kwargs):
@@ -20,24 +21,19 @@ class EmailTemplate(object):
         self.from_address = self._apply_formatters(self.from_address)
         self.message = None
 
-
     def send_job_completed(self, data):
         raise NotImplementedError()
-
 
     def send_task_failed(self, data):
         raise NotImplementedError()
 
-
     def send_job_failed(self, data):
         raise NotImplementedError()
-
 
     def _construct_and_send(self, subject):
         self._address_message()
         self._set_subject(subject)
         self._send_message()
-
 
     def _apply_formatters(self, value):
         new_value = value
@@ -45,17 +41,14 @@ class EmailTemplate(object):
             new_value = new_value.replace(formatter, call().strip())
         return new_value
 
-
     def _address_message(self):
         email_addr = self.from_address if self.user is None else self.user
 
         self.message['From'] = email.utils.formataddr((self.from_address, email_addr))
         self.message['To'] = ','.join(self.recipients)
 
-
     def _set_subject(self, subject):
         self.message['Subject'] = subject
-
 
     def _send_message(self):
         s = smtplib.SMTP(self.host, self.port)
@@ -64,13 +57,12 @@ class EmailTemplate(object):
             s.starttls()
             s.ehlo
 
-        if getattr(self, 'auth_required', True):  #Preserve backward compatibility
+        if getattr(self, 'auth_required', True):  # Preserve backward compatibility
             s.login(self.user, self.password)
 
         s.sendmail(self.message['From'],
                    self.recipients,
                    self.message.as_string())
-
 
     def _get_template(self, template_name, template_file):
         """ Returns a Jinja2 template of the specified file. """

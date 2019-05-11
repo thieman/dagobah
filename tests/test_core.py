@@ -15,18 +15,22 @@ import os
 
 dagobah = None
 
+
 class DagobahTestTimeoutException(Exception):
     pass
+
 
 @nottest
 def raise_timeout_exception(*args, **kwargs):
     raise DagobahTestTimeoutException()
+
 
 @nottest
 def wait_until_stopped(job):
     while job.state.status == 'running':
         sleep(0.1)
         continue
+
 
 @nottest
 def supports_timeouts(fn):
@@ -37,7 +41,9 @@ def supports_timeouts(fn):
         signal.alarm(0)
         signal.signal(signal.SIGALRM, lambda signalnum, handler: None)
         return result
+
     return wrapped
+
 
 @nottest
 def blank_dagobah():
@@ -225,7 +231,7 @@ def test_serialize_dagobah():
                                         'success': None,
                                         'soft_timeout': 0,
                                         'hard_timeout': 0,
-                                        'hostname': None},],
+                                        'hostname': None}, ],
                              'dependencies': {'list': ['grep'],
                                               'grep': []},
                              'status': 'waiting',
@@ -270,12 +276,14 @@ def test_construct_with_timeouts():
     assert job.tasks['From Job'].soft_timeout == 10
     assert job.tasks['From Job'].hard_timeout == 20
 
+
 @with_setup(blank_dagobah)
 def test_ssh_config_load():
     hosts = dagobah.get_hosts()
     assert "test_host" in hosts
     assert "*" not in hosts
     assert "nonexistant" not in hosts
+
 
 @with_setup(blank_dagobah)
 @supports_timeouts

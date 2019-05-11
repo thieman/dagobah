@@ -54,7 +54,6 @@ class TestMongo(object):
         self.db = self.client[self.db_name]
         self.dagobah = None
 
-
     @classmethod
     def teardown_class(self):
 
@@ -62,7 +61,6 @@ class TestMongo(object):
         if self.db_name != 'dagobah_mongobackend_test':
             raise ValueError('something modified the test db name, aborting')
         self.client.drop_database(self.db_name)
-
 
     @nottest
     def new_dagobah(self, return_instance=False):
@@ -78,7 +76,6 @@ class TestMongo(object):
                                         self.mongo_port,
                                         self.db_name))
 
-
     def test_commit_fresh_dagobah(self):
         self.new_dagobah()
         q = {'_id': self.dagobah.dagobah_id,
@@ -88,14 +85,12 @@ class TestMongo(object):
              'jobs': []}
         assert self.dagobah_coll.find(q).count() == 1
 
-
     def test_delete_fresh_dagobah(self):
         self.new_dagobah()
         q = {'_id': self.dagobah.dagobah_id}
         assert self.dagobah_coll.find(q).count() == 1
         self.dagobah.delete()
         assert self.dagobah_coll.find(q).count() == 0
-
 
     def test_commit_loaded_dagobah(self):
         self.new_dagobah()
@@ -132,7 +127,6 @@ class TestMongo(object):
                                  'next_run': None,
                                  'notes': None}]}
 
-
     def test_commit_job(self):
         self.new_dagobah()
         self.dagobah.add_job('test_job')
@@ -166,7 +160,6 @@ class TestMongo(object):
                        'save_date': rec['save_date'],
                        'notes': None}
 
-
     def test_construct_from_backend(self):
         self.new_dagobah()
         self.dagobah.add_job('test_job')
@@ -187,7 +180,6 @@ class TestMongo(object):
         print test_dagobah._serialize()
 
         assert self.dagobah._serialize() == test_dagobah._serialize()
-
 
     def test_decode_json(self):
         self.new_dagobah()

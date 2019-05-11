@@ -20,9 +20,11 @@ login_manager.login_view = "login"
 location = os.path.realpath(os.path.join(os.getcwd(),
                                          os.path.dirname(__file__)))
 
+
 class NullHandler(logging.Handler):
     def emit(self, record):
         pass
+
 
 def replace_nones(dict_or_list):
     """Update a dict or list in place to replace
@@ -40,6 +42,7 @@ def replace_nones(dict_or_list):
             replace_nones(value)
         else:
             dict_or_list[accessor] = replace_none_in_value(value)
+
 
 def get_config_file():
     """ Return the loaded config file if one exists. """
@@ -108,6 +111,7 @@ def configure_requests_logger(config, app):
         stdout_logger.setLevel(logging.DEBUG)
         logger.addHandler(stdout_logger)
 
+
 def configure_app():
     app.debug = get_conf(config, 'Dagobahd.debug', False)
     app.secret_key = get_conf(config, 'Dagobahd.app_secret', 'default_secret')
@@ -140,7 +144,6 @@ def get_conf(config, path, default=None):
 
 
 def init_dagobah(testing=False):
-
     init_core_logger(location, config)
 
     backend = get_backend(config)
@@ -151,8 +154,8 @@ def init_dagobah(testing=False):
         logging.warn("SSH config doesn't exist, no remote hosts will be listed")
 
     dagobah = Dagobah(backend, event_handler, ssh_config)
-    known_ids = [id for id in backend.get_known_dagobah_ids()
-                 if id != dagobah.dagobah_id]
+    known_ids = [job_id for job_id in backend.get_known_dagobah_ids()
+                 if job_id != dagobah.dagobah_id]
     if len(known_ids) > 1:
         # need a way to handle this intelligently through config
         raise ValueError('could not infer dagobah ID, ' +
@@ -185,11 +188,11 @@ def configure_event_hooks(config):
                                       get_conf(config, 'Email', {}))
 
     if (email_handler and
-        get_conf(config, 'Email.send_on_success', False) == True):
+            get_conf(config, 'Email.send_on_success', False) is True):
         handler.register('job_complete', job_complete_email, email_handler)
 
     if (email_handler and
-        get_conf(config, 'Email.send_on_failure', False) == True):
+            get_conf(config, 'Email.send_on_failure', False) is True):
         handler.register('job_failed', job_failed_email, email_handler)
         handler.register('task_failed', task_failed_email, email_handler)
 
@@ -232,7 +235,6 @@ def init_core_logger(location, config):
     if config_filepath:
         print 'Logging output to %s' % config_filepath
     logging.info('Core logger initialized at level %s' % level_string)
-
 
 
 def get_backend(config):

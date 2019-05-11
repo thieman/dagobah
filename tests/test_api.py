@@ -11,6 +11,7 @@ from dagobah.core import Dagobah
 from dagobah.daemon.app import app
 from dagobah.backend.base import BaseBackend
 
+
 class TestAPI(object):
 
     @classmethod
@@ -29,11 +30,9 @@ class TestAPI(object):
 
         self.base_url = 'http://localhost:60000'
 
-
     @classmethod
     def teardown_class(self):
         self.dagobah.delete()
-
 
     @nottest
     def reset_dagobah(self):
@@ -46,8 +45,6 @@ class TestAPI(object):
         j.add_dependency('grep', 'list')
         j.schedule('0 0 3 0 0')
 
-
-
     @nottest
     def validate_api_call(self, request):
         print request.status_code
@@ -58,7 +55,6 @@ class TestAPI(object):
         assert 'result' in d
         return d
 
-
     def test_jobs(self):
         self.reset_dagobah()
         r = self.app.get('/api/jobs')
@@ -66,12 +62,10 @@ class TestAPI(object):
         assert len(d.get('result', [])) == 1
         assert len(d['result'][0].get('tasks', [])) == 2
 
-
     def test_job(self):
         self.reset_dagobah()
         r = self.app.get('/api/job?job_name=Test Job')
         d = self.validate_api_call(r)
-
 
     def test_add_and_delete_job(self):
         self.reset_dagobah()
@@ -85,7 +79,6 @@ class TestAPI(object):
         r = self.app.post('/api/delete_job', data={'job_name': 'Test Added Job'})
         d = self.validate_api_call(r)
 
-
     def test_start_job(self):
         self.reset_dagobah()
         r = self.app.post('/api/start_job', data={'job_name': 'Test Job'})
@@ -94,7 +87,6 @@ class TestAPI(object):
         r = self.app.get('/api/job?job_name=Test Job')
         d = self.validate_api_call(r)
         assert d['result']['status'] == 'running'
-
 
     def test_add_task_to_job(self):
         self.reset_dagobah()
@@ -108,7 +100,6 @@ class TestAPI(object):
         d = self.validate_api_call(r)
         assert len(d['result']) == 1
         assert len(d['result'][0]['tasks']) == 3
-
 
     def test_add_dependency(self):
         self.reset_dagobah()
@@ -125,7 +116,6 @@ class TestAPI(object):
         assert len(d['result'][0]['tasks']) == 3
         assert d['result'][0]['dependencies']['from node'] == ['grep']
 
-
     def test_set_soft_timeout(self):
         self.reset_dagobah()
         p_args = {'job_name': 'Test Job',
@@ -140,7 +130,6 @@ class TestAPI(object):
         self.validate_api_call(r)
         assert self.dagobah.get_job('Test Job').tasks['grep'].soft_timeout == 0
 
-
     def test_set_hard_timeout(self):
         self.reset_dagobah()
         p_args = {'job_name': 'Test Job',
@@ -154,7 +143,6 @@ class TestAPI(object):
         r = self.app.post('/api/set_hard_timeout', data=p_args)
         self.validate_api_call(r)
         assert self.dagobah.get_job('Test Job').tasks['grep'].hard_timeout == 0
-
 
     def test_import_export(self):
         self.reset_dagobah()

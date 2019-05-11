@@ -11,6 +11,7 @@ from .util import validate_dict, api_call, allowed_file
 
 dagobah = app.config['dagobah']
 
+
 @app.route('/api/jobs', methods=['GET'])
 @login_required
 @api_call
@@ -226,6 +227,7 @@ def add_dependency():
 
     job = dagobah.get_job(args['job_name'])
     job.add_dependency(args['from_task_name'], args['to_task_name'])
+
 
 @app.route('/api/delete_dependency', methods=['POST'])
 @login_required
@@ -471,9 +473,9 @@ def export_job():
 @login_required
 @api_call
 def import_job():
-    file = request.files['file']
-    if file and allowed_file(file.filename, ['json']):
-        dagobah.add_job_from_json(file.read(), destructive=True)
+    req_file = request.files['file']
+    if req_file and allowed_file(req_file.filename, ['json']):
+        dagobah.add_job_from_json(req_file.read(), destructive=True)
 
 
 @app.route('/api/hosts', methods=['GET'])

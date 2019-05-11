@@ -7,9 +7,11 @@ from flask_login import UserMixin, login_user, logout_user, login_required
 
 from .app import app, login_manager
 
+
 class User(UserMixin):
     def get_id(self):
         return 1
+
 
 SingleAuthUser = User()
 
