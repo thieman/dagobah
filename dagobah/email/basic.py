@@ -2,7 +2,7 @@
 
 from datetime import datetime
 # noinspection PyUnresolvedReferences
-from email.MIMEMultipart import MIMEMultipart
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import premailer

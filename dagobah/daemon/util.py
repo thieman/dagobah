@@ -24,6 +24,8 @@ class DagobahEncoder(json.JSONEncoder):
         try:
             if isinstance(obj, ObjectId):
                 return str(obj)
+            if isinstance(obj, bytes):
+                return  str(obj)
         except NameError:
             pass
 

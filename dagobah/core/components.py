@@ -118,6 +118,8 @@ class StrictJSONEncoder(json.JSONEncoder):
             from bson import ObjectId
             if isinstance(o, ObjectId):
                 return str(o)
+            if isinstance(o, bytes):
+                return str(o)
         except ImportError:
             pass
         if isinstance(o, datetime):

@@ -96,7 +96,9 @@ class MongoBackend(BaseBackend):
     def commit_dagobah(self, dagobah_json):
         dagobah_json['_id'] = dagobah_json['dagobah_id']
         append = {'save_date': datetime.utcnow()}
-        self.dagobah_coll.save(dict(dagobah_json.items() + append.items()))
+        result_dict = dagobah_json.copy()
+        result_dict.update(append)
+        self.dagobah_coll.save(result_dict)
 
     def delete_dagobah(self, dagobah_id):
         """ Deletes the Dagobah and all child Jobs from the database.
@@ -114,7 +116,9 @@ class MongoBackend(BaseBackend):
     def commit_job(self, job_json):
         job_json['_id'] = job_json['job_id']
         append = {'save_date': datetime.utcnow()}
-        self.job_coll.save(dict(job_json.items() + append.items()))
+        result_dict = job_json.copy()
+        result_dict.update(append)
+        self.job_coll.save(result_dict)
 
     def delete_job(self, job_id):
         self.job_coll.remove({'_id': job_id})

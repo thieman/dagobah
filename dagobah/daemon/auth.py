@@ -31,7 +31,7 @@ def do_login():
     """ Attempt to auth using single login. Rate limited at the site level. """
 
     dt_filter = lambda x: x >= datetime.utcnow() - timedelta(seconds=60)
-    app.config['AUTH_ATTEMPTS'] = filter(dt_filter, app.config['AUTH_ATTEMPTS'])
+    app.config['AUTH_ATTEMPTS'] = list(filter(dt_filter, app.config['AUTH_ATTEMPTS']))
 
     if len(app.config['AUTH_ATTEMPTS']) > app.config['AUTH_RATE_LIMIT']:
         return redirect(url_for('login',
