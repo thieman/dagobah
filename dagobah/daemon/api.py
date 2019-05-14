@@ -6,10 +6,8 @@ import json
 from flask import request, abort, send_file
 from flask_login import login_required
 
-from .daemon import app
+from .daemon import app, dagobah
 from .util import validate_dict, api_call, allowed_file
-
-dagobah = app.config['dagobah']
 
 
 @app.route('/api/jobs', methods=['GET'])

@@ -1,4 +1,4 @@
-from .daemon import app, login_manager
+from .daemon import app, login_manager, dagobah
 from .auth import *
 from .api import *
 from .views import *
