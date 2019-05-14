@@ -63,13 +63,13 @@ class BaseBackend(object):
         return []
 
     def get_new_dagobah_id(self):
-        return binascii.hexlify(os.urandom(16))
+        return binascii.hexlify(os.urandom(16)).decode('ascii')
 
     def get_new_job_id(self):
-        return binascii.hexlify(os.urandom(16))
+        return binascii.hexlify(os.urandom(16)).decode('ascii')
 
     def get_new_log_id(self):
-        return binascii.hexlify(os.urandom(16))
+        return binascii.hexlify(os.urandom(16)).decode('ascii')
 
     def get_dagobah_json(self, dagobah_id):
         return
