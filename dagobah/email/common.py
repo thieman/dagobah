@@ -1,11 +1,11 @@
 """ Common email class to base specific templates off of. """
-
+import email.utils
 import os
 import smtplib
 import socket
-import email.utils
 
 import jinja2
+from six import iteritems
 
 
 class EmailTemplate(object):
@@ -16,7 +16,7 @@ class EmailTemplate(object):
                                                       os.path.dirname(__file__)))
 
         self.formatters = {'{HOSTNAME}': socket.gethostname}
-        for kwarg, value in kwargs.iteritems():
+        for kwarg, value in iteritems(kwargs):
             setattr(self, kwarg, value)
         self.from_address = self._apply_formatters(self.from_address)
         self.message = None
@@ -37,7 +37,7 @@ class EmailTemplate(object):
 
     def _apply_formatters(self, value):
         new_value = value
-        for formatter, call in self.formatters.iteritems():
+        for formatter, call in iteritems(self.formatters):
             new_value = new_value.replace(formatter, call().strip())
         return new_value
 

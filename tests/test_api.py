@@ -1,15 +1,14 @@
+""" Tests on API methods. """
 from __future__ import print_function
 
-""" Tests on API methods. """
-
 import json
-import StringIO
+from io import BytesIO
 
 from flask import json
 from nose.tools import nottest
 
-from dagobah.daemon.app import app
 from dagobah.backend.base import BaseBackend
+from dagobah.daemon.app import app
 
 
 class TestAPI(object):
@@ -151,8 +150,8 @@ class TestAPI(object):
         self.dagobah.delete()
         assert len(self.dagobah.jobs) == 0
 
-        io = StringIO.StringIO()
-        io.write(json.dumps(j))
+        io = BytesIO()
+        io.write(json.dumps(j).encode())
         io.seek(0)
         r = self.app.post('/api/import_job', data={'file': (io, 'test_upload.json')})
         self.validate_api_call(r)

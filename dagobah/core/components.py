@@ -1,12 +1,13 @@
 """ Component classes used by core classes. """
-
 import inspect
-import logging
-from datetime import datetime
-from collections import defaultdict
-import time
-import threading
 import json
+import logging
+import threading
+import time
+from collections import defaultdict
+from datetime import datetime
+
+from six import iteritems
 
 
 class EventHandler(object):
@@ -19,7 +20,9 @@ class EventHandler(object):
     def __init__(self):
         self.handlers = defaultdict(list)
 
-    def emit(self, event, event_params={}):
+    def emit(self, event, event_params=None):
+        if event_params is None:
+            event_params = {}
         try:
             methods = self.handlers.get(event, [])
             for method, args, kwargs in methods:
@@ -67,7 +70,7 @@ class JobState(object):
         self._set_permissions()
 
     def _set_permissions(self):
-        for perm, states in self.perms.iteritems():
+        for perm, states in iteritems(self.perms):
             setattr(self, perm, True if self.status in states else False)
 
 

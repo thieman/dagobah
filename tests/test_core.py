@@ -15,7 +15,7 @@ from dagobah.backend.base import BaseBackend
 
 import os
 
-dagobah = None
+dagobah = None  # type: Dagobah
 
 
 class DagobahTestTimeoutException(Exception):
@@ -38,10 +38,10 @@ def wait_until_stopped(job):
 def supports_timeouts(fn):
     @wraps(fn)
     def wrapped(*args, **kwargs):
-        signal.signal(signal.SIGALRM, raise_timeout_exception)
+        signal.signal(signal.SIGINT, raise_timeout_exception)
         result = fn(*args, **kwargs)
         signal.alarm(0)
-        signal.signal(signal.SIGALRM, lambda signalnum, handler: None)
+        signal.signal(signal.SIGINT, lambda signalnum, handler: None)
         return result
 
     return wrapped

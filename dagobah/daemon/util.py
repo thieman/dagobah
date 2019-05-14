@@ -2,9 +2,10 @@
 
 import logging
 from datetime import date, datetime
-
-from flask import request, json, Response, abort, jsonify
 from functools import wraps
+
+from flask import request, json, Response, jsonify
+from six import iteritems
 
 try:
     from pymongo.objectid import ObjectId
@@ -87,7 +88,7 @@ def validate_dict(in_dict, **kwargs):
     if not isinstance(in_dict, dict):
         raise ValueError('requires a dictionary')
 
-    for key, value in kwargs.iteritems():
+    for key, value in iteritems(kwargs):
 
         if key == 'required':
             for required_key in value:

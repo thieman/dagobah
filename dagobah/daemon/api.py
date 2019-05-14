@@ -1,7 +1,8 @@
 """ HTTP API methods for Dagobah daemon. """
 
-import StringIO
 import json
+from io import StringIO
+from future.builtins import str as text
 
 from flask import request, abort, send_file
 from flask_login import login_required
@@ -457,9 +458,9 @@ def export_job():
 
     job = dagobah.get_job(args['job_name'])
 
-    to_send = StringIO.StringIO()
-    to_send.write(json.dumps(job._serialize(strict_json=True)))
-    to_send.write('\n')
+    to_send = StringIO()
+    to_send.write(u'%s' % text(json.dumps(job._serialize(strict_json=True))))
+    to_send.write(u'\n')
     to_send.seek(0)
 
     return send_file(to_send,

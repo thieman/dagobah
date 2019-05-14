@@ -1,18 +1,21 @@
 """ Core classes for tasks and jobs (groups of tasks) """
 
-import os
-from datetime import datetime
-import time
-import threading
-import subprocess
 import json
-import paramiko
 import logging
-
-from croniter import croniter
+import os
+import subprocess
+import tempfile
+import threading
+from collections import OrderedDict
 from copy import deepcopy
+from datetime import datetime
 
+import paramiko
+from croniter import croniter
 from dag import DAG
+from six import iteritems, itervalues
+from typing import List, Dict
+
 from .components import Scheduler, JobState, StrictJSONEncoder
 from ..backend.base import BaseBackend
 
@@ -31,6 +34,7 @@ class Dagobah(object):
     instance, as well as top-level parameters such as the
     backend used for permanent storage.
     """
+    jobs = None  # type: List[Job]
 
     def __init__(self, backend=BaseBackend(), event_handler=None,
                  ssh_config=None):
@@ -120,7 +124,7 @@ class Dagobah(object):
                                  hostname=task.get('hostname', None))
 
         dependencies = job_json.get('dependencies', {})
-        for from_node, to_nodes in dependencies.iteritems():
+        for from_node, to_nodes in iteritems(dependencies):
             for to_node in to_nodes:
                 job.add_dependency(from_node, to_node)
 
@@ -269,6 +273,7 @@ class Job(DAG):
     job_failed: On failed completion of the job. Returns
     the current serialization of the job with run logs.
     """
+    tasks = None  # type: Dict[str, Task]
 
     def __init__(self, parent, backend, job_id, name):
         logger.debug('Starting Job instance constructor with name {0}'.format(name))
@@ -282,7 +287,7 @@ class Job(DAG):
         self.state = JobState()
 
         # tasks themselves aren't hashable, so we need a secondary lookup
-        self.tasks = {}
+        self.tasks = OrderedDict()
 
         self.next_run = None
         self.cron_schedule = None
@@ -401,7 +406,7 @@ class Job(DAG):
         self._set_status('running')
 
         logger.debug('Job {0} resetting all tasks prior to start'.format(self.name))
-        for task in self.tasks.itervalues():
+        for task in itervalues(self.tasks):
             task.reset()
 
         logger.debug('Job {0} seeding run logs'.format(self.name))
@@ -438,14 +443,14 @@ class Job(DAG):
     def terminate_all(self):
         """ Terminate all currently running tasks. """
         logger.info('Job {0} terminating all currently running tasks'.format(self.name))
-        for task in self.tasks.itervalues():
+        for task in itervalues(self.tasks):
             if task.started_at and not task.completed_at:
                 task.terminate()
 
     def kill_all(self):
         """ Kill all currently running jobs. """
         logger.info('Job {0} killing all currently running tasks'.format(self.name))
-        for task in self.tasks.itervalues():
+        for task in itervalues(self.tasks):
             if task.started_at and not task.completed_at:
                 task.kill()
 
@@ -561,7 +566,7 @@ class Job(DAG):
 
     def _is_complete(self):
         """ Returns Boolean of whether the Job has completed. """
-        for log in self.run_log['tasks'].itervalues():
+        for log in itervalues(self.run_log['tasks']):
             if 'success' not in log:  # job has not returned yet
                 return False
         return True
@@ -573,7 +578,7 @@ class Job(DAG):
         if self.state.status != 'running' or (not self._is_complete()):
             return
 
-        for job, results in self.run_log['tasks'].iteritems():
+        for job, results in iteritems(self.run_log['tasks']):
             if not results.get('success', False):
                 self._set_status('failed')
                 try:
@@ -638,10 +643,10 @@ class Job(DAG):
         except:
             t = [task._serialize(include_run_logs=include_run_logs,
                                  strict_json=strict_json)
-                 for task in self.tasks.itervalues()]
+                 for task in itervalues(self.tasks)]
 
         dependencies = {}
-        for k, v in self.graph.iteritems():
+        for k, v in iteritems(self.graph):
             dependencies[k] = list(v)
 
         result = {'job_id': self.job_id,
@@ -683,7 +688,7 @@ class Job(DAG):
         if graph is None:
             raise Exception("Graph given is None")
         result = set()
-        for node, outgoing_nodes in graph.iteritems():
+        for node, outgoing_nodes in iteritems(graph):
             if target_node in outgoing_nodes:
                 result.add(node)
         return list(result)
@@ -753,8 +758,8 @@ class Task(object):
 
         logger.debug('Resetting task {0}'.format(self.name))
 
-        self.stdout_file = os.tmpfile()
-        self.stderr_file = os.tmpfile()
+        self.stdout_file = tempfile.TemporaryFile()
+        self.stderr_file = tempfile.TemporaryFile()
 
         self.stdout = ""
         self.stderr = ""

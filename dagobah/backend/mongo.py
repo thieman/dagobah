@@ -1,10 +1,11 @@
 """ Mongo Backend class built on top of base Backend """
 
-from datetime import datetime
 import re
-import json
+from datetime import datetime
 
 import pymongo
+from six import iteritems
+
 try:
     from pymongo import MongoClient
 except ImportError:
@@ -86,6 +87,7 @@ class MongoBackend(BaseBackend):
     def decode_import_json(self, json_doc, transformers=None):
         def is_object_id(o):
             return re.match(re.compile('^[0-9a-fA-f]{24}$'), o) is not None
+
         transformers = [([is_object_id], ObjectId),
                         ([], parser.parse)]
         return super(MongoBackend, self).decode_import_json(json_doc,
@@ -129,12 +131,12 @@ class MongoBackend(BaseBackend):
         append = {'save_date': datetime.utcnow()}
 
         for task_name, values in log_json.get('tasks', {}).items():
-            for key, size in TRUNCATE_LOG_SIZES_CHAR.iteritems():
+            for key, size in iteritems(TRUNCATE_LOG_SIZES_CHAR):
                 if isinstance(values.get(key, None), str):
                     if len(values[key]) > size:
-                        values[key] = '\n'.join([values[key][:size/2],
+                        values[key] = '\n'.join([values[key][:size / 2],
                                                  'DAGOBAH STREAM SPLIT',
-                                                 values[key][-1 * (size/2):]])
+                                                 values[key][-1 * (size / 2):]])
         self.log_coll.save(dict(log_json.items() + append.items()))
 
     def get_latest_run_log(self, job_id, task_name):

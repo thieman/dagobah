@@ -1,9 +1,9 @@
 """ Base Backend class inherited by specific implementations. """
 
-import os
 import binascii
 import json
 import logging
+import os
 
 from semantic_version import Version
 
@@ -114,7 +114,7 @@ class BaseBackend(object):
 
                 return o
 
-            for key in dct.iterkeys():
+            for key in dct:
                 if isinstance(key, dict):
                     custom_decoder(dct[key])
                 elif isinstance(key, list):

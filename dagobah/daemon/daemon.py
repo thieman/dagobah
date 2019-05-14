@@ -1,14 +1,15 @@
+""" HTTP Daemon implementation for Dagobah service. """
 from __future__ import print_function
 
-""" HTTP Daemon implementation for Dagobah service. """
-
+import logging
 import os
 import sys
-import logging
 
+import yaml
 from flask import Flask, send_from_directory
 from flask_login import LoginManager
-import yaml
+from past.builtins import basestring
+from six import iteritems
 
 from .. import return_standard_conf
 from ..core import Dagobah, EventHandler
@@ -37,7 +38,7 @@ def replace_nones(dict_or_list):
             return None
         return val
 
-    items = dict_or_list.iteritems() if isinstance(dict_or_list, dict) else enumerate(dict_or_list)
+    items = iteritems(dict_or_list) if isinstance(dict_or_list, dict) else enumerate(dict_or_list)
 
     for accessor, value in items:
         if isinstance(value, (dict, list)):
@@ -64,7 +65,7 @@ def get_config_file():
             try:
                 if os.path.isfile(os.path.join(directory, filename)):
                     to_load = open(os.path.join(directory, filename))
-                    config = yaml.load(to_load.read())
+                    config = yaml.full_load(to_load.read())
                     to_load.close()
                     replace_nones(config)
                     return config

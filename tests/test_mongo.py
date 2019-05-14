@@ -1,14 +1,14 @@
+""" Tests on the Mongo backend """
 from __future__ import print_function
 
-""" Tests on the Mongo backend """
-
-import os
 import datetime
 import json
+import os
 
+import pymongo
 import yaml
 from nose.tools import nottest
-import pymongo
+from pymongo.errors import ConnectionFailure
 
 try:
     from pymongo.objectid import ObjectId
@@ -27,7 +27,7 @@ class TestMongo(object):
         location = os.path.realpath(os.path.join(os.getcwd(),
                                                  os.path.dirname(__file__)))
         config_file = open(os.path.join(location, 'test_config.yml'))
-        config = yaml.load(config_file.read())
+        config = yaml.full_load(config_file.read())
         config_file.close()
 
         if os.getenv('TRAVIS', 'false') == 'true':
@@ -38,13 +38,9 @@ class TestMongo(object):
             self.mongo_port = config.get('MongoBackend', {}).get('mongo_port')
 
         try:
-            try:
-                self.client = pymongo.MongoClient(self.mongo_host,
-                                                  self.mongo_port)
-            except AttributeError:
-                self.client = pymongo.Connection(self.mongo_host,
-                                                 self.mongo_port)
-        except pymongo.errors.ConnectionFailure as e:
+            self.client = pymongo.MongoClient(self.mongo_host,
+                                              self.mongo_port)
+        except ConnectionFailure as e:
             print('Unable to connect to Mongo at %s:%d' % (self.mongo_host,
                                                            self.mongo_port))
             raise e
