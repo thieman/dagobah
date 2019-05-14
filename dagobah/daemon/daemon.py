@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 """ HTTP Daemon implementation for Dagobah service. """
 
 import os
@@ -71,7 +73,7 @@ def get_config_file():
 
     # if we made it to here, need to create a config file
     # double up on notifications here to make sure first-time user sees it
-    print 'Creating new config file in home directory'
+    print('Creating new config file in home directory')
     logging.info('Creating new config file in home directory')
     new_config = open(new_config_path, 'w')
     new_config.write(return_standard_conf())
@@ -136,7 +138,7 @@ def get_conf(config, path, default=None):
     for level in path.split('.'):
         if level not in current:
             msg = 'Defaulting missing config key %s to %s' % (path, default)
-            print msg
+            print(msg)
             logging.warning(msg)
             return default
         current = current[level]
@@ -171,7 +173,8 @@ def configure_event_hooks(config):
     """ Returns an EventHandler instance with registered hooks. """
 
     def print_event_info(**kwargs):
-        print kwargs.get('event_params', {})
+        print()
+        kwargs.get('event_params', {})
 
     def job_complete_email(email_handler, **kwargs):
         email_handler.send_job_completed(kwargs['event_params'])
@@ -233,7 +236,7 @@ def init_core_logger(location, config):
         root.addHandler(stdout_logger)
 
     if config_filepath:
-        print 'Logging output to %s' % config_filepath
+        print('Logging output to %s' % config_filepath)
     logging.info('Core logger initialized at level %s' % level_string)
 
 

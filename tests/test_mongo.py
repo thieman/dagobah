@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 """ Tests on the Mongo backend """
 
 import os
@@ -43,8 +45,8 @@ class TestMongo(object):
                 self.client = pymongo.Connection(self.mongo_host,
                                                  self.mongo_port)
         except pymongo.errors.ConnectionFailure as e:
-            print 'Unable to connect to Mongo at %s:%d' % (self.mongo_host,
-                                                           self.mongo_port)
+            print('Unable to connect to Mongo at %s:%d' % (self.mongo_host,
+                                                           self.mongo_port))
             raise e
 
         self.db_name = 'dagobah_mongobackend_test'
@@ -105,7 +107,7 @@ class TestMongo(object):
         assert self.dagobah_coll.find(q).count() == 1
         rec = self.dagobah_coll.find_one(q)
 
-        print rec
+        print(rec)
         assert rec == {'_id': self.dagobah.dagobah_id,
                        'save_date': rec['save_date'],
                        'dagobah_id': self.dagobah.dagobah_id,
@@ -140,7 +142,8 @@ class TestMongo(object):
 
         rec = self.job_coll.find_one(q)
 
-        print rec
+        print
+        rec
         assert rec == {'_id': job.job_id,
                        'job_id': job.job_id,
                        'name': 'test_job',
@@ -176,8 +179,8 @@ class TestMongo(object):
 
         test_dagobah.from_backend(self.dagobah.dagobah_id)
 
-        print self.dagobah._serialize()
-        print test_dagobah._serialize()
+        print(self.dagobah._serialize())
+        print(test_dagobah._serialize())
 
         assert self.dagobah._serialize() == test_dagobah._serialize()
 

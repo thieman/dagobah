@@ -1,13 +1,13 @@
+from __future__ import print_function
+
 """ Tests on API methods. """
 
 import json
 import StringIO
 
-from flask import Flask, json
-import requests
+from flask import json
 from nose.tools import nottest
 
-from dagobah.core import Dagobah
 from dagobah.daemon.app import app
 from dagobah.backend.base import BaseBackend
 
@@ -47,10 +47,10 @@ class TestAPI(object):
 
     @nottest
     def validate_api_call(self, request):
-        print request.status_code
+        print(request.status_code)
         assert request.status_code == 200
         d = json.loads(request.data)
-        print d
+        print(d)
         assert d['status'] == request.status_code
         assert 'result' in d
         return d
