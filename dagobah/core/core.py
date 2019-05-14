@@ -202,7 +202,7 @@ class Dagobah(object):
 
     def get_job(self, job_name):
         """ Returns a Job by name, or None if none exists. """
-        for job in self.jobs:
+        for job in self.jobs:  # type: Job
             if job.name == job_name:
                 return job
         logger.warn('Tried to find job with name {0}, but job not found'.format(job_name))
