@@ -30,10 +30,10 @@ def replace_nones(dict_or_list):
     """Update a dict or list in place to replace
     'none' string values with Python None."""
 
-    def replace_none_in_value(value):
-        if isinstance(value, basestring) and value.lower() == "none":
+    def get_none_if_none(val):
+        if isinstance(val, basestring) and val.lower() == "none":
             return None
-        return value
+        return val
 
     items = dict_or_list.iteritems() if isinstance(dict_or_list, dict) else enumerate(dict_or_list)
 
@@ -41,7 +41,7 @@ def replace_nones(dict_or_list):
         if isinstance(value, (dict, list)):
             replace_nones(value)
         else:
-            dict_or_list[accessor] = replace_none_in_value(value)
+            dict_or_list[accessor] = get_none_if_none(value)
 
 
 def get_config_file():
@@ -78,10 +78,10 @@ def get_config_file():
     new_config.close()
 
     new_config = open(new_config_path, 'r')
-    config = yaml.load(new_config.read())
+    config_dict = yaml.full_load(new_config.read())
     new_config.close()
-    replace_nones(config)
-    return config
+    replace_nones(config_dict)
+    return config_dict
 
 
 def configure_requests_logger(config, app):
