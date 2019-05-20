@@ -1,15 +1,15 @@
 """ HTTP API methods for Dagobah daemon. """
 
-import StringIO
 import json
+from io import StringIO
+from future.builtins import str as text
 
 from flask import request, abort, send_file
 from flask_login import login_required
 
-from .daemon import app
+from .daemon import app, dagobah
 from .util import validate_dict, api_call, allowed_file
 
-dagobah = app.config['dagobah']
 
 @app.route('/api/jobs', methods=['GET'])
 @login_required
@@ -226,6 +226,7 @@ def add_dependency():
 
     job = dagobah.get_job(args['job_name'])
     job.add_dependency(args['from_task_name'], args['to_task_name'])
+
 
 @app.route('/api/delete_dependency', methods=['POST'])
 @login_required
@@ -457,9 +458,9 @@ def export_job():
 
     job = dagobah.get_job(args['job_name'])
 
-    to_send = StringIO.StringIO()
-    to_send.write(json.dumps(job._serialize(strict_json=True)))
-    to_send.write('\n')
+    to_send = StringIO()
+    to_send.write(u'%s' % text(json.dumps(job._serialize(strict_json=True))))
+    to_send.write(u'\n')
     to_send.seek(0)
 
     return send_file(to_send,
@@ -471,9 +472,9 @@ def export_job():
 @login_required
 @api_call
 def import_job():
-    file = request.files['file']
-    if file and allowed_file(file.filename, ['json']):
-        dagobah.add_job_from_json(file.read(), destructive=True)
+    req_file = request.files['file']
+    if req_file and allowed_file(req_file.filename, ['json']):
+        dagobah.add_job_from_json(req_file.read(), destructive=True)
 
 
 @app.route('/api/hosts', methods=['GET'])

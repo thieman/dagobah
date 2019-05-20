@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 """ Tests on the core class implementations (Dagobah, Job, Task) """
 
 from datetime import datetime
@@ -13,14 +15,17 @@ from dagobah.backend.base import BaseBackend
 
 import os
 
-dagobah = None
+dagobah = None  # type: Dagobah
+
 
 class DagobahTestTimeoutException(Exception):
     pass
 
+
 @nottest
 def raise_timeout_exception(*args, **kwargs):
     raise DagobahTestTimeoutException()
+
 
 @nottest
 def wait_until_stopped(job):
@@ -28,16 +33,19 @@ def wait_until_stopped(job):
         sleep(0.1)
         continue
 
+
 @nottest
 def supports_timeouts(fn):
     @wraps(fn)
     def wrapped(*args, **kwargs):
-        signal.signal(signal.SIGALRM, raise_timeout_exception)
+        signal.signal(signal.SIGINT, raise_timeout_exception)
         result = fn(*args, **kwargs)
         signal.alarm(0)
-        signal.signal(signal.SIGALRM, lambda signalnum, handler: None)
+        signal.signal(signal.SIGINT, lambda signalnum, handler: None)
         return result
+
     return wrapped
+
 
 @nottest
 def blank_dagobah():
@@ -225,15 +233,15 @@ def test_serialize_dagobah():
                                         'success': None,
                                         'soft_timeout': 0,
                                         'hard_timeout': 0,
-                                        'hostname': None},],
+                                        'hostname': None}, ],
                              'dependencies': {'list': ['grep'],
                                               'grep': []},
                              'status': 'waiting',
                              'cron_schedule': '*/5 * * * *',
                              'next_run': datetime(2012, 1, 1, 1, 5, 0),
                              'notes': 'Here are some notes'}]}
-    print dagobah._serialize()
-    print test_result
+    print(dagobah._serialize())
+    print(test_result)
     assert_equal(dagobah._serialize(), test_result)
 
 
@@ -270,12 +278,14 @@ def test_construct_with_timeouts():
     assert job.tasks['From Job'].soft_timeout == 10
     assert job.tasks['From Job'].hard_timeout == 20
 
+
 @with_setup(blank_dagobah)
 def test_ssh_config_load():
     hosts = dagobah.get_hosts()
     assert "test_host" in hosts
     assert "*" not in hosts
     assert "nonexistant" not in hosts
+
 
 @with_setup(blank_dagobah)
 @supports_timeouts

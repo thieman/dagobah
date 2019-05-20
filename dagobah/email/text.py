@@ -5,22 +5,20 @@ from email.mime.text import MIMEText
 
 from .common import EmailTemplate
 
+
 class TextEmail(EmailTemplate):
 
     def send_job_completed(self, data):
         self.message = MIMEText(self._job_to_text(data))
         self._construct_and_send('Job Completed: %s' % data.get('name', None))
 
-
     def send_job_failed(self, data):
         self.message = MIMEText(self._job_to_text(data))
         self._construct_and_send('Job Failed: %s' % data.get('name', None))
 
-
     def send_task_failed(self, data):
         self.message = MIMEText(self._task_to_text(data))
         self._construct_and_send('Task Failed: %s' % data.get('name', None))
-
 
     def _task_to_text(self, task):
         """ Return a standard formatting of a Task serialization. """
@@ -42,7 +40,6 @@ class TextEmail(EmailTemplate):
                           'Stdout: %s' % run_log.get('stdout', None),
                           'Stderr: %s' % run_log.get('stderr', None)])
 
-
     def _job_to_text(self, job):
         """ Return a standard formatting of a Job serialization. """
 
@@ -63,7 +60,6 @@ class TextEmail(EmailTemplate):
                           'Tasks Detail',
                           '',
                           tasks])
-
 
     def _format_date(self, in_date):
         if (not in_date) or (not isinstance(in_date, datetime)):

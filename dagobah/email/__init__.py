@@ -3,12 +3,12 @@ import logging
 from .text import TextEmail
 from .basic import BasicEmail
 
-def get_email_handler(handler_name, email_options):
 
+def get_email_handler(handler_name, email_options):
     if isinstance(handler_name, str):
         handler_name = handler_name.lower()
 
-    #Assume authentication is required if missing for backward compatibility.
+    # Assume authentication is required if missing for backward compatibility.
     auth_required = email_options.get('auth_required', True)
 
     user = email_options.get('user', None)

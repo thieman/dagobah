@@ -1,12 +1,13 @@
 """ Component classes used by core classes. """
-
 import inspect
-import logging
-from datetime import datetime
-from collections import defaultdict
-import time
-import threading
 import json
+import logging
+import threading
+import time
+from collections import defaultdict
+from datetime import datetime
+
+from six import iteritems
 
 
 class EventHandler(object):
@@ -19,8 +20,9 @@ class EventHandler(object):
     def __init__(self):
         self.handlers = defaultdict(list)
 
-
-    def emit(self, event, event_params={}):
+    def emit(self, event, event_params=None):
+        if event_params is None:
+            event_params = {}
         try:
             methods = self.handlers.get(event, [])
             for method, args, kwargs in methods:
@@ -32,12 +34,10 @@ class EventHandler(object):
         except Exception:
             logging.exception('Exception emitting event %s' % event)
 
-
     def register(self, event, method, *args, **kwargs):
         if 'event_params' in kwargs:
             raise ValueError('event_params is a reserved key')
         self.handlers[event].append((method, args, kwargs))
-
 
     def deregister(self, event, method):
         for idx, registered in enumerate(self.handlers[event]):
@@ -61,7 +61,6 @@ class JobState(object):
         for key in self.perms.keys():
             setattr(self, key, None)
 
-
     def set_status(self, status):
         status = status.lower()
         if status not in ['waiting', 'running', 'failed']:
@@ -70,9 +69,8 @@ class JobState(object):
         self.status = status
         self._set_permissions()
 
-
     def _set_permissions(self):
-        for perm, states in self.perms.iteritems():
+        for perm, states in iteritems(self.perms):
             setattr(self, perm, True if self.status in states else False)
 
 
@@ -86,21 +84,17 @@ class Scheduler(threading.Thread):
 
         self.last_check = datetime.utcnow()
 
-
     def __repr__(self):
         return '<Scheduler for %s>' % self.parent
-
 
     def stop(self):
         """ Stop the monitoring loop without killing the thread. """
         self.stopped = True
 
-
     def restart(self):
         """ Restart the monitoring loop. """
         self.last_check = datetime.utcnow()
         self.stopped = False
-
 
     def run(self):
         """ Continually monitors Jobs of the parent Dagobah. """
@@ -123,6 +117,8 @@ class StrictJSONEncoder(json.JSONEncoder):
         try:
             from bson import ObjectId
             if isinstance(o, ObjectId):
+                return str(o)
+            if isinstance(o, bytes):
                 return str(o)
         except ImportError:
             pass

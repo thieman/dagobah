@@ -2,9 +2,10 @@
 
 import logging
 from datetime import date, datetime
-
-from flask import request, json, Response, abort, jsonify
 from functools import wraps
+
+from flask import request, json, Response, jsonify
+from six import iteritems
 
 try:
     from pymongo.objectid import ObjectId
@@ -16,12 +17,15 @@ except ImportError:
 
 from ..core import DagobahError, DAGValidationError
 
+
 class DagobahEncoder(json.JSONEncoder):
     def default(self, obj):
 
         try:
             if isinstance(obj, ObjectId):
                 return str(obj)
+            if isinstance(obj, bytes):
+                return  str(obj)
         except NameError:
             pass
 
@@ -86,7 +90,7 @@ def validate_dict(in_dict, **kwargs):
     if not isinstance(in_dict, dict):
         raise ValueError('requires a dictionary')
 
-    for key, value in kwargs.iteritems():
+    for key, value in iteritems(kwargs):
 
         if key == 'required':
             for required_key in value:
@@ -105,8 +109,8 @@ def validate_dict(in_dict, **kwargs):
         else:
 
             if (isinstance(in_dict[key], list) and
-                len(in_dict[key]) == 1 and
-                value != list):
+                    len(in_dict[key]) == 1 and
+                    value != list):
                 in_dict[key] = in_dict[key][0]
 
             try:

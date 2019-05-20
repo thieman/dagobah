@@ -1,10 +1,11 @@
 """ Mongo Backend class built on top of base Backend """
 
-from datetime import datetime
 import re
-import json
+from datetime import datetime
 
 import pymongo
+from six import iteritems
+
 try:
     from pymongo import MongoClient
 except ImportError:
@@ -86,6 +87,7 @@ class MongoBackend(BaseBackend):
     def decode_import_json(self, json_doc, transformers=None):
         def is_object_id(o):
             return re.match(re.compile('^[0-9a-fA-f]{24}$'), o) is not None
+
         transformers = [([is_object_id], ObjectId),
                         ([], parser.parse)]
         return super(MongoBackend, self).decode_import_json(json_doc,
@@ -94,7 +96,9 @@ class MongoBackend(BaseBackend):
     def commit_dagobah(self, dagobah_json):
         dagobah_json['_id'] = dagobah_json['dagobah_id']
         append = {'save_date': datetime.utcnow()}
-        self.dagobah_coll.save(dict(dagobah_json.items() + append.items()))
+        result_dict = dagobah_json.copy()
+        result_dict.update(append)
+        self.dagobah_coll.save(result_dict)
 
     def delete_dagobah(self, dagobah_id):
         """ Deletes the Dagobah and all child Jobs from the database.
@@ -112,7 +116,9 @@ class MongoBackend(BaseBackend):
     def commit_job(self, job_json):
         job_json['_id'] = job_json['job_id']
         append = {'save_date': datetime.utcnow()}
-        self.job_coll.save(dict(job_json.items() + append.items()))
+        result_dict = job_json.copy()
+        result_dict.update(append)
+        self.job_coll.save(result_dict)
 
     def delete_job(self, job_id):
         self.job_coll.remove({'_id': job_id})
@@ -129,12 +135,12 @@ class MongoBackend(BaseBackend):
         append = {'save_date': datetime.utcnow()}
 
         for task_name, values in log_json.get('tasks', {}).items():
-            for key, size in TRUNCATE_LOG_SIZES_CHAR.iteritems():
+            for key, size in iteritems(TRUNCATE_LOG_SIZES_CHAR):
                 if isinstance(values.get(key, None), str):
                     if len(values[key]) > size:
-                        values[key] = '\n'.join([values[key][:size/2],
+                        values[key] = '\n'.join([values[key][:size / 2],
                                                  'DAGOBAH STREAM SPLIT',
-                                                 values[key][-1 * (size/2):]])
+                                                 values[key][-1 * (size / 2):]])
         self.log_coll.save(dict(log_json.items() + append.items()))
 
     def get_latest_run_log(self, job_id, task_name):

@@ -1,12 +1,15 @@
 """ HTTP Daemon implementation for Dagobah service. """
+from __future__ import print_function
 
+import logging
 import os
 import sys
-import logging
 
+import yaml
 from flask import Flask, send_from_directory
 from flask_login import LoginManager
-import yaml
+from past.builtins import basestring
+from six import iteritems
 
 from .. import return_standard_conf
 from ..core import Dagobah, EventHandler
@@ -20,26 +23,29 @@ login_manager.login_view = "login"
 location = os.path.realpath(os.path.join(os.getcwd(),
                                          os.path.dirname(__file__)))
 
+
 class NullHandler(logging.Handler):
     def emit(self, record):
         pass
+
 
 def replace_nones(dict_or_list):
     """Update a dict or list in place to replace
     'none' string values with Python None."""
 
-    def replace_none_in_value(value):
-        if isinstance(value, basestring) and value.lower() == "none":
+    def get_none_if_none(val):
+        if isinstance(val, basestring) and val.lower() == "none":
             return None
-        return value
+        return val
 
-    items = dict_or_list.iteritems() if isinstance(dict_or_list, dict) else enumerate(dict_or_list)
+    items = iteritems(dict_or_list) if isinstance(dict_or_list, dict) else enumerate(dict_or_list)
 
     for accessor, value in items:
         if isinstance(value, (dict, list)):
             replace_nones(value)
         else:
-            dict_or_list[accessor] = replace_none_in_value(value)
+            dict_or_list[accessor] = get_none_if_none(value)
+
 
 def get_config_file():
     """ Return the loaded config file if one exists. """
@@ -59,7 +65,7 @@ def get_config_file():
             try:
                 if os.path.isfile(os.path.join(directory, filename)):
                     to_load = open(os.path.join(directory, filename))
-                    config = yaml.load(to_load.read())
+                    config = yaml.full_load(to_load.read())
                     to_load.close()
                     replace_nones(config)
                     return config
@@ -68,17 +74,17 @@ def get_config_file():
 
     # if we made it to here, need to create a config file
     # double up on notifications here to make sure first-time user sees it
-    print 'Creating new config file in home directory'
+    print('Creating new config file in home directory')
     logging.info('Creating new config file in home directory')
     new_config = open(new_config_path, 'w')
     new_config.write(return_standard_conf())
     new_config.close()
 
     new_config = open(new_config_path, 'r')
-    config = yaml.load(new_config.read())
+    config_dict = yaml.full_load(new_config.read())
     new_config.close()
-    replace_nones(config)
-    return config
+    replace_nones(config_dict)
+    return config_dict
 
 
 def configure_requests_logger(config, app):
@@ -108,6 +114,7 @@ def configure_requests_logger(config, app):
         stdout_logger.setLevel(logging.DEBUG)
         logger.addHandler(stdout_logger)
 
+
 def configure_app():
     app.debug = get_conf(config, 'Dagobahd.debug', False)
     app.secret_key = get_conf(config, 'Dagobahd.app_secret', 'default_secret')
@@ -132,7 +139,7 @@ def get_conf(config, path, default=None):
     for level in path.split('.'):
         if level not in current:
             msg = 'Defaulting missing config key %s to %s' % (path, default)
-            print msg
+            print(msg)
             logging.warning(msg)
             return default
         current = current[level]
@@ -140,7 +147,6 @@ def get_conf(config, path, default=None):
 
 
 def init_dagobah(testing=False):
-
     init_core_logger(location, config)
 
     backend = get_backend(config)
@@ -151,8 +157,8 @@ def init_dagobah(testing=False):
         logging.warn("SSH config doesn't exist, no remote hosts will be listed")
 
     dagobah = Dagobah(backend, event_handler, ssh_config)
-    known_ids = [id for id in backend.get_known_dagobah_ids()
-                 if id != dagobah.dagobah_id]
+    known_ids = [job_id for job_id in backend.get_known_dagobah_ids()
+                 if job_id != dagobah.dagobah_id]
     if len(known_ids) > 1:
         # need a way to handle this intelligently through config
         raise ValueError('could not infer dagobah ID, ' +
@@ -168,7 +174,8 @@ def configure_event_hooks(config):
     """ Returns an EventHandler instance with registered hooks. """
 
     def print_event_info(**kwargs):
-        print kwargs.get('event_params', {})
+        print()
+        kwargs.get('event_params', {})
 
     def job_complete_email(email_handler, **kwargs):
         email_handler.send_job_completed(kwargs['event_params'])
@@ -185,11 +192,11 @@ def configure_event_hooks(config):
                                       get_conf(config, 'Email', {}))
 
     if (email_handler and
-        get_conf(config, 'Email.send_on_success', False) == True):
+            get_conf(config, 'Email.send_on_success', False) is True):
         handler.register('job_complete', job_complete_email, email_handler)
 
     if (email_handler and
-        get_conf(config, 'Email.send_on_failure', False) == True):
+            get_conf(config, 'Email.send_on_failure', False) is True):
         handler.register('job_failed', job_failed_email, email_handler)
         handler.register('task_failed', task_failed_email, email_handler)
 
@@ -230,9 +237,8 @@ def init_core_logger(location, config):
         root.addHandler(stdout_logger)
 
     if config_filepath:
-        print 'Logging output to %s' % config_filepath
+        print('Logging output to %s' % config_filepath)
     logging.info('Core logger initialized at level %s' % level_string)
-
 
 
 def get_backend(config):
