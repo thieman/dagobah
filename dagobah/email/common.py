@@ -18,6 +18,7 @@ class EmailTemplate(object):
         self.formatters = {'{HOSTNAME}': socket.gethostname}
         for kwarg, value in iteritems(kwargs):
             setattr(self, kwarg, value)
+        self.original_from_address = self.from_address
         self.from_address = self._apply_formatters(self.from_address)
         self.message = None
 

@@ -70,6 +70,9 @@ Logging:
 
 Email:
 
+  # amazon: Uses Amazon SES and sends basic email
+  use_amazon: False
+
   # set host and port of the SMTP server to use to send mail
   # e.g. host: smtp.gmail.com   port: 587
   host: smtp.gmail.com
@@ -84,6 +87,11 @@ Email:
   # tls is required for some mail servers, specifically Gmail
   use_tls: True
 
+  # set amazon ses region_name, aws_access_key_id and aws_secret_access_key
+  region_name: None
+  aws_access_key_id: None
+  aws_secret_access_key: None
+
   # from address in the emails from Dagobah.
   # supports the following special variables within curly brackets {}
   # {HOSTNAME}: the machine's hostname
@@ -91,6 +99,12 @@ Email:
 
   # list of email addresses to send reports to, e.g. ['myemail@gmail.com']
   recipients: []
+
+  # list of email addresses in cc (Only works in amazon)
+  cc_addresses: []
+
+  # list of email addresses in bcc (Only works in amazon)
+  bcc_addresses: []
 
   # sets whether Dagobah sends you emails on successful job completion
   send_on_success: True
