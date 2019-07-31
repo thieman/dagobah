@@ -39,3 +39,6 @@ venv
 
 # Vim packages
 *.ropeproject
+
+# PyCharm Settings
+.idea/*

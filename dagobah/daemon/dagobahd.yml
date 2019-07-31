@@ -30,7 +30,7 @@ Dagobahd:
   # If you don't plan on executing tasks on remote servers, leaving this
   # default is fine. If you need to create an ssh config, the default
   # location is sugested
-  ssh_config: ~/.ssh/config
+  #ssh_config: ~/.ssh/config
 
 Logging:
 
@@ -77,8 +77,8 @@ Email:
 
   # email server authentication
   auth_required: True
-  user: AKIAJGE76EO37IVLCH4Q
-  password: AkRFQyRj81vGnnFyrGNG0/AR8KBE43GVQhnHd034CD3n
+  user: AKIAIKQIPV5V2MRXIDDQ
+  password: AiHPFFJrG13Vn9BhPrRFynAOpnsDfolQDO6tOXFWKTt0
 
 
   # tls is required for some mail servers, specifically Gmail
